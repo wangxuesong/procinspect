@@ -1,0 +1,38 @@
+
+package parser
+
+type SqlParser Peg {
+}
+
+Unit <- Spacing CreatePackageDeclaration EOT
+
+CreatePackageDeclaration <- CREATE ( OR REPLACE )? PACKAGE Identifier IS
+                            END SEMI
+
+Identifier <- !Keyword Letter LetterOrDigit* Spacing
+
+Letter <- [a-z] / [A-Z] / [_$]
+
+Spacing <- ( [ \t\r\n]+ )*
+
+LetterOrDigit <- [a-z] / [A-Z] / [0-9] / [_$]
+
+Keyword
+   <- ( "create"
+      / "or"
+      / "replace"
+      / "package"
+      / "is"
+      / "end"
+      ) !LetterOrDigit
+
+CREATE   <- "create"    !LetterOrDigit Spacing
+OR       <- "or"        !LetterOrDigit Spacing
+REPLACE  <- "replace"   !LetterOrDigit Spacing
+PACKAGE  <- "package"   !LetterOrDigit Spacing
+IS       <- "is"        !LetterOrDigit Spacing
+END      <- "end"       !LetterOrDigit Spacing
+
+SEMI            <-   ';'       Spacing
+
+EOT <- !.
