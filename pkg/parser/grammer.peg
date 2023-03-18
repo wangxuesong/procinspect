@@ -4,10 +4,17 @@ package parser
 type SqlParser Peg {
 }
 
+
 Unit <- Spacing CreatePackageDeclaration EOT
 
-CreatePackageDeclaration <- CREATE ( OR REPLACE )? PACKAGE Identifier IS
+# Rules of Package
+
+CreatePackageDeclaration <- CREATE ( OR REPLACE )? PACKAGE PackageName IS
                             END SEMI
+
+PackageName <- Identifier
+
+# Lexical Structure
 
 Identifier <- !Keyword Letter LetterOrDigit* Spacing
 
