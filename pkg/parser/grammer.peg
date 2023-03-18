@@ -5,16 +5,53 @@ type SqlParser Peg {
 }
 
 
-Unit <- Spacing CreatePackageDeclaration EOT
+Unit <- Spacing Statement* EOT
 
+Statement <- CreatePackageDeclaration
+           / CreateProcedureDeclaration
+
+#------------------------------------------------------------------------------
 # Rules of Package
+#------------------------------------------------------------------------------
 
 CreatePackageDeclaration <- CREATE ( OR REPLACE )? PACKAGE PackageName IS
                             END SEMI
 
 PackageName <- Identifier
 
+#------------------------------------------------------------------------------
+# Rules of Procedure
+#------------------------------------------------------------------------------
+
+CreateProcedureDeclaration <- CREATE ( OR REPLACE )? ProcedureHeader IS
+                                ProcedureDeclarationBlock?
+                                ProcedureBody SEMI
+
+ProcedureHeader <- PROCEDURE ProcedureName #( LPAR ParameterList RPAR )?
+
+ProcedureDeclarationBlock <- DeclarationItem+
+
+DeclarationItem <- VariableDeclaration SEMI
+
+VariableDeclaration <- Identifier TypeSpecifier
+
+ProcedureBody <- BEGIN END
+
+ProcedureName <- Identifier
+
+#------------------------------------------------------------------------------
+# Rules of Type
+#------------------------------------------------------------------------------
+
+TypeSpecifier
+    <- INTEGER
+     / VARCHAR
+     / VARCHAR2
+
+
+#------------------------------------------------------------------------------
 # Lexical Structure
+#------------------------------------------------------------------------------
 
 Identifier <- !Keyword Letter LetterOrDigit* Spacing
 
@@ -30,7 +67,12 @@ Keyword
       / "replace"
       / "package"
       / "is"
+      / "begin"
       / "end"
+      / "procedure"
+      / "integer"
+      / "varchar"
+      / "varchar2"
       ) !LetterOrDigit
 
 CREATE   <- "create"    !LetterOrDigit Spacing
@@ -38,8 +80,15 @@ OR       <- "or"        !LetterOrDigit Spacing
 REPLACE  <- "replace"   !LetterOrDigit Spacing
 PACKAGE  <- "package"   !LetterOrDigit Spacing
 IS       <- "is"        !LetterOrDigit Spacing
+BEGIN    <- "begin"     !LetterOrDigit Spacing
 END      <- "end"       !LetterOrDigit Spacing
+PROCEDURE<- "procedure" !LetterOrDigit Spacing
+INTEGER  <- "integer"   !LetterOrDigit Spacing
+VARCHAR  <- "varchar"   !LetterOrDigit Spacing
+VARCHAR2 <- "varchar2"  !LetterOrDigit Spacing
 
 SEMI            <-   ';'       Spacing
+#LPAR            <-   '('       Spacing
+#RPAR            <-   ')'       Spacing
 
 EOT <- !.

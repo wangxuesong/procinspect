@@ -15,24 +15,41 @@ type (
 	}
 )
 
-func TestParseProc(t *testing.T) {
-	text := `create or replace package test is
-	end;`
-
-	parser := &testSqlParser{
-		SqlParser{Buffer: text},
-		t,
-	}
-	err := parser.Init()
-	assert.Nil(t, err)
-	assert.Nil(t, parser.Parse())
-	ast := parser.AST()
-	node := ast.up
+func (p *testSqlParser) defaultVisitor(node *node32) error {
+	node = node.up
 	for node != nil {
-		err := node.Accept(parser)
-		assert.Nil(t, err)
+		err := node.Accept(p)
+		if err != nil {
+			return err
+		}
 		node = node.next
 	}
+	return nil
+}
+
+func (p *testSqlParser) VisitStatement(node *node32) error {
+	return p.defaultVisitor(node)
+}
+
+func (p *testSqlParser) VisitCreateProcedureDeclaration(node *node32) error {
+	node = node.up
+	for node != nil {
+		switch node.pegRule {
+		case ruleCREATE, ruleOR, ruleREPLACE, rulePROCEDURE, ruleIS, ruleSEMI:
+		case ruleProcedureHeader:
+			node := node.up
+			for node != nil {
+				switch node.pegRule {
+				case ruleProcedureName:
+					assert.Equal(p.t, "test", strings.TrimSpace(string(p.buffer[node.begin:node.end])))
+					return nil
+				}
+				node = node.next
+			}
+		}
+		node = node.next
+	}
+	return nil
 }
 
 func (p *testSqlParser) VisitCreatePackageDeclaration(node *node32) error {
@@ -62,4 +79,45 @@ func (p *testSqlParser) VisitCreatePackageDeclaration(node *node32) error {
 		node = node.next
 	}
 	return nil
+}
+
+func TestParseCreatePackage(t *testing.T) {
+	text := `create or replace package test is
+	end;`
+
+	parser := &testSqlParser{
+		SqlParser{Buffer: text},
+		t,
+	}
+	err := parser.Init()
+	assert.Nil(t, err)
+	assert.Nil(t, parser.Parse())
+	ast := parser.AST()
+	node := ast.up
+	for node != nil {
+		err := node.Accept(parser)
+		assert.Nil(t, err)
+		node = node.next
+	}
+}
+
+func TestParseCreateProc(t *testing.T) {
+	text := `create or replace procedure test is
+	begin
+	end;`
+
+	parser := &testSqlParser{
+		SqlParser{Buffer: text},
+		t,
+	}
+	err := parser.Init()
+	assert.Nil(t, err)
+	assert.Nil(t, parser.Parse())
+	ast := parser.AST()
+	node := ast.up
+	for node != nil {
+		err := node.Accept(parser)
+		assert.Nil(t, err)
+		node = node.next
+	}
 }
