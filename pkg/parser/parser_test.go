@@ -59,3 +59,43 @@ func TestParseSimple(t *testing.T) {
 	assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
 	assert.Equal(t, stmt.From.TableRefs[1].Table, "test")
 }
+
+func TestCreateProcedure(t *testing.T) {
+	text := `create or replace procedure test is
+	begin
+		select 1 from dual;
+		select 2 from t;
+	end;`
+
+	p := plsql.NewParser(text)
+	root := p.Sql_script()
+	assert.Nil(t, p.Error())
+	assert.NotNil(t, root)
+	assert.IsType(t, &plsql.Sql_scriptContext{}, root)
+	_, ok := root.(*plsql.Sql_scriptContext)
+	assert.True(t, ok)
+
+	node := GeneralScript(root)
+	assert.NotNil(t, node)
+	assert.Greater(t, len(node.Statements), 0)
+
+	{ // assert that the statement is a CreateProcedureStatement
+		assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
+		stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
+
+		assert.True(t, stmt.IsReplace)
+
+		assert.Equal(t, stmt.Name, "test")
+
+		assert.NotNil(t, stmt.Body)
+		assert.Equal(t, len(stmt.Body.Statements), 2)
+
+		assert.IsType(t, &semantic.SelectStatement{}, stmt.Body.Statements[0])
+		select1 := stmt.Body.Statements[0].(*semantic.SelectStatement)
+		assert.Equal(t, select1.From.TableRefs[0].Table, "dual")
+
+		assert.IsType(t, &semantic.SelectStatement{}, stmt.Body.Statements[1])
+		select2 := stmt.Body.Statements[1].(*semantic.SelectStatement)
+		assert.Equal(t, select2.From.TableRefs[0].Table, "t")
+	}
+}
