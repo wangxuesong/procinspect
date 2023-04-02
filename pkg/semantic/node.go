@@ -18,8 +18,9 @@ type (
 
 const (
 	NilNode NodeType = iota
-	ScriptNodeT
+	ScriptNode
 	StatementSelect
+	CreateProcedure
 )
 
 func (*node) Type() NodeType {
@@ -27,5 +28,5 @@ func (*node) Type() NodeType {
 }
 
 func (*Script) Type() NodeType {
-	return ScriptNodeT
+	return ScriptNode
 }
