@@ -67,17 +67,7 @@ func TestCreateProcedure(t *testing.T) {
 		select 2 from t;
 	end;`
 
-	p := plsql.NewParser(text)
-	root := p.Sql_script()
-	assert.Nil(t, p.Error())
-	assert.NotNil(t, root)
-	assert.IsType(t, &plsql.Sql_scriptContext{}, root)
-	_, ok := root.(*plsql.Sql_scriptContext)
-	assert.True(t, ok)
-
-	node := GeneralScript(root)
-	assert.NotNil(t, node)
-	assert.Greater(t, len(node.Statements), 0)
+	node := getRoot(t, text)
 
 	{ // assert that the statement is a CreateProcedureStatement
 		assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
@@ -98,4 +88,52 @@ func TestCreateProcedure(t *testing.T) {
 		select2 := stmt.Body.Statements[1].(*semantic.SelectStatement)
 		assert.Equal(t, select2.From.TableRefs[0].Table, "t")
 	}
+
+	text = `CREATE OR REPLACE PROCEDURE PROC(PARAM NUMBER)
+IS
+LOCAL_PARAM NUMBER;
+USER_EXCEPTION EXCEPTION;
+BEGIN
+LOCAL_PARAM:=0;
+END;`
+
+	node = getRoot(t, text)
+
+	{ // assert that the statement is a CreateProcedureStatement
+		assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
+		stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
+
+		assert.True(t, stmt.IsReplace)
+
+		assert.Equal(t, stmt.Name, "PROC")
+
+		assert.NotNil(t, stmt.Declarations)
+		assert.Equal(t, len(stmt.Declarations), 2)
+
+		assert.Equal(t, &semantic.VariableDeclaration{Name: "LOCAL_PARAM", DataType: "NUMBER"}, stmt.Declarations[0])
+		assert.Equal(t, &semantic.ExceptionDeclaration{Name: "USER_EXCEPTION"}, stmt.Declarations[1])
+
+		assert.NotNil(t, stmt.Body)
+		assert.Equal(t, len(stmt.Body.Statements), 1)
+
+		assert.Equal(t, &semantic.AssignmentStatement{Left: "LOCAL_PARAM", Right: "0"}, stmt.Body.Statements[0])
+		stmt1 := stmt.Body.Statements[0].(*semantic.AssignmentStatement)
+		assert.Equal(t, stmt1.Left, "LOCAL_PARAM")
+		assert.Equal(t, stmt1.Right, "0")
+	}
+}
+
+func getRoot(t *testing.T, text string) *semantic.Script {
+	p := plsql.NewParser(text)
+	root := p.Sql_script()
+	assert.Nil(t, p.Error())
+	assert.NotNil(t, root)
+	assert.IsType(t, &plsql.Sql_scriptContext{}, root)
+	_, ok := root.(*plsql.Sql_scriptContext)
+	assert.True(t, ok)
+
+	node := GeneralScript(root)
+	assert.NotNil(t, node)
+	assert.Greater(t, len(node.Statements), 0)
+	return node
 }

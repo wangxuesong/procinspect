@@ -124,6 +124,8 @@ func (l *sqlListener) ExitCreate_procedure_body(ctx *plsql.Create_procedure_body
 		switch node.(type) {
 		case *semantic.Body:
 			stmt.Body = node.(*semantic.Body)
+		case semantic.Declaration:
+			stmt.Declarations = append([]semantic.Declaration{node.(semantic.Declaration)}, stmt.Declarations...)
 		}
 		l.nodeStack.Pop()
 	}
@@ -150,4 +152,33 @@ func (l *sqlListener) ExitBody(ctx *plsql.BodyContext) {
 		}
 		l.nodeStack.Pop()
 	}
+}
+
+func (l *sqlListener) EnterAssignment_statement(ctx *plsql.Assignment_statementContext) {
+	stmt := &semantic.AssignmentStatement{}
+	l.nodeStack.Push(stmt)
+}
+
+func (l *sqlListener) ExitAssignment_statement(ctx *plsql.Assignment_statementContext) {
+	stmt, err := peekNode[*semantic.AssignmentStatement](l)
+	if err != nil {
+		panic(err)
+	}
+
+	// set left
+	stmt.Left = ctx.General_element().GetText()
+	stmt.Right = ctx.Expression().GetText()
+}
+
+func (l *sqlListener) ExitVariable_declaration(ctx *plsql.Variable_declarationContext) {
+	stmt := &semantic.VariableDeclaration{}
+	stmt.Name = ctx.Identifier().GetText()
+	stmt.DataType = ctx.Type_spec().GetText()
+	l.nodeStack.Push(stmt)
+}
+
+func (l *sqlListener) ExitException_declaration(ctx *plsql.Exception_declarationContext) {
+	stmt := &semantic.ExceptionDeclaration{}
+	stmt.Name = ctx.Identifier().GetText()
+	l.nodeStack.Push(stmt)
 }
