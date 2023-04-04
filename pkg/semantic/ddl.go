@@ -4,6 +4,7 @@ type (
 	CreateProcedureStatement struct {
 		node
 		Name         string
+		Parameters   []*Parameter
 		Declarations []Declaration
 		Body         *Body
 		IsReplace    bool

@@ -22,6 +22,12 @@ type (
 		node
 		Name string
 	}
+
+	Parameter struct {
+		node
+		Name     string
+		DataType string
+	}
 )
 
 func (s *AssignmentStatement) Type() NodeType {

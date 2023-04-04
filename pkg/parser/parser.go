@@ -126,6 +126,8 @@ func (l *sqlListener) ExitCreate_procedure_body(ctx *plsql.Create_procedure_body
 			stmt.Body = node.(*semantic.Body)
 		case semantic.Declaration:
 			stmt.Declarations = append([]semantic.Declaration{node.(semantic.Declaration)}, stmt.Declarations...)
+		case *semantic.Parameter:
+			stmt.Parameters = append([]*semantic.Parameter{node.(*semantic.Parameter)}, stmt.Parameters...)
 		}
 		l.nodeStack.Pop()
 	}
@@ -180,5 +182,12 @@ func (l *sqlListener) ExitVariable_declaration(ctx *plsql.Variable_declarationCo
 func (l *sqlListener) ExitException_declaration(ctx *plsql.Exception_declarationContext) {
 	stmt := &semantic.ExceptionDeclaration{}
 	stmt.Name = ctx.Identifier().GetText()
+	l.nodeStack.Push(stmt)
+}
+
+func (l *sqlListener) ExitParameter(ctx *plsql.ParameterContext) {
+	stmt := &semantic.Parameter{}
+	stmt.Name = ctx.Parameter_name().GetText()
+	stmt.DataType = ctx.Type_spec().GetText()
 	l.nodeStack.Push(stmt)
 }
