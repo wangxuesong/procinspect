@@ -19,8 +19,9 @@ type (
 const (
 	NilNode NodeType = iota
 	ScriptNode
-	StatementSelect
 	CreateProcedure
+	StatementSelect
+	Assignment
 )
 
 func (*node) Type() NodeType {

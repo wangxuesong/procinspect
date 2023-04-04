@@ -3,9 +3,10 @@ package semantic
 type (
 	CreateProcedureStatement struct {
 		node
-		Name      string
-		Body      *Body
-		IsReplace bool
+		Name         string
+		Declarations []Declaration
+		Body         *Body
+		IsReplace    bool
 	}
 
 	Body struct {
