@@ -36,6 +36,8 @@ func (l *sqlListener) EnterSql_script(ctx *plsql.Sql_scriptContext) {
 	l.script = &semantic.Script{
 		Statements: make([]semantic.Statement, 0),
 	}
+	l.script.SetLine(ctx.GetStart().GetLine())
+	l.script.SetColumn(ctx.GetStart().GetColumn())
 	l.nodeStack.Push(l.script)
 }
 
@@ -56,6 +58,8 @@ func (l *sqlListener) ExitUnit_statement(ctx *plsql.Unit_statementContext) {
 
 func (l *sqlListener) EnterSelect_statement(ctx *plsql.Select_statementContext) {
 	stmt := &semantic.SelectStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
 	l.nodeStack.Push(stmt)
 }
 
@@ -108,6 +112,10 @@ func (l *sqlListener) ExitCreate_procedure_body(ctx *plsql.Create_procedure_body
 	if err != nil {
 		panic(err)
 	}
+
+	// set line & column
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
 
 	// set name
 	stmt.Name = ctx.Procedure_name().GetText()
@@ -167,6 +175,10 @@ func (l *sqlListener) ExitAssignment_statement(ctx *plsql.Assignment_statementCo
 		panic(err)
 	}
 
+	// set line & column
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
 	// set left
 	stmt.Left = ctx.General_element().GetText()
 	stmt.Right = ctx.Expression().GetText()
@@ -174,6 +186,9 @@ func (l *sqlListener) ExitAssignment_statement(ctx *plsql.Assignment_statementCo
 
 func (l *sqlListener) ExitVariable_declaration(ctx *plsql.Variable_declarationContext) {
 	stmt := &semantic.VariableDeclaration{}
+	// set line & column
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
 	stmt.Name = ctx.Identifier().GetText()
 	stmt.DataType = ctx.Type_spec().GetText()
 	l.nodeStack.Push(stmt)
@@ -181,6 +196,9 @@ func (l *sqlListener) ExitVariable_declaration(ctx *plsql.Variable_declarationCo
 
 func (l *sqlListener) ExitException_declaration(ctx *plsql.Exception_declarationContext) {
 	stmt := &semantic.ExceptionDeclaration{}
+	// set line & column
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
 	stmt.Name = ctx.Identifier().GetText()
 	l.nodeStack.Push(stmt)
 }
