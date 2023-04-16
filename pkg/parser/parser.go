@@ -16,6 +16,12 @@ type (
 	}
 )
 
+func Parse(text string) error {
+	p := plsql.NewParser(text)
+	_ = p.Sql_script()
+	return p.Error()
+}
+
 func GeneralScript(root plsql.ISql_scriptContext) *semantic.Script {
 	listener := &sqlListener{}
 	antlr.ParseTreeWalkerDefault.Walk(listener, root)
