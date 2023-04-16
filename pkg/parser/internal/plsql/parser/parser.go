@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 )
@@ -40,8 +41,9 @@ func NewMyErrorListener() *MyErrorListener {
 }
 
 func (el *MyErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
-	el.err = fmt.Errorf("%d:%d: %s", line, column, msg)
-	//panic(msg)
+	p := recognizer.(antlr.Parser)
+	stack := p.GetRuleInvocationStack(p.GetParserRuleContext())
+	el.err = errors.Join(el.err, fmt.Errorf("stack: %v; %d:%d at %v: %s", stack[0], line, column, offendingSymbol, ""))
 }
 
 func (el *MyErrorListener) Error() error {
