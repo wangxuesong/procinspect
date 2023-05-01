@@ -155,6 +155,93 @@ END;`
 	}
 }
 
+func TestCursorDeclaration(t *testing.T) {
+	text := `create or replace procedure test is
+	Cursor c_AllAws Is
+		Select *
+		From Asc_Work_Status
+		Where Aws_Interfacer='ABB'
+		Order By Aws_Asc_Id;
+	Rec_AllAws c_AllAws%Rowtype;
+	begin
+		select 1 from dual;
+	end;`
+
+	node := getRoot(t, text)
+
+	{ // assert that the statement is a CreateProcedureStatement
+		assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
+		stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
+		assert.Equal(t, 1, stmt.Line())
+		assert.Equal(t, 1, stmt.Column())
+		assert.True(t, stmt.IsReplace)
+		assert.Equal(t, stmt.Name, "test")
+
+		// assert declaration
+		assert.NotNil(t, stmt.Declarations)
+		assert.Equal(t, len(stmt.Declarations), 2)
+		// assert the declaration is a CursorDeclaration
+		assert.IsType(t, &semantic.CursorDeclaration{}, stmt.Declarations[0])
+		decl := stmt.Declarations[0].(*semantic.CursorDeclaration)
+		assert.Equal(t, decl.Name, "c_AllAws")
+		// assert the parameters is nil
+		assert.Nil(t, decl.Parameters)
+		// assert the declaration is a VariableDeclaration
+		assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[1])
+		vardecl := stmt.Declarations[1].(*semantic.VariableDeclaration)
+		assert.Equal(t, vardecl.Name, "Rec_AllAws")
+		assert.Equal(t, vardecl.DataType, "c_AllAws%Rowtype")
+		// assert the statement is a SelectStatement
+		assert.NotNil(t, decl.Stmt)
+		assert.IsType(t, &semantic.SelectStatement{}, decl.Stmt)
+	}
+
+	text = `create or replace procedure test is
+	Cursor c_Aws(m_Areano Varchar2) Is
+		Select *
+		From Asc_Work_Status
+		Where Aws_Interfacer='ABB'
+		  And Aws_Curarea=m_Areano;
+		Rec_Aws c_Aws%Rowtype;
+	begin
+		select 1 from dual;
+	end;`
+
+	node = getRoot(t, text)
+
+	{ // assert that the statement is a CreateProcedureStatement
+		assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
+		stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
+		assert.Equal(t, 1, stmt.Line())
+		assert.Equal(t, 1, stmt.Column())
+		assert.True(t, stmt.IsReplace)
+		assert.Equal(t, stmt.Name, "test")
+
+		// assert declaration
+		assert.NotNil(t, stmt.Declarations)
+		assert.Equal(t, len(stmt.Declarations), 2)
+		// assert the declaration is a CursorDeclaration
+		assert.IsType(t, &semantic.CursorDeclaration{}, stmt.Declarations[0])
+		decl := stmt.Declarations[0].(*semantic.CursorDeclaration)
+		assert.Equal(t, decl.Name, "c_Aws")
+		// assert the parameters is not nil
+		assert.NotNil(t, decl.Parameters)
+		assert.Equal(t, len(decl.Parameters), 1)
+		// assert the parameter is a Parameter
+		param := decl.Parameters[0]
+		assert.Equal(t, param.Name, "m_Areano")
+		assert.Equal(t, param.DataType, "Varchar2")
+		// assert the declaration is a VariableDeclaration
+		assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[1])
+		vardecl := stmt.Declarations[1].(*semantic.VariableDeclaration)
+		assert.Equal(t, vardecl.Name, "Rec_Aws")
+		assert.Equal(t, vardecl.DataType, "c_Aws%Rowtype")
+		// assert the statement is a SelectStatement
+		assert.NotNil(t, decl.Stmt)
+		assert.IsType(t, &semantic.SelectStatement{}, decl.Stmt)
+	}
+}
+
 func getRoot(t *testing.T, text string) *semantic.Script {
 	p := plsql.NewParser(text)
 	root := p.Sql_script()

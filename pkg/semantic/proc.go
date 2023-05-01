@@ -23,6 +23,13 @@ type (
 		Name string
 	}
 
+	CursorDeclaration struct {
+		node
+		Name       string
+		Parameters []*Parameter
+		Stmt       Statement
+	}
+
 	Parameter struct {
 		node
 		Name     string
@@ -39,3 +46,5 @@ func (s *AssignmentStatement) statement() {}
 func (d *VariableDeclaration) declaration() {}
 
 func (d *ExceptionDeclaration) declaration() {}
+
+func (d *CursorDeclaration) declaration() {}

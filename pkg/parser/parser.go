@@ -209,6 +209,29 @@ func (l *sqlListener) ExitException_declaration(ctx *plsql.Exception_declaration
 	l.nodeStack.Push(stmt)
 }
 
+func (l *sqlListener) ExitCursor_declaration(ctx *plsql.Cursor_declarationContext) {
+	decl := &semantic.CursorDeclaration{}
+	// set line & column
+	decl.SetLine(ctx.GetStart().GetLine())
+	decl.SetColumn(ctx.GetStart().GetColumn())
+	decl.Name = ctx.Identifier().GetText()
+	if ctx.Select_statement() != nil {
+		stmt := l.nodeStack.Pop().(*semantic.SelectStatement)
+		decl.Stmt = stmt
+	}
+	for range ctx.AllParameter_spec() {
+		decl.Parameters = append(decl.Parameters, l.nodeStack.Pop().(*semantic.Parameter))
+	}
+	l.nodeStack.Push(decl)
+}
+
+func (l *sqlListener) ExitParameter_spec(ctx *plsql.Parameter_specContext) {
+	para := &semantic.Parameter{}
+	para.Name = ctx.Parameter_name().GetText()
+	para.DataType = ctx.Type_spec().GetText()
+	l.nodeStack.Push(para)
+}
+
 func (l *sqlListener) ExitParameter(ctx *plsql.ParameterContext) {
 	stmt := &semantic.Parameter{}
 	stmt.Name = ctx.Parameter_name().GetText()
