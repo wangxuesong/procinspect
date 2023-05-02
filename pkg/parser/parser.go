@@ -5,6 +5,7 @@ import (
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
+	"sync/atomic"
 )
 
 type (
@@ -14,6 +15,10 @@ type (
 		script    *semantic.Script
 		nodeStack semantic.Stack[semantic.Node]
 	}
+)
+
+var (
+	stmtDepth int64 = 0
 )
 
 func Parse(text string) error {
@@ -33,6 +38,20 @@ func peekNode[T semantic.Node](l *sqlListener) (t T, err error) {
 		node := l.nodeStack[i]
 		if _, ok := node.(T); ok {
 			return node.(T), nil
+		}
+	}
+	return t, fmt.Errorf("node is not of type %T", t)
+}
+
+func peekNodeDepth[T semantic.Node](l *sqlListener, depth int64) (t T, err error) {
+	for i := len(l.nodeStack) - 1; i >= 0; i-- {
+		node := l.nodeStack[i]
+		if _, ok := node.(T); ok {
+			if d, ok := node.(semantic.StatementDepth); ok {
+				if d.Get() == depth {
+					return node.(T), nil
+				}
+			}
 		}
 	}
 	return t, fmt.Errorf("node is not of type %T", t)
@@ -237,4 +256,64 @@ func (l *sqlListener) ExitParameter(ctx *plsql.ParameterContext) {
 	stmt.Name = ctx.Parameter_name().GetText()
 	stmt.DataType = ctx.Type_spec().GetText()
 	l.nodeStack.Push(stmt)
+}
+
+func (l *sqlListener) EnterIf_statement(ctx *plsql.If_statementContext) {
+	stmt := &semantic.IfStatement{}
+	stmt.Set(atomic.LoadInt64(&stmtDepth))
+	atomic.AddInt64(&stmtDepth, 1)
+	l.nodeStack.Push(stmt)
+}
+
+func (l *sqlListener) ExitIf_statement(ctx *plsql.If_statementContext) {
+	stmt, err := peekNodeDepth[*semantic.IfStatement](l, stmtDepth-1)
+	if err != nil {
+		panic(err)
+	}
+	for {
+		node := l.nodeStack.Top()
+		if s, ok := node.(*semantic.IfStatement); ok {
+			if s == stmt {
+				stmt.Condition = ctx.Condition().GetText()
+				break
+			}
+		}
+		switch node.(type) {
+		case semantic.Statement:
+			stmt.ThenBlock = append([]semantic.Statement{node.(semantic.Statement)}, stmt.ThenBlock...)
+		case *semantic.ElseBlock:
+			stmt.ElseBlock = node.(*semantic.ElseBlock).Statements
+		}
+
+		l.nodeStack.Pop()
+	}
+	atomic.AddInt64(&stmtDepth, -1)
+}
+
+func (l *sqlListener) EnterElse_part(ctx *plsql.Else_partContext) {
+	stmt := &semantic.ElseBlock{}
+	stmt.Set(atomic.LoadInt64(&stmtDepth))
+	atomic.AddInt64(&stmtDepth, 1)
+	l.nodeStack.Push(stmt)
+}
+
+func (l *sqlListener) ExitElse_part(ctx *plsql.Else_partContext) {
+	stmt, err := peekNodeDepth[*semantic.ElseBlock](l, stmtDepth-1)
+	if err != nil {
+		panic(err)
+	}
+	for {
+		node := l.nodeStack.Top()
+		if s, ok := node.(*semantic.ElseBlock); ok {
+			if s == stmt {
+				break
+			}
+		}
+		switch node.(type) {
+		case semantic.Statement:
+			stmt.Statements = append([]semantic.Statement{node.(semantic.Statement)}, stmt.Statements...)
+		}
+		l.nodeStack.Pop()
+	}
+	atomic.AddInt64(&stmtDepth, -1)
 }
