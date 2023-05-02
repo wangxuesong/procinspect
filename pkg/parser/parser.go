@@ -337,3 +337,33 @@ func (l *sqlListener) ExitClose_statement(ctx *plsql.Close_statementContext) {
 	stmt.Name = ctx.Cursor_name().GetText()
 	l.nodeStack.Push(stmt)
 }
+
+func (l *sqlListener) EnterLoop_statement(ctx *plsql.Loop_statementContext) {
+	stmt := &semantic.LoopStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	stmt.Set(atomic.LoadInt64(&stmtDepth))
+	atomic.AddInt64(&stmtDepth, 1)
+	l.nodeStack.Push(stmt)
+}
+
+func (l *sqlListener) ExitLoop_statement(ctx *plsql.Loop_statementContext) {
+	stmt, err := peekNodeDepth[*semantic.LoopStatement](l, stmtDepth-1)
+	if err != nil {
+		panic(err)
+	}
+	for {
+		node := l.nodeStack.Top()
+		if s, ok := node.(*semantic.LoopStatement); ok {
+			if s == stmt {
+				break
+			}
+		}
+		switch node.(type) {
+		case semantic.Statement:
+			stmt.Statements = append([]semantic.Statement{node.(semantic.Statement)}, stmt.Statements...)
+		}
+		l.nodeStack.Pop()
+	}
+	atomic.AddInt64(&stmtDepth, -1)
+}

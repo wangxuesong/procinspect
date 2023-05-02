@@ -444,60 +444,83 @@ End;
 					assert.Nil(t, ifStmt.ElseBlock)
 				}
 				assert.IsType(t, &semantic.OpenStatement{}, ifStmt.ThenBlock[1])
-				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ThenBlock[2])
-				// assert the second if statement
+				assert.IsType(t, &semantic.LoopStatement{}, ifStmt.ThenBlock[2])
+				// assert the loop statement
 				{
-					ifStmt := ifStmt.ThenBlock[2].(*semantic.IfStatement)
-					assert.NotNil(t, ifStmt.Condition)
-					assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
-					assert.NotNil(t, ifStmt.ThenBlock)
-					assert.NotNil(t, ifStmt.ElseBlock)
-					assert.Equal(t, len(ifStmt.ThenBlock), 1)
-					assert.Equal(t, len(ifStmt.ElseBlock), 1)
-					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
-					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
+					loopStmt := ifStmt.ThenBlock[2].(*semantic.LoopStatement)
+					assert.NotNil(t, loopStmt.Statements)
+					assert.Equal(t, len(loopStmt.Statements), 1)
+					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[0])
+					// assert the if statement
+					{
+						ifStmt := loopStmt.Statements[0].(*semantic.IfStatement)
+						assert.NotNil(t, ifStmt.Condition)
+						assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
+						assert.NotNil(t, ifStmt.ThenBlock)
+						assert.NotNil(t, ifStmt.ElseBlock)
+						assert.Equal(t, len(ifStmt.ThenBlock), 1)
+						assert.Equal(t, len(ifStmt.ElseBlock), 1)
+						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
+						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
+					}
 				}
 				// assert the else_block of the if statement
 				assert.NotNil(t, ifStmt.ElseBlock)
-				assert.Equal(t, len(ifStmt.ElseBlock), 7)
+				assert.Equal(t, len(ifStmt.ElseBlock), 2)
 				assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
-				assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[1])
-				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ElseBlock[2])
-				// assert the else_block of the if statement
+				assert.IsType(t, &semantic.LoopStatement{}, ifStmt.ElseBlock[1])
+				// assert the loop statement
 				{
-					ifStmt := ifStmt.ElseBlock[2].(*semantic.IfStatement)
-					assert.NotNil(t, ifStmt.Condition)
-					assert.Equal(t, ifStmt.Condition, "v_Index>0")
-					assert.NotNil(t, ifStmt.ThenBlock)
-					assert.Equal(t, len(ifStmt.ThenBlock), 2)
-					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
-					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[1])
-					assert.NotNil(t, ifStmt.ElseBlock)
-					assert.Equal(t, len(ifStmt.ElseBlock), 2)
-					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
-					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[1])
-				}
-				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ElseBlock[3])
-				{
-					ifStmt := ifStmt.ElseBlock[3].(*semantic.IfStatement)
-					assert.NotNil(t, ifStmt.Condition)
-					assert.Equal(t, ifStmt.Condition, "c_Aws%Isopen")
-					assert.NotNil(t, ifStmt.ThenBlock)
-					assert.Equal(t, len(ifStmt.ThenBlock), 1)
-					assert.IsType(t, &semantic.CloseStatement{}, ifStmt.ThenBlock[0])
-				}
-				assert.IsType(t, &semantic.OpenStatement{}, ifStmt.ElseBlock[4])
-				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ElseBlock[5])
-				{
-					ifStmt := ifStmt.ElseBlock[5].(*semantic.IfStatement)
-					assert.NotNil(t, ifStmt.Condition)
-					assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
-					assert.NotNil(t, ifStmt.ThenBlock)
-					assert.Equal(t, len(ifStmt.ThenBlock), 1)
-					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
-					assert.NotNil(t, ifStmt.ElseBlock)
-					assert.Equal(t, len(ifStmt.ElseBlock), 1)
-					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
+					loopStmt := ifStmt.ElseBlock[1].(*semantic.LoopStatement)
+					assert.NotNil(t, loopStmt.Statements)
+					assert.Equal(t, len(loopStmt.Statements), 6)
+					assert.IsType(t, &semantic.AssignmentStatement{}, loopStmt.Statements[0])
+					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[1])
+					// assert the else_block of the if statement
+					{
+						ifStmt := loopStmt.Statements[1].(*semantic.IfStatement)
+						assert.NotNil(t, ifStmt.Condition)
+						assert.Equal(t, ifStmt.Condition, "v_Index>0")
+						assert.NotNil(t, ifStmt.ThenBlock)
+						assert.Equal(t, len(ifStmt.ThenBlock), 2)
+						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
+						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[1])
+						assert.NotNil(t, ifStmt.ElseBlock)
+						assert.Equal(t, len(ifStmt.ElseBlock), 2)
+						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
+						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[1])
+					}
+					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[2])
+					{
+						ifStmt := loopStmt.Statements[2].(*semantic.IfStatement)
+						assert.NotNil(t, ifStmt.Condition)
+						assert.Equal(t, ifStmt.Condition, "c_Aws%Isopen")
+						assert.NotNil(t, ifStmt.ThenBlock)
+						assert.Equal(t, len(ifStmt.ThenBlock), 1)
+						assert.IsType(t, &semantic.CloseStatement{}, ifStmt.ThenBlock[0])
+					}
+					assert.IsType(t, &semantic.OpenStatement{}, loopStmt.Statements[3])
+					assert.IsType(t, &semantic.LoopStatement{}, loopStmt.Statements[4])
+					// assert the loop statement
+					{
+						loopStmt := loopStmt.Statements[4].(*semantic.LoopStatement)
+						assert.NotNil(t, loopStmt.Statements)
+						assert.Equal(t, len(loopStmt.Statements), 1)
+						assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[0])
+						// assert the if statement
+						{
+							ifStmt := loopStmt.Statements[0].(*semantic.IfStatement)
+							assert.NotNil(t, ifStmt.Condition)
+							assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
+							assert.NotNil(t, ifStmt.ThenBlock)
+							assert.Equal(t, len(ifStmt.ThenBlock), 1)
+							assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
+							assert.NotNil(t, ifStmt.ElseBlock)
+							assert.Equal(t, len(ifStmt.ElseBlock), 1)
+							assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
+						}
+					}
+					assert.IsType(t, &semantic.CloseStatement{}, loopStmt.Statements[5])
 				}
 			}
 		},
