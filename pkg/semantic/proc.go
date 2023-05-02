@@ -1,10 +1,34 @@
 package semantic
 
 type (
+	StatementDepth interface {
+		Get() int64
+		Set(int64)
+	}
+
+	blockDepth struct {
+		depth int64
+	}
+
 	AssignmentStatement struct {
 		node
 		Left  string
 		Right string
+	}
+
+	IfStatement struct {
+		node
+		blockDepth
+		Condition string
+		ThenBlock []Statement
+		ElseBlock []Statement
+		ElseIfs   []*IfStatement
+	}
+
+	ElseBlock struct {
+		node
+		blockDepth
+		Statements []Statement
 	}
 
 	Declaration interface {
@@ -48,3 +72,13 @@ func (d *VariableDeclaration) declaration() {}
 func (d *ExceptionDeclaration) declaration() {}
 
 func (d *CursorDeclaration) declaration() {}
+
+func (i *IfStatement) statement() {}
+
+func (i *blockDepth) Get() int64 {
+	return i.depth
+}
+
+func (i *blockDepth) Set(depth int64) {
+	i.depth = depth
+}

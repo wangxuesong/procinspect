@@ -293,3 +293,202 @@ func TestCursorDeclaration(t *testing.T) {
 
 	runTestSuite(t, tests)
 }
+
+func TestCursor(t *testing.T) {
+	tests := testSuite{}
+
+	tests = append(tests, testCase{
+		name: "游标声明及使用",
+		text: `CREATE OR REPLACE Procedure Abb_GenAnchorJob_P(i_Areanos Varchar2) Is
+  v_Asc_Ids Varchar2(4000);
+
+  Cursor c_AllAws Is
+    Select *
+    From Asc_Work_Status
+    Where Aws_Interfacer='ABB'
+    Order By Aws_Asc_Id;
+  Rec_AllAws c_AllAws%Rowtype;
+
+  Cursor c_Aws(m_Areano Varchar2) Is
+    Select *
+    From Asc_Work_Status
+    Where Aws_Interfacer='ABB'
+      And Aws_Curarea=m_Areano;
+  Rec_Aws c_Aws%Rowtype;
+  v_Areano Varchar2(100);
+  v_Areanos Varchar2(4000);
+  v_Index Integer;
+Begin
+  If i_Areanos Is Null Then
+    If c_AllAws%Isopen Then
+      Close c_AllAws;
+    End If;
+    Open c_AllAws;
+    Loop
+      Fetch c_AllAws Into Rec_AllAws;
+      Exit When c_AllAws%NotFound;
+      If v_Asc_Ids Is Null Then
+        v_Asc_Ids := Rec_AllAws.Aws_Asc_Id;
+      Else
+        v_Asc_Ids := v_Asc_Ids || ','||Rec_AllAws.Aws_Asc_Id;
+      End If;
+    End Loop;
+  Else
+    v_Areanos := i_Areanos;
+    Loop
+      v_Index := Instr(v_Areanos,',');
+      If v_Index>0 Then
+        v_Areano := Substr(v_Areanos,1,v_Index-1);
+        v_Areanos := Substr(v_Areanos,v_Index+1);
+      Else
+        v_Areano := v_Areanos;
+        v_Areanos := '';
+      End If;
+      Exit When v_Areano Is Null;
+
+      If c_Aws%Isopen Then
+        Close c_Aws;
+      End If;
+      Open c_Aws(v_Areano);
+      Loop
+        Fetch c_Aws Into Rec_Aws;
+        Exit When c_Aws%NotFound;
+        If v_Asc_Ids Is Null Then
+          v_Asc_Ids := Rec_Aws.Aws_Asc_Id;
+        Else
+          v_Asc_Ids := v_Asc_Ids||','||Rec_Aws.Aws_Asc_Id;
+        End If;
+      End Loop;
+      Close c_Aws;
+    End Loop;
+  End If;
+
+  If v_Asc_Ids Is Not Null Then
+    Mon_Abb_Pak.gen_Anchor_Job_P(v_Asc_Ids);
+  End If;
+End;
+/`,
+		Func: func(t *testing.T, node *semantic.Script) {
+			// assert that the statement is a CreateProcedureStatement
+			assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.True(t, stmt.IsReplace)
+			assert.Equal(t, stmt.Name, "Abb_GenAnchorJob_P")
+
+			// assert declaration
+			{
+				assert.NotNil(t, stmt.Declarations)
+				assert.Equal(t, len(stmt.Declarations), 8)
+				// assert the declaration is a variableDeclaration
+				assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[0])
+				varDecl := stmt.Declarations[0].(*semantic.VariableDeclaration)
+				assert.Equal(t, varDecl.Name, "v_Asc_Ids")
+				assert.Equal(t, varDecl.DataType, "Varchar2(4000)")
+				// assert the declaration is a CursorDeclaration
+				assert.IsType(t, &semantic.CursorDeclaration{}, stmt.Declarations[1])
+				cursorDecl := stmt.Declarations[1].(*semantic.CursorDeclaration)
+				assert.Equal(t, cursorDecl.Name, "c_AllAws")
+				// assert the declaration is a VariableDeclaration
+				assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[2])
+				varDecl = stmt.Declarations[2].(*semantic.VariableDeclaration)
+				assert.Equal(t, varDecl.Name, "Rec_AllAws")
+				assert.Equal(t, varDecl.DataType, "c_AllAws%Rowtype")
+				// assert the declaration is a CursorDeclaration
+				assert.IsType(t, &semantic.CursorDeclaration{}, stmt.Declarations[3])
+				cursorDecl = stmt.Declarations[3].(*semantic.CursorDeclaration)
+				assert.Equal(t, cursorDecl.Name, "c_Aws")
+				// assert the declaration is a VariableDeclaration
+				assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[4])
+				varDecl = stmt.Declarations[4].(*semantic.VariableDeclaration)
+				assert.Equal(t, varDecl.Name, "Rec_Aws")
+				assert.Equal(t, varDecl.DataType, "c_Aws%Rowtype")
+				// assert the declaration is a VariableDeclaration
+				assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[5])
+				varDecl = stmt.Declarations[5].(*semantic.VariableDeclaration)
+				assert.Equal(t, varDecl.Name, "v_Areano")
+				assert.Equal(t, varDecl.DataType, "Varchar2(100)")
+				// assert the declaration is a VariableDeclaration
+				assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[6])
+				varDecl = stmt.Declarations[6].(*semantic.VariableDeclaration)
+				assert.Equal(t, varDecl.Name, "v_Areanos")
+				assert.Equal(t, varDecl.DataType, "Varchar2(4000)")
+				// assert the declaration is a VariableDeclaration
+				assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[7])
+				varDecl = stmt.Declarations[7].(*semantic.VariableDeclaration)
+				assert.Equal(t, varDecl.Name, "v_Index")
+				assert.Equal(t, varDecl.DataType, "Integer")
+			}
+
+			// assert body
+			{
+				assert.NotNil(t, stmt.Body)
+				assert.Equal(t, len(stmt.Body.Statements), 2)
+				assert.IsType(t, &semantic.IfStatement{}, stmt.Body.Statements[0])
+				ifStmt := stmt.Body.Statements[0].(*semantic.IfStatement)
+				// assert the condition of the if statement
+				assert.NotNil(t, ifStmt.Condition)
+				assert.Equal(t, ifStmt.Condition, "i_AreanosIsNull")
+				// assert the then_block of the if statement
+				assert.NotNil(t, ifStmt.ThenBlock)
+				assert.Equal(t, len(ifStmt.ThenBlock), 2)
+				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ThenBlock[0])
+				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ThenBlock[1])
+				// assert the second if statement
+				{
+					ifStmt := ifStmt.ThenBlock[1].(*semantic.IfStatement)
+					assert.NotNil(t, ifStmt.Condition)
+					assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
+					assert.NotNil(t, ifStmt.ThenBlock)
+					assert.NotNil(t, ifStmt.ElseBlock)
+					assert.Equal(t, len(ifStmt.ThenBlock), 1)
+					assert.Equal(t, len(ifStmt.ElseBlock), 1)
+					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
+					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
+				}
+				// assert the else_block of the if statement
+				assert.NotNil(t, ifStmt.ElseBlock)
+				assert.Equal(t, len(ifStmt.ElseBlock), 5)
+				assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
+				assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[1])
+				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ElseBlock[2])
+				// assert the else_block of the if statement
+				{
+					ifStmt := ifStmt.ElseBlock[2].(*semantic.IfStatement)
+					assert.NotNil(t, ifStmt.Condition)
+					assert.Equal(t, ifStmt.Condition, "v_Index>0")
+					assert.NotNil(t, ifStmt.ThenBlock)
+					assert.Equal(t, len(ifStmt.ThenBlock), 2)
+					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
+					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[1])
+					assert.NotNil(t, ifStmt.ElseBlock)
+					assert.Equal(t, len(ifStmt.ElseBlock), 2)
+					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
+					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[1])
+				}
+				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ElseBlock[3])
+				{
+					ifStmt := ifStmt.ElseBlock[3].(*semantic.IfStatement)
+					assert.NotNil(t, ifStmt.Condition)
+					assert.Equal(t, ifStmt.Condition, "c_Aws%Isopen")
+					assert.Nil(t, ifStmt.ThenBlock)
+				}
+				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ElseBlock[4])
+				{
+					ifStmt := ifStmt.ElseBlock[4].(*semantic.IfStatement)
+					assert.NotNil(t, ifStmt.Condition)
+					assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
+					assert.NotNil(t, ifStmt.ThenBlock)
+					assert.Equal(t, len(ifStmt.ThenBlock), 1)
+					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
+					assert.NotNil(t, ifStmt.ElseBlock)
+					assert.Equal(t, len(ifStmt.ElseBlock), 1)
+					assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
+				}
+			}
+		},
+	})
+
+	runTestSuite(t, tests)
+}
