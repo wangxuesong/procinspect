@@ -367,3 +367,12 @@ func (l *sqlListener) ExitLoop_statement(ctx *plsql.Loop_statementContext) {
 	}
 	atomic.AddInt64(&stmtDepth, -1)
 }
+
+func (l *sqlListener) ExitFetch_statement(ctx *plsql.Fetch_statementContext) {
+	stmt := &semantic.FetchStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	stmt.Cursor = ctx.Cursor_name().GetText()
+	stmt.Into = ctx.Variable_name(0).GetText()
+	l.nodeStack.Push(stmt)
+}

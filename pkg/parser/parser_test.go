@@ -449,11 +449,20 @@ End;
 				{
 					loopStmt := ifStmt.ThenBlock[2].(*semantic.LoopStatement)
 					assert.NotNil(t, loopStmt.Statements)
-					assert.Equal(t, len(loopStmt.Statements), 1)
-					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[0])
+					assert.Equal(t, len(loopStmt.Statements), 2)
+					assert.IsType(t, &semantic.FetchStatement{}, loopStmt.Statements[0])
+					// assert the fetch statement
+					{
+						fetchStmt := loopStmt.Statements[0].(*semantic.FetchStatement)
+						assert.NotNil(t, fetchStmt.Cursor)
+						assert.Equal(t, fetchStmt.Cursor, "c_AllAws")
+						assert.NotNil(t, fetchStmt.Into)
+						assert.Equal(t, fetchStmt.Into, "Rec_AllAws")
+					}
+					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[1])
 					// assert the if statement
 					{
-						ifStmt := loopStmt.Statements[0].(*semantic.IfStatement)
+						ifStmt := loopStmt.Statements[1].(*semantic.IfStatement)
 						assert.NotNil(t, ifStmt.Condition)
 						assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
 						assert.NotNil(t, ifStmt.ThenBlock)
@@ -505,11 +514,20 @@ End;
 					{
 						loopStmt := loopStmt.Statements[4].(*semantic.LoopStatement)
 						assert.NotNil(t, loopStmt.Statements)
-						assert.Equal(t, len(loopStmt.Statements), 1)
-						assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[0])
+						assert.Equal(t, len(loopStmt.Statements), 2)
+						assert.IsType(t, &semantic.FetchStatement{}, loopStmt.Statements[0])
+						// assert the fetch statement
+						{
+							fetchStmt := loopStmt.Statements[0].(*semantic.FetchStatement)
+							assert.NotNil(t, fetchStmt.Cursor)
+							assert.Equal(t, fetchStmt.Cursor, "c_Aws")
+							assert.NotNil(t, fetchStmt.Into)
+							assert.Equal(t, fetchStmt.Into, "Rec_Aws")
+						}
+						assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[1])
 						// assert the if statement
 						{
-							ifStmt := loopStmt.Statements[0].(*semantic.IfStatement)
+							ifStmt := loopStmt.Statements[1].(*semantic.IfStatement)
 							assert.NotNil(t, ifStmt.Condition)
 							assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
 							assert.NotNil(t, ifStmt.ThenBlock)
