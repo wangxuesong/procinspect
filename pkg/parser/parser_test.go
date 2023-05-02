@@ -449,7 +449,7 @@ End;
 				{
 					loopStmt := ifStmt.ThenBlock[2].(*semantic.LoopStatement)
 					assert.NotNil(t, loopStmt.Statements)
-					assert.Equal(t, len(loopStmt.Statements), 2)
+					assert.Equal(t, len(loopStmt.Statements), 3)
 					assert.IsType(t, &semantic.FetchStatement{}, loopStmt.Statements[0])
 					// assert the fetch statement
 					{
@@ -459,10 +459,17 @@ End;
 						assert.NotNil(t, fetchStmt.Into)
 						assert.Equal(t, fetchStmt.Into, "Rec_AllAws")
 					}
-					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[1])
+					assert.IsType(t, &semantic.ExitStatement{}, loopStmt.Statements[1])
+					// assert the exit statement
+					{
+						exitStmt := loopStmt.Statements[1].(*semantic.ExitStatement)
+						assert.NotNil(t, exitStmt.Condition)
+						assert.Equal(t, exitStmt.Condition, "c_AllAws%NotFound")
+					}
+					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[2])
 					// assert the if statement
 					{
-						ifStmt := loopStmt.Statements[1].(*semantic.IfStatement)
+						ifStmt := loopStmt.Statements[2].(*semantic.IfStatement)
 						assert.NotNil(t, ifStmt.Condition)
 						assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
 						assert.NotNil(t, ifStmt.ThenBlock)
@@ -482,7 +489,7 @@ End;
 				{
 					loopStmt := ifStmt.ElseBlock[1].(*semantic.LoopStatement)
 					assert.NotNil(t, loopStmt.Statements)
-					assert.Equal(t, len(loopStmt.Statements), 6)
+					assert.Equal(t, len(loopStmt.Statements), 7)
 					assert.IsType(t, &semantic.AssignmentStatement{}, loopStmt.Statements[0])
 					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[1])
 					// assert the else_block of the if statement
@@ -499,22 +506,29 @@ End;
 						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
 						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[1])
 					}
-					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[2])
+					assert.IsType(t, &semantic.ExitStatement{}, loopStmt.Statements[2])
+					// assert the exit statement
 					{
-						ifStmt := loopStmt.Statements[2].(*semantic.IfStatement)
+						exitStmt := loopStmt.Statements[2].(*semantic.ExitStatement)
+						assert.NotNil(t, exitStmt.Condition)
+						assert.Equal(t, exitStmt.Condition, "v_AreanoIsNull")
+					}
+					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[3])
+					{
+						ifStmt := loopStmt.Statements[3].(*semantic.IfStatement)
 						assert.NotNil(t, ifStmt.Condition)
 						assert.Equal(t, ifStmt.Condition, "c_Aws%Isopen")
 						assert.NotNil(t, ifStmt.ThenBlock)
 						assert.Equal(t, len(ifStmt.ThenBlock), 1)
 						assert.IsType(t, &semantic.CloseStatement{}, ifStmt.ThenBlock[0])
 					}
-					assert.IsType(t, &semantic.OpenStatement{}, loopStmt.Statements[3])
-					assert.IsType(t, &semantic.LoopStatement{}, loopStmt.Statements[4])
+					assert.IsType(t, &semantic.OpenStatement{}, loopStmt.Statements[4])
+					assert.IsType(t, &semantic.LoopStatement{}, loopStmt.Statements[5])
 					// assert the loop statement
 					{
-						loopStmt := loopStmt.Statements[4].(*semantic.LoopStatement)
+						loopStmt := loopStmt.Statements[5].(*semantic.LoopStatement)
 						assert.NotNil(t, loopStmt.Statements)
-						assert.Equal(t, len(loopStmt.Statements), 2)
+						assert.Equal(t, len(loopStmt.Statements), 3)
 						assert.IsType(t, &semantic.FetchStatement{}, loopStmt.Statements[0])
 						// assert the fetch statement
 						{
@@ -524,10 +538,17 @@ End;
 							assert.NotNil(t, fetchStmt.Into)
 							assert.Equal(t, fetchStmt.Into, "Rec_Aws")
 						}
-						assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[1])
+						assert.IsType(t, &semantic.ExitStatement{}, loopStmt.Statements[1])
+						// assert the exit statement
+						{
+							exitStmt := loopStmt.Statements[1].(*semantic.ExitStatement)
+							assert.NotNil(t, exitStmt.Condition)
+							assert.Equal(t, exitStmt.Condition, "c_Aws%NotFound")
+						}
+						assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[2])
 						// assert the if statement
 						{
-							ifStmt := loopStmt.Statements[1].(*semantic.IfStatement)
+							ifStmt := loopStmt.Statements[2].(*semantic.IfStatement)
 							assert.NotNil(t, ifStmt.Condition)
 							assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
 							assert.NotNil(t, ifStmt.ThenBlock)
@@ -538,7 +559,7 @@ End;
 							assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
 						}
 					}
-					assert.IsType(t, &semantic.CloseStatement{}, loopStmt.Statements[5])
+					assert.IsType(t, &semantic.CloseStatement{}, loopStmt.Statements[6])
 				}
 			}
 		},
