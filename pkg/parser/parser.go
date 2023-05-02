@@ -376,3 +376,11 @@ func (l *sqlListener) ExitFetch_statement(ctx *plsql.Fetch_statementContext) {
 	stmt.Into = ctx.Variable_name(0).GetText()
 	l.nodeStack.Push(stmt)
 }
+
+func (l *sqlListener) ExitExit_statement(ctx *plsql.Exit_statementContext) {
+	stmt := &semantic.ExitStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	stmt.Condition = ctx.Condition().GetText()
+	l.nodeStack.Push(stmt)
+}

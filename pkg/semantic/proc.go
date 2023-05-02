@@ -53,6 +53,11 @@ type (
 		Into   string
 	}
 
+	ExitStatement struct {
+		node
+		Condition string
+	}
+
 	Declaration interface {
 		Node
 		declaration()
@@ -112,3 +117,5 @@ func (o *OpenStatement) statement() {}
 func (c *CloseStatement) statement() {}
 
 func (s *FetchStatement) statement() {}
+
+func (s *ExitStatement) statement() {}
