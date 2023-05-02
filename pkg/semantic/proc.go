@@ -31,6 +31,16 @@ type (
 		Statements []Statement
 	}
 
+	OpenStatement struct {
+		node
+		Name string
+	}
+
+	CloseStatement struct {
+		node
+		Name string
+	}
+
 	Declaration interface {
 		Node
 		declaration()
@@ -82,3 +92,7 @@ func (i *blockDepth) Get() int64 {
 func (i *blockDepth) Set(depth int64) {
 	i.depth = depth
 }
+
+func (o *OpenStatement) statement() {}
+
+func (c *CloseStatement) statement() {}
