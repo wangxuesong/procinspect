@@ -31,6 +31,12 @@ type (
 		Statements []Statement
 	}
 
+	LoopStatement struct {
+		node
+		blockDepth
+		Statements []Statement
+	}
+
 	OpenStatement struct {
 		node
 		Name string
@@ -71,6 +77,14 @@ type (
 	}
 )
 
+func (i *blockDepth) Get() int64 {
+	return i.depth
+}
+
+func (i *blockDepth) Set(depth int64) {
+	i.depth = depth
+}
+
 func (s *AssignmentStatement) Type() NodeType {
 	return Assignment
 }
@@ -85,13 +99,7 @@ func (d *CursorDeclaration) declaration() {}
 
 func (i *IfStatement) statement() {}
 
-func (i *blockDepth) Get() int64 {
-	return i.depth
-}
-
-func (i *blockDepth) Set(depth int64) {
-	i.depth = depth
-}
+func (l *LoopStatement) statement() {}
 
 func (o *OpenStatement) statement() {}
 
