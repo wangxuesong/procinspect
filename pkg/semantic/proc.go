@@ -47,6 +47,12 @@ type (
 		Name string
 	}
 
+	FetchStatement struct {
+		node
+		Cursor string
+		Into   string
+	}
+
 	Declaration interface {
 		Node
 		declaration()
@@ -104,3 +110,5 @@ func (l *LoopStatement) statement() {}
 func (o *OpenStatement) statement() {}
 
 func (c *CloseStatement) statement() {}
+
+func (s *FetchStatement) statement() {}
