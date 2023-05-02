@@ -2,10 +2,10 @@ package parser
 
 import (
 	"fmt"
-	"procinspect/pkg/semantic"
 	"testing"
 
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
+	"procinspect/pkg/semantic"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -432,12 +432,22 @@ End;
 				assert.Equal(t, ifStmt.Condition, "i_AreanosIsNull")
 				// assert the then_block of the if statement
 				assert.NotNil(t, ifStmt.ThenBlock)
-				assert.Equal(t, len(ifStmt.ThenBlock), 2)
+				assert.Equal(t, len(ifStmt.ThenBlock), 3)
 				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ThenBlock[0])
-				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ThenBlock[1])
+				// assert the first if statement
+				{
+					ifStmt := ifStmt.ThenBlock[0].(*semantic.IfStatement)
+					assert.NotNil(t, ifStmt.Condition)
+					assert.Equal(t, ifStmt.Condition, "c_AllAws%Isopen")
+					assert.NotNil(t, ifStmt.ThenBlock)
+					assert.IsType(t, &semantic.CloseStatement{}, ifStmt.ThenBlock[0])
+					assert.Nil(t, ifStmt.ElseBlock)
+				}
+				assert.IsType(t, &semantic.OpenStatement{}, ifStmt.ThenBlock[1])
+				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ThenBlock[2])
 				// assert the second if statement
 				{
-					ifStmt := ifStmt.ThenBlock[1].(*semantic.IfStatement)
+					ifStmt := ifStmt.ThenBlock[2].(*semantic.IfStatement)
 					assert.NotNil(t, ifStmt.Condition)
 					assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
 					assert.NotNil(t, ifStmt.ThenBlock)
@@ -449,7 +459,7 @@ End;
 				}
 				// assert the else_block of the if statement
 				assert.NotNil(t, ifStmt.ElseBlock)
-				assert.Equal(t, len(ifStmt.ElseBlock), 5)
+				assert.Equal(t, len(ifStmt.ElseBlock), 7)
 				assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
 				assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[1])
 				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ElseBlock[2])
@@ -472,11 +482,14 @@ End;
 					ifStmt := ifStmt.ElseBlock[3].(*semantic.IfStatement)
 					assert.NotNil(t, ifStmt.Condition)
 					assert.Equal(t, ifStmt.Condition, "c_Aws%Isopen")
-					assert.Nil(t, ifStmt.ThenBlock)
+					assert.NotNil(t, ifStmt.ThenBlock)
+					assert.Equal(t, len(ifStmt.ThenBlock), 1)
+					assert.IsType(t, &semantic.CloseStatement{}, ifStmt.ThenBlock[0])
 				}
-				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ElseBlock[4])
+				assert.IsType(t, &semantic.OpenStatement{}, ifStmt.ElseBlock[4])
+				assert.IsType(t, &semantic.IfStatement{}, ifStmt.ElseBlock[5])
 				{
-					ifStmt := ifStmt.ElseBlock[4].(*semantic.IfStatement)
+					ifStmt := ifStmt.ElseBlock[5].(*semantic.IfStatement)
 					assert.NotNil(t, ifStmt.Condition)
 					assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNull")
 					assert.NotNil(t, ifStmt.ThenBlock)

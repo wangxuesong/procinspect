@@ -2,10 +2,12 @@ package parser
 
 import (
 	"fmt"
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	"sync/atomic"
+
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
-	"sync/atomic"
+
+	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 )
 
 type (
@@ -260,6 +262,8 @@ func (l *sqlListener) ExitParameter(ctx *plsql.ParameterContext) {
 
 func (l *sqlListener) EnterIf_statement(ctx *plsql.If_statementContext) {
 	stmt := &semantic.IfStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
 	stmt.Set(atomic.LoadInt64(&stmtDepth))
 	atomic.AddInt64(&stmtDepth, 1)
 	l.nodeStack.Push(stmt)
@@ -316,4 +320,20 @@ func (l *sqlListener) ExitElse_part(ctx *plsql.Else_partContext) {
 		l.nodeStack.Pop()
 	}
 	atomic.AddInt64(&stmtDepth, -1)
+}
+
+func (l *sqlListener) ExitOpen_statement(ctx *plsql.Open_statementContext) {
+	stmt := &semantic.OpenStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	stmt.Name = ctx.Cursor_name().GetText()
+	l.nodeStack.Push(stmt)
+}
+
+func (l *sqlListener) ExitClose_statement(ctx *plsql.Close_statementContext) {
+	stmt := &semantic.CloseStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	stmt.Name = ctx.Cursor_name().GetText()
+	l.nodeStack.Push(stmt)
 }
