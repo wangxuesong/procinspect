@@ -384,3 +384,30 @@ func (l *sqlListener) ExitExit_statement(ctx *plsql.Exit_statementContext) {
 	stmt.Condition = ctx.Condition().GetText()
 	l.nodeStack.Push(stmt)
 }
+
+func (l *sqlListener) ExitFunction_call(ctx *plsql.Function_callContext) {
+	stmt := &semantic.ProcedureCall{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	stmt.Name = ctx.Routine_name().GetText()
+	for range ctx.Function_argument().AllArgument() {
+		node := l.nodeStack.Top()
+		switch node.(type) {
+		case *semantic.Argument:
+			stmt.Arguments = append([]*semantic.Argument{node.(*semantic.Argument)}, stmt.Arguments...)
+			l.nodeStack.Pop()
+		}
+	}
+	l.nodeStack.Push(stmt)
+}
+
+func (l *sqlListener) ExitFunction_argument(ctx *plsql.Function_argumentContext) {
+	for _, arg := range ctx.AllArgument() {
+		stmt := &semantic.Argument{}
+		stmt.SetLine(arg.GetStart().GetLine())
+		stmt.SetColumn(arg.GetStart().GetColumn())
+
+		stmt.Name = arg.GetText()
+		l.nodeStack.Push(stmt)
+	}
+}
