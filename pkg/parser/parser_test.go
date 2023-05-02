@@ -561,6 +561,25 @@ End;
 					}
 					assert.IsType(t, &semantic.CloseStatement{}, loopStmt.Statements[6])
 				}
+				assert.IsType(t, &semantic.IfStatement{}, stmt.Body.Statements[1])
+				// assert the if statement
+				{
+					ifStmt := stmt.Body.Statements[1].(*semantic.IfStatement)
+					assert.NotNil(t, ifStmt.Condition)
+					assert.Equal(t, ifStmt.Condition, "v_Asc_IdsIsNotNull")
+					assert.NotNil(t, ifStmt.ThenBlock)
+					assert.Equal(t, len(ifStmt.ThenBlock), 1)
+					assert.IsType(t, &semantic.ProcedureCall{}, ifStmt.ThenBlock[0])
+					// assert the procedure call
+					{
+						procCall := ifStmt.ThenBlock[0].(*semantic.ProcedureCall)
+						assert.Equal(t, procCall.Name, "Mon_Abb_Pak.gen_Anchor_Job_P")
+						assert.Equal(t, len(procCall.Arguments), 1)
+						assert.IsType(t, &semantic.Argument{}, procCall.Arguments[0])
+						assert.Equal(t, procCall.Arguments[0].Name, "v_Asc_Ids")
+					}
+					assert.Nil(t, ifStmt.ElseBlock)
+				}
 			}
 		},
 	})

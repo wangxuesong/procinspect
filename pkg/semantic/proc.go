@@ -58,6 +58,12 @@ type (
 		Condition string
 	}
 
+	ProcedureCall struct {
+		node
+		Name      string
+		Arguments []*Argument
+	}
+
 	Declaration interface {
 		Node
 		declaration()
@@ -85,6 +91,11 @@ type (
 		node
 		Name     string
 		DataType string
+	}
+
+	Argument struct {
+		node
+		Name string
 	}
 )
 
@@ -119,3 +130,5 @@ func (c *CloseStatement) statement() {}
 func (s *FetchStatement) statement() {}
 
 func (s *ExitStatement) statement() {}
+
+func (s *ProcedureCall) statement() {}
