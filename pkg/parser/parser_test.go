@@ -150,7 +150,7 @@ IS
 LOCAL_PARAM NUMBER;
 USER_EXCEPTION EXCEPTION;
 BEGIN
-LOCAL_PARAM:=0;
+LOCAL_PARAM:=1;
 END;`,
 		Func: func(t *testing.T, node *semantic.Script) {
 			// assert that the statement is a CreateProcedureStatement
@@ -194,7 +194,9 @@ END;`,
 			assert.Equal(t, 6, stmt1.Line())
 			assert.Equal(t, 1, stmt1.Column())
 			assert.Equal(t, stmt1.Left, "LOCAL_PARAM")
-			assert.Equal(t, stmt1.Right, "0")
+			assert.IsType(t, &semantic.NumericLiteral{}, stmt1.Right)
+			right := stmt1.Right.(*semantic.NumericLiteral)
+			assert.Equal(t, right.Value, int64(1))
 		},
 	})
 
