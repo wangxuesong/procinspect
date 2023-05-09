@@ -13,7 +13,7 @@ type (
 	AssignmentStatement struct {
 		node
 		Left  string
-		Right string
+		Right Expr
 	}
 
 	IfStatement struct {

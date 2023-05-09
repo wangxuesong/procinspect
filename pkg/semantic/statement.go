@@ -11,6 +11,7 @@ type (
 	SelectField struct {
 		node
 		WildCard *WildCardField
+		Expr     Expr
 	}
 
 	FieldList struct {

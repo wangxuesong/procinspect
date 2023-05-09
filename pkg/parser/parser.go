@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 	"sync/atomic"
 
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
@@ -93,8 +94,13 @@ func (l *sqlListener) EnterSelect_statement(ctx *plsql.Select_statementContext) 
 func (l *sqlListener) ExitSelect_statement(ctx *plsql.Select_statementContext) {
 }
 
-func (l *sqlListener) EnterSelected_list(ctx *plsql.Selected_listContext) {
-	stmt := l.nodeStack.Top().(*semantic.SelectStatement)
+func (l *sqlListener) ExitSelected_list(ctx *plsql.Selected_listContext) {
+	//stmt := l.nodeStack.Top().(*semantic.SelectStatement)
+	stmt, err := peekNode[*semantic.SelectStatement](l)
+	if err != nil {
+		panic(err)
+	}
+
 	stmt.Fields = &semantic.FieldList{
 		Fields: make([]*semantic.SelectField, 0),
 	}
@@ -105,6 +111,15 @@ func (l *sqlListener) EnterSelected_list(ctx *plsql.Selected_listContext) {
 			WildCard: field,
 		}
 		stmt.Fields.Fields = append(stmt.Fields.Fields, selectField)
+	} else {
+		for _, _ = range ctx.AllSelect_list_elements() {
+			node := l.nodeStack.Top()
+			if _, ok := node.(semantic.Expr); ok {
+				selectField := &semantic.SelectField{}
+				stmt.Fields.Fields = append(stmt.Fields.Fields, selectField)
+				l.nodeStack.Pop()
+			}
+		}
 	}
 }
 
@@ -208,7 +223,14 @@ func (l *sqlListener) ExitAssignment_statement(ctx *plsql.Assignment_statementCo
 
 	// set left
 	stmt.Left = ctx.General_element().GetText()
-	stmt.Right = ctx.Expression().GetText()
+	// set right
+	node := l.nodeStack.Top()
+	if _, ok := node.(semantic.Expr); ok {
+		stmt.Right = node.(semantic.Expr)
+		l.nodeStack.Pop()
+	} else {
+		stmt.Right = nil
+	}
 }
 
 func (l *sqlListener) ExitVariable_declaration(ctx *plsql.Variable_declarationContext) {
@@ -410,4 +432,16 @@ func (l *sqlListener) ExitFunction_argument(ctx *plsql.Function_argumentContext)
 		stmt.Name = arg.GetText()
 		l.nodeStack.Push(stmt)
 	}
+}
+
+func (l *sqlListener) ExitNumeric(ctx *plsql.NumericContext) {
+	number := &semantic.NumericLiteral{}
+	number.SetLine(ctx.GetStart().GetLine())
+	number.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.UNSIGNED_INTEGER() != nil {
+		if v, err := strconv.ParseInt(ctx.GetText(), 10, 64); err == nil {
+			number.Value = v
+		}
+	}
+	l.nodeStack.Push(number)
 }
