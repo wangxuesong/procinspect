@@ -403,7 +403,12 @@ func (l *sqlListener) ExitExit_statement(ctx *plsql.Exit_statementContext) {
 	stmt := &semantic.ExitStatement{}
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
-	stmt.Condition = ctx.Condition().GetText()
+	if ctx.Condition() != nil {
+		txt := ctx.Condition().GetText()
+		_ = txt
+		vistior := experVisitor{}
+		stmt.Condition = vistior.VisitCondition(ctx.Condition().(*plsql.ConditionContext)).(semantic.Expr)
+	}
 	l.nodeStack.Push(stmt)
 }
 

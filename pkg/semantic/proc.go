@@ -55,7 +55,7 @@ type (
 
 	ExitStatement struct {
 		node
-		Condition string
+		Condition Expr
 	}
 
 	ProcedureCall struct {
