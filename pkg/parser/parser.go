@@ -300,7 +300,12 @@ func (l *sqlListener) ExitIf_statement(ctx *plsql.If_statementContext) {
 		node := l.nodeStack.Top()
 		if s, ok := node.(*semantic.IfStatement); ok {
 			if s == stmt {
-				stmt.Condition = ctx.Condition().GetText()
+				//stmt.Condition = ctx.Condition().GetText()
+				if ctx.Condition() != nil {
+					vistior := experVisitor{}
+					stmt.Condition = vistior.VisitCondition(ctx.Condition().(*plsql.ConditionContext)).(semantic.Expr)
+				}
+
 				break
 			}
 		}
@@ -404,8 +409,6 @@ func (l *sqlListener) ExitExit_statement(ctx *plsql.Exit_statementContext) {
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	if ctx.Condition() != nil {
-		txt := ctx.Condition().GetText()
-		_ = txt
 		vistior := experVisitor{}
 		stmt.Condition = vistior.VisitCondition(ctx.Condition().(*plsql.ConditionContext)).(semantic.Expr)
 	}
