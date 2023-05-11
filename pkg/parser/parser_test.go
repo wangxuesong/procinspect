@@ -466,7 +466,10 @@ End;
 					{
 						exitStmt := loopStmt.Statements[1].(*semantic.ExitStatement)
 						assert.NotNil(t, exitStmt.Condition)
-						assert.Equal(t, exitStmt.Condition, "c_AllAws%NotFound")
+						assert.IsType(t, &semantic.CursorAttribute{}, exitStmt.Condition)
+						attr := exitStmt.Condition.(*semantic.CursorAttribute)
+						assert.Equal(t, attr.Cursor, "c_AllAws")
+						assert.Equal(t, attr.Attr, "NOTFOUND")
 					}
 					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[2])
 					// assert the if statement
@@ -513,7 +516,12 @@ End;
 					{
 						exitStmt := loopStmt.Statements[2].(*semantic.ExitStatement)
 						assert.NotNil(t, exitStmt.Condition)
-						assert.Equal(t, exitStmt.Condition, "v_AreanoIsNull")
+						assert.IsType(t, &semantic.UnaryLogicalExpression{}, exitStmt.Condition)
+						expr := exitStmt.Condition.(*semantic.UnaryLogicalExpression)
+						assert.IsType(t, &semantic.NameExpression{}, expr.Expr)
+						name := expr.Expr.(*semantic.NameExpression)
+						assert.Equal(t, name.Name, "v_Areano")
+						assert.Equal(t, expr.Operator, "NULL")
 					}
 					assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[3])
 					{
@@ -545,7 +553,10 @@ End;
 						{
 							exitStmt := loopStmt.Statements[1].(*semantic.ExitStatement)
 							assert.NotNil(t, exitStmt.Condition)
-							assert.Equal(t, exitStmt.Condition, "c_Aws%NotFound")
+							assert.IsType(t, &semantic.CursorAttribute{}, exitStmt.Condition)
+							attr := exitStmt.Condition.(*semantic.CursorAttribute)
+							assert.Equal(t, attr.Cursor, "c_Aws")
+							assert.Equal(t, attr.Attr, "NOTFOUND")
 						}
 						assert.IsType(t, &semantic.IfStatement{}, loopStmt.Statements[2])
 						// assert the if statement
