@@ -19,7 +19,7 @@ type (
 	IfStatement struct {
 		node
 		blockDepth
-		Condition string
+		Condition Expr
 		ThenBlock []Statement
 		ElseBlock []Statement
 		ElseIfs   []*IfStatement

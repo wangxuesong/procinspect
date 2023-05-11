@@ -28,6 +28,13 @@ type (
 		Not      bool
 	}
 
+	RelationalExpression struct {
+		expression
+		Left     Expr
+		Right    Expr
+		Operator string
+	}
+
 	NameExpression struct {
 		expression
 		Name string
