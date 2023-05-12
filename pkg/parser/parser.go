@@ -224,13 +224,15 @@ func (l *sqlListener) ExitAssignment_statement(ctx *plsql.Assignment_statementCo
 	// set left
 	stmt.Left = ctx.General_element().GetText()
 	// set right
-	node := l.nodeStack.Top()
-	if _, ok := node.(semantic.Expr); ok {
-		stmt.Right = node.(semantic.Expr)
-		l.nodeStack.Pop()
-	} else {
-		stmt.Right = nil
-	}
+	//node := l.nodeStack.Top()
+	//if _, ok := node.(semantic.Expr); ok {
+	//	stmt.Right = node.(semantic.Expr)
+	//	l.nodeStack.Pop()
+	//} else {
+	//	stmt.Right = nil
+	//}
+	visitor := &exprVisitor{}
+	stmt.Right = visitor.VisitExpression(ctx.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 }
 
 func (l *sqlListener) ExitVariable_declaration(ctx *plsql.Variable_declarationContext) {
@@ -302,7 +304,7 @@ func (l *sqlListener) ExitIf_statement(ctx *plsql.If_statementContext) {
 			if s == stmt {
 				//stmt.Condition = ctx.Condition().GetText()
 				if ctx.Condition() != nil {
-					vistior := experVisitor{}
+					vistior := exprVisitor{}
 					stmt.Condition = vistior.VisitCondition(ctx.Condition().(*plsql.ConditionContext)).(semantic.Expr)
 				}
 
@@ -409,7 +411,7 @@ func (l *sqlListener) ExitExit_statement(ctx *plsql.Exit_statementContext) {
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	if ctx.Condition() != nil {
-		vistior := experVisitor{}
+		vistior := exprVisitor{}
 		stmt.Condition = vistior.VisitCondition(ctx.Condition().(*plsql.ConditionContext)).(semantic.Expr)
 	}
 	l.nodeStack.Push(stmt)

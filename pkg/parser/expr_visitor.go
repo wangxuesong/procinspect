@@ -9,12 +9,12 @@ import (
 )
 
 type (
-	experVisitor struct {
+	exprVisitor struct {
 		plsql.BasePlSqlParserVisitor
 	}
 )
 
-func (v *experVisitor) VisitChildren(node antlr.RuleNode) interface{} {
+func (v *exprVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 	children := node.GetChildren()
 	nodes := make([]interface{}, 0, len(children))
 	for _, child := range children {
@@ -28,6 +28,18 @@ func (v *experVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Relational_expressionContext:
 			c := child.(*plsql.Relational_expressionContext)
 			nodes = append(nodes, v.VisitRelational_expression(c))
+		case *plsql.ConcatenationContext:
+			c := child.(*plsql.ConcatenationContext)
+			nodes = append(nodes, v.VisitConcatenation(c))
+		case *plsql.String_functionContext:
+			c := child.(*plsql.String_functionContext)
+			nodes = append(nodes, v.VisitString_function(c))
+		case *plsql.General_element_partContext:
+			c := child.(*plsql.General_element_partContext)
+			nodes = append(nodes, v.VisitGeneral_element_part(c))
+		case *plsql.Quoted_stringContext:
+			c := child.(*plsql.Quoted_stringContext)
+			nodes = append(nodes, v.VisitQuoted_string(c))
 		case *plsql.Variable_nameContext:
 			c := child.(*plsql.Variable_nameContext)
 			nodes = append(nodes, v.VisitVariable_name(c))
@@ -52,22 +64,20 @@ func (v *experVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 	return nodes
 }
 
-func (v *experVisitor) VisitCondition(ctx *plsql.ConditionContext) interface{} {
+func (v *exprVisitor) VisitCondition(ctx *plsql.ConditionContext) interface{} {
 	if ctx.Expression() != nil {
-		expr := ctx.Expression().Accept(v)
-		switch expr.(type) {
-		case []interface{}:
-			cc := expr.([]interface{})
-			return cc[0]
-		default:
-			return expr
-		}
+		expr := v.VisitExpression(ctx.Expression().(*plsql.ExpressionContext))
+		return expr
 	} else {
 		return nil
 	}
 }
 
-func (v *experVisitor) VisitOther_function(ctx *plsql.Other_functionContext) interface{} {
+func (v *exprVisitor) VisitExpression(ctx *plsql.ExpressionContext) interface{} {
+	return ctx.Accept(v)
+}
+
+func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) interface{} {
 	switch ctx.GetChild(0).(type) {
 	case *plsql.Cursor_nameContext:
 		node := ctx.GetChild(0).(*plsql.Cursor_nameContext)
@@ -89,7 +99,7 @@ func (v *experVisitor) VisitOther_function(ctx *plsql.Other_functionContext) int
 	}
 }
 
-func (v *experVisitor) VisitUnary_logical_expression(ctx *plsql.Unary_logical_expressionContext) interface{} {
+func (v *exprVisitor) VisitUnary_logical_expression(ctx *plsql.Unary_logical_expressionContext) interface{} {
 	result := &semantic.UnaryLogicalExpression{}
 	result.SetLine(ctx.GetStart().GetLine())
 	result.SetColumn(ctx.GetStart().GetColumn())
@@ -119,7 +129,7 @@ func (v *experVisitor) VisitUnary_logical_expression(ctx *plsql.Unary_logical_ex
 	return result
 }
 
-func (v *experVisitor) VisitRelational_expression(ctx *plsql.Relational_expressionContext) interface{} {
+func (v *exprVisitor) VisitRelational_expression(ctx *plsql.Relational_expressionContext) interface{} {
 	result := &semantic.RelationalExpression{}
 	result.SetLine(ctx.GetStart().GetLine())
 	result.SetColumn(ctx.GetStart().GetColumn())
@@ -135,7 +145,79 @@ func (v *experVisitor) VisitRelational_expression(ctx *plsql.Relational_expressi
 	}
 }
 
-func (v *experVisitor) VisitVariable_name(ctx *plsql.Variable_nameContext) interface{} {
+func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interface{} {
+	if ctx.Model_expression() != nil {
+		return ctx.Accept(v)
+	} else {
+		if ctx.BAR(0) != nil {
+			expr := &semantic.BinaryExpression{}
+			expr.SetLine(ctx.GetStart().GetLine())
+			expr.SetColumn(ctx.GetStart().GetColumn())
+			i := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext))
+
+			expr.Left = i.(semantic.Expr)
+			expr.Right = ctx.Concatenation(1).Accept(v).(semantic.Expr)
+			expr.Operator = "||"
+			return expr
+		} else if ctx.GetOp() != nil {
+			expr := &semantic.BinaryExpression{}
+			expr.SetLine(ctx.GetStart().GetLine())
+			expr.SetColumn(ctx.GetStart().GetColumn())
+			i := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext))
+
+			expr.Left = i.(semantic.Expr)
+			expr.Right = ctx.Concatenation(1).Accept(v).(semantic.Expr)
+			expr.Operator = ctx.GetOp().GetText()
+			return expr
+		}
+	}
+	return ctx.Accept(v)
+}
+
+func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) interface{} {
+	if ctx.SUBSTR() != nil {
+		expr := &semantic.FunctionCallExpression{Name: "SUBSTR"}
+		for _, arg := range ctx.AllExpression() {
+			expr.Args = append(expr.Args, arg.Accept(v).(semantic.Expr))
+		}
+		return expr
+	}
+	return ctx.Accept(v)
+}
+
+func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partContext) interface{} {
+	if ctx.Function_argument() != nil {
+		args := v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]interface{})
+		expr := &semantic.FunctionCallExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		for _, arg := range args {
+			expr.Args = append(expr.Args, arg.(semantic.Expr))
+		}
+		expr.Name = ctx.Id_expression(0).GetText()
+		return expr
+	}
+	return ctx.Accept(v)
+}
+
+func (v *exprVisitor) VisitFunction_argument(ctx *plsql.Function_argumentContext) interface{} {
+	args := make([]interface{}, 0)
+	if len(ctx.AllArgument()) > 0 {
+		for _, arg := range ctx.AllArgument() {
+			args = append(args, arg.Accept(v))
+		}
+	}
+	return args
+}
+
+func (v *exprVisitor) VisitQuoted_string(ctx *plsql.Quoted_stringContext) interface{} {
+	if ctx.Variable_name() != nil {
+		return ctx.Accept(v)
+	}
+	return &semantic.StringLiteral{Value: ctx.GetText()}
+}
+
+func (v *exprVisitor) VisitVariable_name(ctx *plsql.Variable_nameContext) interface{} {
 	name := &semantic.NameExpression{
 		Name: ctx.GetText(),
 	}
@@ -144,7 +226,7 @@ func (v *experVisitor) VisitVariable_name(ctx *plsql.Variable_nameContext) inter
 	return name
 }
 
-func (v *experVisitor) VisitNumeric(ctx *plsql.NumericContext) interface{} {
+func (v *exprVisitor) VisitNumeric(ctx *plsql.NumericContext) interface{} {
 	number := &semantic.NumericLiteral{}
 	number.SetLine(ctx.GetStart().GetLine())
 	number.SetColumn(ctx.GetStart().GetColumn())
