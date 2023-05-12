@@ -35,9 +35,27 @@ type (
 		Operator string
 	}
 
+	BinaryExpression struct {
+		expression
+		Left     Expr
+		Right    Expr
+		Operator string
+	}
+
+	FunctionCallExpression struct {
+		expression
+		Name string
+		Args []Expr
+	}
+
 	NameExpression struct {
 		expression
 		Name string
+	}
+
+	StringLiteral struct {
+		expression
+		Value string
 	}
 )
 
