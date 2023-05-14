@@ -38,6 +38,7 @@ type (
 		node
 		Fields *FieldList
 		From   *FromClause
+		Where  Expr
 	}
 )
 
