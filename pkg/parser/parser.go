@@ -94,8 +94,21 @@ func (l *sqlListener) EnterSelect_statement(ctx *plsql.Select_statementContext) 
 func (l *sqlListener) ExitSelect_statement(ctx *plsql.Select_statementContext) {
 }
 
+func (l *sqlListener) ExitQuery_block(ctx *plsql.Query_blockContext) {
+	stmt, err := peekNode[*semantic.SelectStatement](l)
+	if err != nil {
+		panic(err)
+	}
+
+	if ctx.Where_clause() != nil {
+		if ctx.Where_clause().Expression() != nil {
+			visitor := &exprVisitor{}
+			stmt.Where = visitor.VisitExpression(ctx.Where_clause().Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+		}
+	}
+}
+
 func (l *sqlListener) ExitSelected_list(ctx *plsql.Selected_listContext) {
-	//stmt := l.nodeStack.Top().(*semantic.SelectStatement)
 	stmt, err := peekNode[*semantic.SelectStatement](l)
 	if err != nil {
 		panic(err)

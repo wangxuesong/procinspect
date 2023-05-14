@@ -22,6 +22,9 @@ func (v *exprVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Other_functionContext:
 			c := child.(*plsql.Other_functionContext)
 			nodes = append(nodes, v.VisitOther_function(c))
+		case *plsql.Logical_expressionContext:
+			c := child.(*plsql.Logical_expressionContext)
+			nodes = append(nodes, v.VisitLogical_expression(c))
 		case *plsql.Unary_logical_expressionContext:
 			c := child.(*plsql.Unary_logical_expressionContext)
 			nodes = append(nodes, v.VisitUnary_logical_expression(c))
@@ -96,6 +99,24 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 		return ca
 	default:
 		return v.VisitChildren(ctx)
+	}
+}
+
+func (v *exprVisitor) VisitLogical_expression(ctx *plsql.Logical_expressionContext) interface{} {
+	if ctx.Unary_logical_expression() != nil {
+		return ctx.Accept(v)
+	} else {
+		expr := &semantic.BinaryExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		if ctx.AND() != nil {
+			expr.Operator = "AND"
+		} else if ctx.OR() != nil {
+			expr.Operator = "OR"
+		}
+		expr.Left = ctx.Logical_expression(0).Accept(v).(semantic.Expr)
+		expr.Right = ctx.Logical_expression(1).Accept(v).(semantic.Expr)
+		return expr
 	}
 }
 
