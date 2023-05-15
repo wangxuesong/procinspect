@@ -1,5 +1,3 @@
-//go:build visitor
-
 package parser
 
 import (
