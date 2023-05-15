@@ -166,7 +166,9 @@ END;`,
 			assert.Equal(t, stmt.Name, "PROC")
 
 			assert.Equal(t, len(stmt.Parameters), 1)
-			assert.Equal(t, &semantic.Parameter{Name: "PARAM", DataType: "NUMBER"}, stmt.Parameters[0])
+			assert.Equal(t, len(stmt.Body.Statements), 1)
+			assert.Equal(t, stmt.Parameters[0].Name, "PARAM")
+			assert.Equal(t, stmt.Parameters[0].DataType, "NUMBER")
 
 			assert.NotNil(t, stmt.Declarations)
 			assert.Equal(t, len(stmt.Declarations), 2)
