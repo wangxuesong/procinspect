@@ -16,6 +16,12 @@ type (
 		Right Expr
 	}
 
+	BlockStatement struct {
+		node
+		Declarations []Declaration
+		Body         *Body
+	}
+
 	IfStatement struct {
 		node
 		blockDepth
@@ -112,6 +118,8 @@ func (s *AssignmentStatement) Type() NodeType {
 }
 
 func (s *AssignmentStatement) statement() {}
+
+func (b *BlockStatement) statement() {}
 
 func (d *VariableDeclaration) declaration() {}
 

@@ -213,6 +213,17 @@ func (v *plsqlVisitor) VisitBody(ctx *plsql.BodyContext) interface{} {
 	return stmt
 }
 
+func (v *plsqlVisitor) VisitBlock(ctx *plsql.BlockContext) interface{} {
+	stmt := &semantic.BlockStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	for _, p := range ctx.AllDeclare_spec() {
+		stmt.Declarations = append(stmt.Declarations, p.Accept(v).(semantic.Declaration))
+	}
+	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
+	return stmt
+}
+
 func (v *plsqlVisitor) VisitSeq_of_statements(ctx *plsql.Seq_of_statementsContext) interface{} {
 	stmts := make([]semantic.Statement, 0, len(ctx.AllStatement()))
 	for _, stmt := range ctx.AllStatement() {

@@ -768,12 +768,44 @@ End;
 }
 
 func TestBlock(t *testing.T) {
+	getBlock := func(t *testing.T, text string) any {
+		p := plsql.NewParser(text)
+		root := p.Block()
+		assert.Nil(t, p.Error())
+
+		visitor := &plsqlVisitor{}
+		node := visitor.VisitBlock(root.(*plsql.BlockContext)).(*semantic.BlockStatement)
+
+		return node
+	}
+
 	tests := testSuite{}
 	tests = append(tests, testCase{
-		name: "匿名块",
+		name: "block",
+		root: getBlock,
 		text: `
+DECLARE
+	a NUMBER;
 BEGIN
+	a:=1;
 END`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.BlockStatement)
+			assert.Equal(t, len(node.Declarations), 1)
+			assert.IsType(t, &semantic.VariableDeclaration{}, node.Declarations[0])
+			decl := node.Declarations[0].(*semantic.VariableDeclaration)
+			assert.Equal(t, decl.Name, "a")
+			assert.Equal(t, decl.DataType, "NUMBER")
+			assert.NotNil(t, node.Body)
+			assert.Equal(t, len(node.Body.Statements), 1)
+			assert.IsType(t, &semantic.AssignmentStatement{}, node.Body.Statements[0])
+			stmt := node.Body.Statements[0].(*semantic.AssignmentStatement)
+			assert.Equal(t, stmt.Left, "a")
+			assert.IsType(t, &semantic.NumericLiteral{}, stmt.Right)
+			lit := stmt.Right.(*semantic.NumericLiteral)
+			assert.Equal(t, lit.Value, int64(1))
+		},
 	})
 
+	runTestSuite(t, tests)
 }
