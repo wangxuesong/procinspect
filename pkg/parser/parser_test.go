@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"testing"
 
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
@@ -14,15 +13,18 @@ type (
 	testCase struct {
 		name string
 		text string
+		root rootFunc
 		Func testCaseFunc
 	}
 
-	testCaseFunc func(*testing.T, *semantic.Script)
+	testCaseFunc func(*testing.T, any)
 
 	testSuite []testCase
+
+	rootFunc func(*testing.T, string) any
 )
 
-func getRoot(t *testing.T, text string) *semantic.Script {
+func getRoot(t *testing.T, text string) any {
 	p := plsql.NewParser(text)
 	root := p.Sql_script()
 	assert.Nil(t, p.Error())
@@ -37,15 +39,25 @@ func getRoot(t *testing.T, text string) *semantic.Script {
 	return node
 }
 
-func runTest(t *testing.T, input string, testFunc func(t *testing.T, node *semantic.Script)) {
+func runTest(t *testing.T, input string, testFunc func(t *testing.T, node any), rootFunc ...rootFunc) {
+	if len(rootFunc) > 0 {
+		node := rootFunc[0](t, input)
+		testFunc(t, node)
+		return
+	}
 	node := getRoot(t, input)
 	testFunc(t, node)
 }
 
 func runTestSuite(t *testing.T, tests testSuite) {
 	for _, test := range tests {
-		fmt.Println(test.name)
-		runTest(t, test.text, test.Func)
+		t.Run(test.name, func(t *testing.T) {
+			if test.root != nil {
+				runTest(t, test.text, test.Func, test.root)
+			} else {
+				runTest(t, test.text, test.Func)
+			}
+		})
 	}
 }
 
@@ -83,7 +95,8 @@ func TestParseSimple(t *testing.T) {
 	tests = append(tests, testCase{
 		name: "simple",
 		text: `select * from dual, test;`,
-		Func: func(t *testing.T, node *semantic.Script) {
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
 			assert.Greater(t, len(node.Statements), 0)
 			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
 			assert.True(t, ok)
@@ -112,7 +125,8 @@ func TestCreateProcedure(t *testing.T) {
 		select 1 from dual;
 		select 2 from t;
 	end;`,
-		Func: func(t *testing.T, node *semantic.Script) {
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
 			// assert that the statement is a CreateProcedureStatement
 			assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
 			stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
@@ -152,7 +166,8 @@ USER_EXCEPTION EXCEPTION;
 BEGIN
 LOCAL_PARAM:=1;
 END;`,
-		Func: func(t *testing.T, node *semantic.Script) {
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
 			// assert that the statement is a CreateProcedureStatement
 			assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
 			stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
@@ -220,7 +235,8 @@ func TestCursorDeclaration(t *testing.T) {
 	begin
 		select 1 from dual;
 	end;`,
-		Func: func(t *testing.T, node *semantic.Script) {
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
 			// assert that the statement is a CreateProcedureStatement
 			assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
 			stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
@@ -261,7 +277,8 @@ func TestCursorDeclaration(t *testing.T) {
 	begin
 		select 1 from dual;
 	end;`,
-		Func: func(t *testing.T, node *semantic.Script) {
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
 			// assert that the statement is a CreateProcedureStatement
 			assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
 			stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
@@ -372,7 +389,8 @@ Begin
   End If;
 End;
 /`,
-		Func: func(t *testing.T, node *semantic.Script) {
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
 			// assert that the statement is a CreateProcedureStatement
 			assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
 			stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
@@ -747,4 +765,15 @@ End;
 	})
 
 	runTestSuite(t, tests)
+}
+
+func TestBlock(t *testing.T) {
+	tests := testSuite{}
+	tests = append(tests, testCase{
+		name: "匿名块",
+		text: `
+BEGIN
+END`,
+	})
+
 }
