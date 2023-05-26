@@ -25,6 +25,9 @@ func (b *NumericLiteral) Accept(visitor ExprVisitor) (result interface{}, err er
 type StmtVisitor interface {
 	VisitScript(v *Script) (err error)
 	VisitCreateProcedureStatement(v *CreateProcedureStatement) (err error)
+	VisitBlockStatement(v *BlockStatement) (err error)
+	VisitAssignmentStatement(v *AssignmentStatement) (err error)
+	VisitVariableDeclaration(v *VariableDeclaration) (err error)
 }
 
 type StubStmtVisitor struct{}
@@ -39,10 +42,34 @@ func (s StubExprVisitor) VisitCreateProcedureStatement(_ *CreateProcedureStateme
 	return errors.New("visit func for CreateProcedureStatement is not implemented")
 }
 
+func (s StubExprVisitor) VisitBlockStatement(_ *BlockStatement) error {
+	return errors.New("visit func for BlockStatement is not implemented")
+}
+
+func (s StubExprVisitor) VisitAssignmentStatement(_ *AssignmentStatement) error {
+	return errors.New("visit func for AssignmentStatement is not implemented")
+}
+
+func (s StubExprVisitor) VisitVariableDeclaration(_ *VariableDeclaration) error {
+	return errors.New("visit func for VariableDeclaration is not implemented")
+}
+
 func (b *Script) Accept(visitor StmtVisitor) (err error) {
 	return visitor.VisitScript(b)
 }
 
 func (b *CreateProcedureStatement) Accept(visitor StmtVisitor) (err error) {
 	return visitor.VisitCreateProcedureStatement(b)
+}
+
+func (b *BlockStatement) Accept(visitor StmtVisitor) (err error) {
+	return visitor.VisitBlockStatement(b)
+}
+
+func (b *AssignmentStatement) Accept(visitor StmtVisitor) (err error) {
+	return visitor.VisitAssignmentStatement(b)
+}
+
+func (b *VariableDeclaration) Accept(visitor StmtVisitor) (err error) {
+	return visitor.VisitVariableDeclaration(b)
 }

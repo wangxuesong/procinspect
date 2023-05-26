@@ -1,6 +1,8 @@
 package interp
 
 import (
+	"context"
+
 	"procinspect/pkg/parser"
 	"procinspect/pkg/semantic"
 )
@@ -11,6 +13,8 @@ type (
 		environment *Environment
 		global      *Environment
 		program     *Program
+
+		semantic.StubExprVisitor
 	}
 )
 
@@ -22,33 +26,33 @@ func NewInterpreter() *Interpreter {
 	}
 }
 
-func (interp *Interpreter) LoadScript(src string) (*Program, error) {
+func (i *Interpreter) LoadScript(src string) (*Program, error) {
 	script, err := parser.ParseScript(src)
 	if err != nil {
 		return nil, err
 	}
 
-	return interp.CompileAst(script)
+	return i.CompileAst(script)
 }
 
-func (interp *Interpreter) CompileAst(script *semantic.Script) (*Program, error) {
-	interp.program = &Program{
+func (i *Interpreter) CompileAst(script *semantic.Script) (*Program, error) {
+	i.program = &Program{
 		Script: script,
 	}
 
 	for _, stmt := range script.Statements {
 		s := stmt.(semantic.Stmt)
-		visitor := &StmtVisitor{interp: interp}
+		visitor := &resolver{interp: i}
 		err := s.Accept(visitor)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return interp.program, nil
+	return i.program, nil
 }
 
-func (interp *Interpreter) compileCreateProcedure(s *semantic.CreateProcedureStatement) Procedure {
+func (i *Interpreter) compileCreateProcedure(s *semantic.CreateProcedureStatement) Procedure {
 	procedure := Procedure{
 		Name: s.Name,
 	}
@@ -56,4 +60,77 @@ func (interp *Interpreter) compileCreateProcedure(s *semantic.CreateProcedureSta
 
 	// compile body
 	return procedure
+}
+
+func (i *Interpreter) Interpret(ctx context.Context, program *Program) (err error) {
+	done := ctx.Done()
+	for _, stmt := range program.Statements {
+		select {
+		case <-done:
+			err = ctx.Err()
+		default:
+			// relax
+		}
+		err = i.execute(stmt)
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (i *Interpreter) execute(stmt semantic.Stmt) (err error) {
+	return stmt.Accept(i)
+}
+
+func (i *Interpreter) VisitVariableDeclaration(s *semantic.VariableDeclaration) (err error) {
+	var value any
+	if s.Initialization != nil {
+		value, err = s.Initialization.(semantic.Expression).Accept(i)
+		if err != nil {
+			return
+		}
+		err := i.environment.Assign(s.Name, value)
+		if err != nil {
+			return err
+		}
+	}
+	i.environment.Define(s.Name, value)
+	return
+}
+
+func (i *Interpreter) VisitBlockStatement(s *semantic.BlockStatement) (err error) {
+	for _, decl := range s.Declarations {
+		stmt := decl.(semantic.Stmt)
+		err = stmt.Accept(i)
+		if err != nil {
+			return
+		}
+	}
+
+	for _, s := range s.Body.Statements {
+		stmt := s.(semantic.Stmt)
+		err = stmt.Accept(i)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (i *Interpreter) VisitAssignmentStatement(s *semantic.AssignmentStatement) (err error) {
+	right := s.Right.(semantic.Expression)
+	value, err := right.Accept(i)
+	if err != nil {
+		return err
+	}
+	err = i.environment.Assign(s.Left, value)
+	return
+}
+
+func (i *Interpreter) VisitNumericLiteral(s *semantic.NumericLiteral) (result any, err error) {
+	number := &Number{}
+	number.Value = s.Value
+	return number, nil
 }

@@ -785,7 +785,7 @@ func TestBlock(t *testing.T) {
 		root: getBlock,
 		text: `
 DECLARE
-	a NUMBER;
+	a NUMBER := 1;
 BEGIN
 	a:=1;
 END`,
@@ -796,6 +796,8 @@ END`,
 			decl := node.Declarations[0].(*semantic.VariableDeclaration)
 			assert.Equal(t, decl.Name, "a")
 			assert.Equal(t, decl.DataType, "NUMBER")
+			assert.NotNil(t, decl.Initialization)
+			assert.IsType(t, &semantic.NumericLiteral{}, decl.Initialization)
 			assert.NotNil(t, node.Body)
 			assert.Equal(t, len(node.Body.Statements), 1)
 			assert.IsType(t, &semantic.AssignmentStatement{}, node.Body.Statements[0])

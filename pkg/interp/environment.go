@@ -32,7 +32,7 @@ func (e *Environment) Define(name string, value interface{}) {
 }
 
 // Get a variable from the environment.
-func (e *Environment) Get(name string) (value interface{}, err error) {
+func (e *Environment) Get(name string) (value any, err error) {
 	value, ok := e.values[name]
 	if ok {
 		return

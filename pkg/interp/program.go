@@ -6,6 +6,7 @@ type (
 	Program struct {
 		Script     *semantic.Script
 		Procedures []*Procedure
+		Statements []semantic.Stmt
 	}
 
 	Procedure struct {

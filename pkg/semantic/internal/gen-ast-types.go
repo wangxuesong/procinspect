@@ -36,6 +36,21 @@ var stmtTypes = Types{
 		Fields:  "semantic.CreateProcedureStatement",
 		Comment: "",
 	},
+	{
+		Name:    "BlockStatement",
+		Fields:  "semantic.BlockStatement",
+		Comment: "",
+	},
+	{
+		Name:    "AssignmentStatement",
+		Fields:  "semantic.AssignmentStatement",
+		Comment: "",
+	},
+	{
+		Name:    "VariableDeclaration",
+		Fields:  "semantic.VariableDeclaration",
+		Comment: "",
+	},
 }
 
 var output = flag.String("o", "exprTypes.generated.go", "output file path")

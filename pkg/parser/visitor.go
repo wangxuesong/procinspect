@@ -173,6 +173,10 @@ func (v *plsqlVisitor) VisitVariable_declaration(ctx *plsql.Variable_declaration
 	varDecl.SetColumn(ctx.GetStart().GetColumn())
 	varDecl.Name = ctx.Identifier().GetText()
 	varDecl.DataType = ctx.Type_spec().GetText()
+	if ctx.Default_value_part() != nil {
+		visitor := &exprVisitor{}
+		varDecl.Initialization = visitor.VisitExpression(ctx.Default_value_part().Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+	}
 	return varDecl
 }
 
