@@ -52,16 +52,6 @@ func (i *Interpreter) CompileAst(script *semantic.Script) (*Program, error) {
 	return i.program, nil
 }
 
-func (i *Interpreter) compileCreateProcedure(s *semantic.CreateProcedureStatement) Procedure {
-	procedure := Procedure{
-		Name: s.Name,
-	}
-	// compile declaration
-
-	// compile body
-	return procedure
-}
-
 func (i *Interpreter) Interpret(ctx context.Context, program *Program) (err error) {
 	done := ctx.Done()
 	for _, stmt := range program.Statements {
