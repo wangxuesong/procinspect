@@ -51,3 +51,47 @@ END`,
 
 	runTestSuite(t, tests)
 }
+
+func TestInterpreter_ExecuteAnonymousBlock(t *testing.T) {
+	var tests testSuite
+
+	tests = append(tests, testCase{
+		name: "execute anonymous block",
+		text: `
+DECLARE
+	a NUMBER;
+	b NUMBER := 2;
+BEGIN
+	a:=1;
+END;`,
+		Func: func(t *testing.T, i *Interpreter) {
+			program, err := i.LoadScript(i.Source)
+			assert.Nil(t, err)
+			assert.NotNil(t, program)
+			assert.Equal(t, len(program.Statements), 1)
+			assert.Equal(t, len(i.global.values), 2)
+			v, err := i.global.Get("a")
+			assert.Nil(t, err)
+			assert.Nil(t, v)
+			v, err = i.global.Get("b")
+			assert.Nil(t, err)
+			assert.Nil(t, v)
+
+			ctx := context.Background()
+			err = i.Interpret(ctx, program)
+			assert.Nil(t, err)
+			assert.Equal(t, len(i.global.values), 2)
+			v, err = i.global.Get("a")
+			assert.Nil(t, err)
+			assert.NotNil(t, v)
+			assert.Equal(t, v, &Number{Value: 1})
+			v, err = i.global.Get("b")
+			assert.Nil(t, err)
+			assert.NotNil(t, v)
+			assert.Equal(t, v, &Number{Value: 2})
+
+		},
+	})
+
+	runTestSuite(t, tests)
+}

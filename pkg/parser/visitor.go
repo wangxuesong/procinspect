@@ -45,6 +45,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Cursor_declarationContext:
 			c := child.(*plsql.Cursor_declarationContext)
 			nodes = append(nodes, v.VisitCursor_declaration(c))
+		case *plsql.Anonymous_blockContext:
+			c := child.(*plsql.Anonymous_blockContext)
+			nodes = append(nodes, v.VisitAnonymous_block(c))
 		case *plsql.Assignment_statementContext:
 			c := child.(*plsql.Assignment_statementContext)
 			nodes = append(nodes, v.VisitAssignment_statement(c))
@@ -225,6 +228,21 @@ func (v *plsqlVisitor) VisitBlock(ctx *plsql.BlockContext) interface{} {
 		stmt.Declarations = append(stmt.Declarations, p.Accept(v).(semantic.Declaration))
 	}
 	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitAnonymous_block(ctx *plsql.Anonymous_blockContext) interface{} {
+	stmt := &semantic.BlockStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.Seq_of_declare_specs() != nil {
+		for _, p := range ctx.Seq_of_declare_specs().AllDeclare_spec() {
+			stmt.Declarations = append(stmt.Declarations, p.Accept(v).(semantic.Declaration))
+		}
+	}
+	stmts := v.VisitSeq_of_statements(ctx.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
+
+	stmt.Body = &semantic.Body{Statements: stmts}
 	return stmt
 }
 
