@@ -77,8 +77,9 @@ type (
 
 	VariableDeclaration struct {
 		node
-		Name     string
-		DataType string
+		Name           string
+		DataType       string
+		Initialization Expr
 	}
 
 	ExceptionDeclaration struct {

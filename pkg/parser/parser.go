@@ -22,3 +22,19 @@ func ParseScript(src string) (*semantic.Script, error) {
 
 	return script, nil
 }
+
+func ParseBlock(src string) (*semantic.Script, error) {
+	p := parser.NewParser(src)
+	root := p.Block()
+	if p.Error() != nil {
+		return nil, p.Error()
+	}
+	visitor := &plsqlVisitor{}
+	block := visitor.VisitBlock(root.(*parser.BlockContext)).(*semantic.BlockStatement)
+
+	script := &semantic.Script{}
+
+	script.Statements = append(script.Statements, block)
+
+	return script, nil
+}

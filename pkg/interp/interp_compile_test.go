@@ -2,6 +2,8 @@ package interp
 
 import (
 	"github.com/stretchr/testify/assert"
+	"procinspect/pkg/parser"
+	"procinspect/pkg/semantic"
 	"testing"
 )
 
@@ -48,6 +50,46 @@ func TestInterpreter_LoadScript(t *testing.T) {
 			v, err := i.global.Get("test")
 			assert.Nil(t, err)
 			assert.IsType(t, v, &Procedure{})
+		},
+	})
+
+	runTestSuite(t, tests)
+}
+
+func compileBlock(src string) (*semantic.Script, error) {
+	script, err := parser.ParseBlock(src)
+	if err != nil {
+		return nil, err
+	}
+	return script, nil
+}
+
+func TestInterpreter_CompileBlock(t *testing.T) {
+	var tests testSuite
+
+	tests = append(tests, testCase{
+		name: "compile block",
+		text: `
+DECLARE
+	a NUMBER;
+	b NUMBER := 2;
+BEGIN
+	a:=1;
+END`,
+		Func: func(t *testing.T, i *Interpreter) {
+			script, err := compileBlock(i.Source)
+			assert.Nil(t, err)
+			program, err := i.CompileAst(script)
+			assert.Nil(t, err)
+			assert.NotNil(t, program)
+			assert.Equal(t, len(program.Statements), 1)
+			assert.Equal(t, len(i.global.values), 2)
+			v, err := i.global.Get("a")
+			assert.Nil(t, err)
+			assert.Nil(t, v)
+			v, err = i.global.Get("b")
+			assert.Nil(t, err)
+			assert.Nil(t, v)
 		},
 	})
 
