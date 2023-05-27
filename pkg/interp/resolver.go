@@ -10,7 +10,7 @@ type (
 )
 
 func (v *resolver) VisitCreateProcedureStatement(s *semantic.CreateProcedureStatement) (err error) {
-	proc := &Procedure{Name: s.Name}
+	proc := &Procedure{Name: s.Name, Proc: s}
 	v.interp.program.Procedures = append(v.interp.program.Procedures, proc)
 	v.interp.environment.Define(s.Name, proc)
 	return

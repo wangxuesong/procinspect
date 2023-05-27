@@ -11,5 +11,6 @@ type (
 
 	Procedure struct {
 		Name string
+		Proc *semantic.CreateProcedureStatement
 	}
 )
