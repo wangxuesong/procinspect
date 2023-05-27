@@ -95,3 +95,54 @@ END`,
 
 	runTestSuite(t, tests)
 }
+
+func TestInterpreter_CompileProcedure(t *testing.T) {
+	var tests testSuite
+
+	tests = append(tests, testCase{
+		name: "compile simple procedure",
+		text: `create or replace procedure test is
+			t integer;
+		begin
+			t := 1;
+			t := t + 1;
+		end;`,
+		Func: func(t *testing.T, i *Interpreter) {
+			program, err := i.LoadScript(i.Source)
+			assert.Nil(t, err)
+			assert.NotNil(t, program)
+			assert.Equal(t, len(program.Procedures), 1)
+			assert.Equal(t, program.Procedures[0].Name, "test")
+			assert.Equal(t, len(i.global.values), 1)
+			v, err := i.global.Get("test")
+			assert.Nil(t, err)
+			assert.IsType(t, v, &Procedure{})
+			assert.NotNil(t, v.(*Procedure).Proc)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "compile procedure with parameters",
+		text: `create or replace procedure test (a NUMBER, b NUMBER default 100) is
+			t integer;
+		begin
+			t := 1;
+			t := t + 1;
+		end;`,
+		Func: func(t *testing.T, i *Interpreter) {
+			program, err := i.LoadScript(i.Source)
+			assert.Nil(t, err)
+			assert.NotNil(t, program)
+			assert.Equal(t, len(program.Procedures), 1)
+			assert.Equal(t, program.Procedures[0].Name, "test")
+			assert.Equal(t, len(i.global.values), 1)
+			v, err := i.global.Get("test")
+			assert.Nil(t, err)
+			assert.IsType(t, v, &Procedure{})
+			assert.NotNil(t, v.(*Procedure).Proc)
+		},
+	})
+
+	runTestSuite(t, tests)
+
+}
