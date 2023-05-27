@@ -755,8 +755,9 @@ End;
 						procCall := ifStmt.ThenBlock[0].(*semantic.ProcedureCall)
 						assert.Equal(t, procCall.Name, "Mon_Abb_Pak.gen_Anchor_Job_P")
 						assert.Equal(t, len(procCall.Arguments), 1)
-						assert.IsType(t, &semantic.Argument{}, procCall.Arguments[0])
-						assert.Equal(t, procCall.Arguments[0].Name, "v_Asc_Ids")
+						assert.IsType(t, &semantic.NameExpression{}, procCall.Arguments[0])
+						nameExp := procCall.Arguments[0].(*semantic.NameExpression)
+						assert.Equal(t, nameExp.Name, "v_Asc_Ids")
 					}
 					assert.Nil(t, ifStmt.ElseBlock)
 				}

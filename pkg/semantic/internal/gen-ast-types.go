@@ -47,6 +47,11 @@ var stmtTypes = Types{
 		Comment: "",
 	},
 	{
+		Name:    "ProcedureCall",
+		Fields:  "semantic.ProcedureCall",
+		Comment: "",
+	},
+	{
 		Name:    "VariableDeclaration",
 		Fields:  "semantic.VariableDeclaration",
 		Comment: "",

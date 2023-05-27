@@ -95,3 +95,52 @@ END;`,
 
 	runTestSuite(t, tests)
 }
+
+type fooProcedure struct {
+	value int64
+}
+
+func (f *fooProcedure) Arity() int {
+	return 1
+}
+
+func (f *fooProcedure) Call(i *Interpreter, arguments []any) (result any, err error) {
+	f.value = arguments[0].(*Number).Value
+	result = f.value
+	return
+}
+
+func (f *fooProcedure) String() string {
+	return "foo procedure for testing"
+}
+
+func TestInterpreter_ExecuteCallProcedure(t *testing.T) {
+	var tests testSuite
+
+	tests = append(tests, testCase{
+		name: "call native procedure",
+		text: `
+BEGIN
+	foo(2);
+END;`,
+		Func: func(t *testing.T, i *Interpreter) {
+			i.environment.Define("foo", &fooProcedure{})
+			program, err := i.LoadScript(i.Source)
+			assert.Nil(t, err)
+			assert.NotNil(t, program)
+			assert.Equal(t, len(program.Statements), 1)
+			assert.Equal(t, len(i.global.values), 1)
+
+			ctx := context.Background()
+			err = i.Interpret(ctx, program)
+			assert.Nil(t, err)
+			assert.Equal(t, len(i.global.values), 1)
+			foo, ok := i.global.values["foo"].(*fooProcedure)
+			assert.True(t, ok)
+			assert.Equal(t, foo.value, int64(2))
+
+		},
+	})
+
+	runTestSuite(t, tests)
+}

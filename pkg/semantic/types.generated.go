@@ -27,6 +27,7 @@ type StmtVisitor interface {
 	VisitCreateProcedureStatement(v *CreateProcedureStatement) (err error)
 	VisitBlockStatement(v *BlockStatement) (err error)
 	VisitAssignmentStatement(v *AssignmentStatement) (err error)
+	VisitProcedureCall(v *ProcedureCall) (err error)
 	VisitVariableDeclaration(v *VariableDeclaration) (err error)
 }
 
@@ -50,6 +51,10 @@ func (s StubExprVisitor) VisitAssignmentStatement(_ *AssignmentStatement) error 
 	return errors.New("visit func for AssignmentStatement is not implemented")
 }
 
+func (s StubExprVisitor) VisitProcedureCall(_ *ProcedureCall) error {
+	return errors.New("visit func for ProcedureCall is not implemented")
+}
+
 func (s StubExprVisitor) VisitVariableDeclaration(_ *VariableDeclaration) error {
 	return errors.New("visit func for VariableDeclaration is not implemented")
 }
@@ -68,6 +73,10 @@ func (b *BlockStatement) Accept(visitor StmtVisitor) (err error) {
 
 func (b *AssignmentStatement) Accept(visitor StmtVisitor) (err error) {
 	return visitor.VisitAssignmentStatement(b)
+}
+
+func (b *ProcedureCall) Accept(visitor StmtVisitor) (err error) {
+	return visitor.VisitProcedureCall(b)
 }
 
 func (b *VariableDeclaration) Accept(visitor StmtVisitor) (err error) {

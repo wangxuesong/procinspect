@@ -67,7 +67,7 @@ type (
 	ProcedureCall struct {
 		node
 		Name      string
-		Arguments []*Argument
+		Arguments []Expr
 	}
 
 	Declaration interface {
