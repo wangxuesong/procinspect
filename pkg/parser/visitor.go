@@ -328,20 +328,17 @@ func (v *plsqlVisitor) VisitFunction_call(ctx *plsql.Function_callContext) inter
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	stmt.Name = ctx.Routine_name().GetText()
 	if ctx.Function_argument() != nil {
-		stmt.Arguments = v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]*semantic.Argument)
+		stmt.Arguments = v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]semantic.Expr)
 	}
 	return stmt
 }
 
 func (v *plsqlVisitor) VisitFunction_argument(ctx *plsql.Function_argumentContext) interface{} {
-	args := make([]*semantic.Argument, 0, len(ctx.AllArgument()))
+	exprs := make([]semantic.Expr, 0, len(ctx.AllArgument()))
 	for _, c := range ctx.AllArgument() {
-		arg := &semantic.Argument{}
-		arg.SetLine(c.GetStart().GetLine())
-		arg.SetColumn(c.GetStart().GetColumn())
-
-		arg.Name = c.GetText()
-		args = append(args, arg)
+		visitor := &exprVisitor{}
+		expr := visitor.VisitExpression(c.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+		exprs = append(exprs, expr)
 	}
-	return args
+	return exprs
 }

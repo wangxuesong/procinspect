@@ -119,6 +119,29 @@ func (i *Interpreter) VisitAssignmentStatement(s *semantic.AssignmentStatement) 
 	return
 }
 
+func (i *Interpreter) VisitProcedureCall(s *semantic.ProcedureCall) (err error) {
+	proc, err := i.environment.Get(s.Name)
+	if err != nil {
+		return err
+	}
+
+	// process arguments
+	var arguments []any
+	for _, arg := range s.Arguments {
+		value, err := arg.(semantic.Expression).Accept(i)
+		if err != nil {
+			return err
+		}
+		arguments = append(arguments, value)
+	}
+
+	_, err = proc.(Callable).Call(i, arguments)
+	if err != nil {
+		return err
+	}
+	return
+}
+
 func (i *Interpreter) VisitNumericLiteral(s *semantic.NumericLiteral) (result any, err error) {
 	number := &Number{}
 	number.Value = s.Value
