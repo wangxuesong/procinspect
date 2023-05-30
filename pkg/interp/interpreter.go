@@ -99,7 +99,11 @@ func (i *Interpreter) VisitBlockStatement(s *semantic.BlockStatement) (err error
 		}
 	}
 
-	for _, s := range s.Body.Statements {
+	return s.Body.Accept(i)
+}
+
+func (i *Interpreter) VisitBody(s *semantic.Body) (err error) {
+	for _, s := range s.Statements {
 		stmt := s.(semantic.Stmt)
 		err = stmt.Accept(i)
 		if err != nil {
@@ -146,4 +150,8 @@ func (i *Interpreter) VisitNumericLiteral(s *semantic.NumericLiteral) (result an
 	number := &Number{}
 	number.Value = s.Value
 	return number, nil
+}
+
+func (i *Interpreter) VisitNameExpression(s *semantic.NameExpression) (result any, err error) {
+	return &Number{Value: 1}, nil
 }
