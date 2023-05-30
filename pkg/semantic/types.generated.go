@@ -8,6 +8,7 @@ import (
 
 type ExprVisitor interface {
 	VisitNumericLiteral(v *NumericLiteral) (result interface{}, err error)
+	VisitNameExpression(v *NameExpression) (result interface{}, err error)
 }
 
 type StubExprVisitor struct{}
@@ -18,14 +19,23 @@ func (s StubExprVisitor) VisitNumericLiteral(_ *NumericLiteral) (interface{}, er
 	return nil, errors.New("visit func for NumericLiteral is not implemented")
 }
 
+func (s StubExprVisitor) VisitNameExpression(_ *NameExpression) (interface{}, error) {
+	return nil, errors.New("visit func for NameExpression is not implemented")
+}
+
 func (b *NumericLiteral) Accept(visitor ExprVisitor) (result interface{}, err error) {
 	return visitor.VisitNumericLiteral(b)
+}
+
+func (b *NameExpression) Accept(visitor ExprVisitor) (result interface{}, err error) {
+	return visitor.VisitNameExpression(b)
 }
 
 type StmtVisitor interface {
 	VisitScript(v *Script) (err error)
 	VisitCreateProcedureStatement(v *CreateProcedureStatement) (err error)
 	VisitBlockStatement(v *BlockStatement) (err error)
+	VisitBody(v *Body) (err error)
 	VisitAssignmentStatement(v *AssignmentStatement) (err error)
 	VisitProcedureCall(v *ProcedureCall) (err error)
 	VisitVariableDeclaration(v *VariableDeclaration) (err error)
@@ -45,6 +55,10 @@ func (s StubExprVisitor) VisitCreateProcedureStatement(_ *CreateProcedureStateme
 
 func (s StubExprVisitor) VisitBlockStatement(_ *BlockStatement) error {
 	return errors.New("visit func for BlockStatement is not implemented")
+}
+
+func (s StubExprVisitor) VisitBody(_ *Body) error {
+	return errors.New("visit func for Body is not implemented")
 }
 
 func (s StubExprVisitor) VisitAssignmentStatement(_ *AssignmentStatement) error {
@@ -69,6 +83,10 @@ func (b *CreateProcedureStatement) Accept(visitor StmtVisitor) (err error) {
 
 func (b *BlockStatement) Accept(visitor StmtVisitor) (err error) {
 	return visitor.VisitBlockStatement(b)
+}
+
+func (b *Body) Accept(visitor StmtVisitor) (err error) {
+	return visitor.VisitBody(b)
 }
 
 func (b *AssignmentStatement) Accept(visitor StmtVisitor) (err error) {
