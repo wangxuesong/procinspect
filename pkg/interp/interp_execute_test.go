@@ -171,5 +171,34 @@ END;`,
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "call procedure with arguments",
+		text: `
+create procedure swth(a NUMBER) as
+BEGIN
+	foo(a);
+END;
+BEGIN
+	swth(11);
+END;`,
+		Func: func(t *testing.T, i *Interpreter) {
+			i.environment.Define("foo", &fooProcedure{})
+			program, err := i.LoadScript(i.Source)
+			assert.Nil(t, err, err)
+			assert.NotNil(t, program)
+			assert.Equal(t, len(program.Statements), 1)
+			assert.Equal(t, len(i.global.values), 2)
+
+			ctx := context.Background()
+			err = i.Interpret(ctx, program)
+			assert.Nil(t, err)
+			assert.Equal(t, len(i.global.values), 2)
+			foo, ok := i.global.values["foo"].(*fooProcedure)
+			assert.True(t, ok)
+			assert.Equal(t, foo.value, int64(11))
+
+		},
+	})
+
 	runTestSuite(t, tests)
 }
