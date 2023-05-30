@@ -26,6 +26,13 @@ func (p *Procedure) Arity() int {
 }
 
 func (p *Procedure) Call(i *Interpreter, arguments []any) (result any, err error) {
+	env := i.beginScope()
+	defer i.endScope(env)
+
+	for i, param := range p.Proc.Parameters {
+		env.Define(param.Name, arguments[i])
+	}
+
 	err = p.Proc.Body.Accept(i)
 	return
 }

@@ -70,6 +70,16 @@ func (i *Interpreter) Interpret(ctx context.Context, program *Program) (err erro
 	return
 }
 
+func (i *Interpreter) beginScope() *Environment {
+	env := NewChildEnvironment(i.environment)
+	i.environment = env
+	return env
+}
+
+func (i *Interpreter) endScope(env *Environment) {
+	i.environment = env.parent
+}
+
 func (i *Interpreter) execute(stmt semantic.Stmt) (err error) {
 	return stmt.Accept(i)
 }
@@ -153,5 +163,6 @@ func (i *Interpreter) VisitNumericLiteral(s *semantic.NumericLiteral) (result an
 }
 
 func (i *Interpreter) VisitNameExpression(s *semantic.NameExpression) (result any, err error) {
-	return &Number{Value: 1}, nil
+	result, err = i.environment.Get(s.Name)
+	return
 }
