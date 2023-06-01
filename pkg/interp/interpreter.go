@@ -2,6 +2,7 @@ package interp
 
 import (
 	"context"
+	"fmt"
 
 	"procinspect/pkg/parser"
 	"procinspect/pkg/semantic"
@@ -149,7 +150,13 @@ func (i *Interpreter) VisitProcedureCall(s *semantic.ProcedureCall) (err error) 
 		arguments = append(arguments, value)
 	}
 
-	_, err = proc.(Callable).Call(i, arguments)
+	callable := proc.(Callable)
+	if want, got := callable.Arity(), len(arguments); want != got {
+		err = fmt.Errorf("function expected %d arguments but got %d, at line %d", want, got, s.Line())
+		return
+	}
+
+	_, err = callable.Call(i, arguments)
 	if err != nil {
 		return err
 	}

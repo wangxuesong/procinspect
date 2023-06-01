@@ -104,7 +104,7 @@ func (f *fooProcedure) Arity() int {
 	return 1
 }
 
-func (f *fooProcedure) Call(i *Interpreter, arguments []any) (result any, err error) {
+func (f *fooProcedure) Call(_ *Interpreter, arguments []any) (result any, err error) {
 	f.value = arguments[0].(*Number).Value
 	result = f.value
 	return
@@ -180,6 +180,37 @@ BEGIN
 END;
 BEGIN
 	swth(11);
+END;`,
+		Func: func(t *testing.T, i *Interpreter) {
+			i.environment.Define("foo", &fooProcedure{})
+			program, err := i.LoadScript(i.Source)
+			assert.Nil(t, err, err)
+			assert.NotNil(t, program)
+			assert.Equal(t, len(program.Statements), 1)
+			assert.Equal(t, len(i.global.values), 2)
+
+			ctx := context.Background()
+			err = i.Interpret(ctx, program)
+			assert.Nil(t, err)
+			assert.Equal(t, len(i.global.values), 2)
+			foo, ok := i.global.values["foo"].(*fooProcedure)
+			assert.True(t, ok)
+			assert.Equal(t, foo.value, int64(11))
+
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "call procedure with variables",
+		text: `
+create procedure swth as
+DECLARE
+	a NUMBER := 11;
+BEGIN
+	foo(a);
+END;
+BEGIN
+	swth();
 END;`,
 		Func: func(t *testing.T, i *Interpreter) {
 			i.environment.Define("foo", &fooProcedure{})

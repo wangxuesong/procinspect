@@ -33,6 +33,17 @@ func (p *Procedure) Call(i *Interpreter, arguments []any) (result any, err error
 		env.Define(param.Name, arguments[i])
 	}
 
+	// define variables
+	for _, decl := range p.Proc.Declarations {
+		switch decl.(type) {
+		case *semantic.VariableDeclaration:
+			v := decl.(*semantic.VariableDeclaration)
+			var value any
+			value, err = v.Initialization.(semantic.Expression).Accept(i)
+			env.Define(v.Name, value)
+		}
+	}
+
 	err = p.Proc.Body.Accept(i)
 	return
 }
