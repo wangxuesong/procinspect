@@ -1,6 +1,18 @@
 package semantic
 
 type (
+	CreatePackageStatement struct {
+		node
+		Name       string
+		Procedures []*CreateProcedureStatement
+	}
+
+	CreatePackageBodyStatement struct {
+		node
+		Name       string
+		Procedures []*CreateProcedureStatement
+	}
+
 	CreateProcedureStatement struct {
 		node
 		Name         string
@@ -21,3 +33,7 @@ func (s *CreateProcedureStatement) Type() NodeType {
 }
 
 func (s *CreateProcedureStatement) statement() {}
+
+func (s *CreatePackageStatement) statement() {}
+
+func (s *CreatePackageBodyStatement) statement() {}
