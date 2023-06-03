@@ -33,9 +33,21 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Table_ref_listContext:
 			c := child.(*plsql.Table_ref_listContext)
 			nodes = append(nodes, v.VisitTable_ref_list(c))
+		case *plsql.Create_packageContext:
+			c := child.(*plsql.Create_packageContext)
+			nodes = append(nodes, v.VisitCreate_package(c))
+		case *plsql.Create_package_bodyContext:
+			c := child.(*plsql.Create_package_bodyContext)
+			nodes = append(nodes, v.VisitCreate_package_body(c))
 		case *plsql.Create_procedure_bodyContext:
 			c := child.(*plsql.Create_procedure_bodyContext)
 			nodes = append(nodes, v.VisitCreate_procedure_body(c))
+		case *plsql.Procedure_specContext:
+			c := child.(*plsql.Procedure_specContext)
+			nodes = append(nodes, v.VisitProcedure_spec(c))
+		case *plsql.Procedure_bodyContext:
+			c := child.(*plsql.Procedure_bodyContext)
+			nodes = append(nodes, v.VisitProcedure_body(c))
 		case *plsql.Variable_declarationContext:
 			c := child.(*plsql.Variable_declarationContext)
 			nodes = append(nodes, v.VisitVariable_declaration(c))
@@ -341,4 +353,53 @@ func (v *plsqlVisitor) VisitFunction_argument(ctx *plsql.Function_argumentContex
 		exprs = append(exprs, expr)
 	}
 	return exprs
+}
+
+func (v *plsqlVisitor) VisitCreate_package(ctx *plsql.Create_packageContext) interface{} {
+	stmt := &semantic.CreatePackageStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	stmt.Name = ctx.Package_name(0).GetText()
+	for _, p := range ctx.AllPackage_obj_spec() {
+		stmt.Procedures = append(stmt.Procedures, p.Accept(v).(*semantic.CreateProcedureStatement))
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitCreate_package_body(ctx *plsql.Create_package_bodyContext) interface{} {
+	stmt := &semantic.CreatePackageBodyStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	stmt.Name = ctx.Package_name(0).GetText()
+	for _, p := range ctx.AllPackage_obj_body() {
+		stmt.Procedures = append(stmt.Procedures, p.Accept(v).(*semantic.CreateProcedureStatement))
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitProcedure_spec(ctx *plsql.Procedure_specContext) interface{} {
+	stmt := &semantic.CreateProcedureStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	stmt.Name = ctx.Identifier().GetText()
+	for _, p := range ctx.AllParameter() {
+		stmt.Parameters = append(stmt.Parameters, v.VisitParameter(p.(*plsql.ParameterContext)).(*semantic.Parameter))
+	}
+
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitProcedure_body(ctx *plsql.Procedure_bodyContext) interface{} {
+	stmt := &semantic.CreateProcedureStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	stmt.Name = ctx.Identifier().GetText()
+	for _, p := range ctx.AllParameter() {
+		stmt.Parameters = append(stmt.Parameters, v.VisitParameter(p.(*plsql.ParameterContext)).(*semantic.Parameter))
+	}
+	return stmt
 }

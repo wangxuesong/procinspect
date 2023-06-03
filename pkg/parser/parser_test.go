@@ -27,7 +27,7 @@ type (
 func getRoot(t *testing.T, text string) any {
 	p := plsql.NewParser(text)
 	root := p.Sql_script()
-	assert.Nil(t, p.Error())
+	assert.Nil(t, p.Error(), p.Error())
 	assert.NotNil(t, root)
 	assert.IsType(t, &plsql.Sql_scriptContext{}, root)
 	_, ok := root.(*plsql.Sql_scriptContext)
@@ -62,16 +62,48 @@ func runTestSuite(t *testing.T, tests testSuite) {
 }
 
 func TestParseCreatePackage(t *testing.T) {
-	text := `create or replace package test is
-	end;`
+	var tests testSuite
 
-	p := plsql.NewParser(text)
-	root := p.Sql_script()
-	assert.Nil(t, p.Error())
-	assert.NotNil(t, root)
-	assert.IsType(t, &plsql.Sql_scriptContext{}, root)
-	_, ok := root.(*plsql.Sql_scriptContext)
-	assert.True(t, ok)
+	tests = append(tests, testCase{
+		name: "create package",
+		text: `create or replace package test is
+	procedure swth(a number);
+end;
+create or replace package body test is
+	procedure swth(a number) is
+	begin
+		a := 1;
+	end swth;
+end;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 2)
+			{
+				stmt, ok := node.Statements[0].(*semantic.CreatePackageStatement)
+				assert.True(t, ok)
+				assert.NotNil(t, stmt)
+				assert.Equal(t, "test", stmt.Name)
+				assert.Equal(t, len(stmt.Procedures), 1)
+				assert.Equal(t, "swth", stmt.Procedures[0].Name)
+				assert.Equal(t, len(stmt.Procedures[0].Parameters), 1)
+				assert.Equal(t, "a", stmt.Procedures[0].Parameters[0].Name)
+				assert.Equal(t, "number", stmt.Procedures[0].Parameters[0].DataType)
+			}
+			{
+				stmt, ok := node.Statements[1].(*semantic.CreatePackageBodyStatement)
+				assert.True(t, ok)
+				assert.NotNil(t, stmt)
+				assert.Equal(t, "test", stmt.Name)
+				assert.Equal(t, len(stmt.Procedures), 1)
+				assert.Equal(t, "swth", stmt.Procedures[0].Name)
+				assert.Equal(t, len(stmt.Procedures[0].Parameters), 1)
+				assert.Equal(t, "a", stmt.Procedures[0].Parameters[0].Name)
+				assert.Equal(t, "number", stmt.Procedures[0].Parameters[0].DataType)
+			}
+		},
+	})
+
+	runTestSuite(t, tests)
 }
 
 func TestParseCreateProc(t *testing.T) {

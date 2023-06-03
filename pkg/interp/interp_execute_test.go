@@ -233,3 +233,25 @@ END;`,
 
 	runTestSuite(t, tests)
 }
+
+func TestInterpreter_InterpretCallPackage(t *testing.T) {
+	var tests testSuite
+
+	tests = append(tests, testCase{
+		name: "call procedure in package",
+		text: `
+CREATE OR REPLACE PACKAGE foo IS
+END foo;`,
+		Func: func(t *testing.T, i *Interpreter) {
+			i.environment.Define("foo", &fooProcedure{})
+			program, err := i.LoadScript(i.Source)
+			assert.Nil(t, err)
+			assert.NotNil(t, program)
+			assert.Equal(t, len(program.Statements), 0)
+			assert.Equal(t, len(i.global.values), 0)
+
+		},
+	})
+
+	runTestSuite(t, tests)
+}
