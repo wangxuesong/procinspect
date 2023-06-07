@@ -199,7 +199,7 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 
 func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) interface{} {
 	if ctx.SUBSTR() != nil {
-		expr := &semantic.FunctionCallExpression{Name: "SUBSTR"}
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "SUBSTR"}}
 		for _, arg := range ctx.AllExpression() {
 			expr.Args = append(expr.Args, arg.Accept(v).(semantic.Expr))
 		}
@@ -217,7 +217,7 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 		for _, arg := range args {
 			expr.Args = append(expr.Args, arg.(semantic.Expr))
 		}
-		expr.Name = ctx.Id_expression(0).GetText()
+		expr.Name = v.parseDotExpr(ctx.Id_expression(0).GetText())
 		return expr
 	}
 	return ctx.Accept(v)
@@ -259,4 +259,27 @@ func (v *exprVisitor) VisitNumeric(ctx *plsql.NumericContext) interface{} {
 		}
 	}
 	return number
+}
+
+func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
+	parts := strings.Split(text, ".")
+	if len(parts) == 1 {
+		return &semantic.NameExpression{
+			Name: text,
+		}
+	}
+
+	length := len(parts)
+	var expr semantic.Expr = &semantic.NameExpression{
+		Name: parts[length-1],
+	}
+
+	for i := length - 2; i >= 0; i-- {
+		expr = &semantic.DotExpression{
+			Self:   parts[i],
+			Member: expr,
+		}
+	}
+
+	return expr
 }

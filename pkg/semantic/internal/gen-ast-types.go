@@ -23,6 +23,11 @@ var exprTypes = Types{
 		Fields:  "semantic.NumericLiteral",
 		Comment: "",
 	},
+	{
+		Name:    "NameExpression",
+		Fields:  "semantic.NameExpression",
+		Comment: "",
+	},
 }
 
 var stmtTypes = Types{
@@ -37,8 +42,23 @@ var stmtTypes = Types{
 		Comment: "",
 	},
 	{
+		Name:    "CreatePackageStatement",
+		Fields:  "semantic.CreatePackageStatement",
+		Comment: "",
+	},
+	{
+		Name:    "CreatePackageBodyStatement",
+		Fields:  "semantic.CreatePackageBodyStatement",
+		Comment: "",
+	},
+	{
 		Name:    "BlockStatement",
 		Fields:  "semantic.BlockStatement",
+		Comment: "",
+	},
+	{
+		Name:    "Body",
+		Fields:  "semantic.Body",
 		Comment: "",
 	},
 	{
