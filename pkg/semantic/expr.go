@@ -44,8 +44,14 @@ type (
 
 	FunctionCallExpression struct {
 		expression
-		Name string
+		Name Expr
 		Args []Expr
+	}
+
+	DotExpression struct {
+		expression
+		Self   string
+		Member Expr
 	}
 
 	NameExpression struct {

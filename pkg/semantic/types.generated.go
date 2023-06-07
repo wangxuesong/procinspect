@@ -34,6 +34,8 @@ func (b *NameExpression) Accept(visitor ExprVisitor) (result interface{}, err er
 type StmtVisitor interface {
 	VisitScript(v *Script) (err error)
 	VisitCreateProcedureStatement(v *CreateProcedureStatement) (err error)
+	VisitCreatePackageStatement(v *CreatePackageStatement) (err error)
+	VisitCreatePackageBodyStatement(v *CreatePackageBodyStatement) (err error)
 	VisitBlockStatement(v *BlockStatement) (err error)
 	VisitBody(v *Body) (err error)
 	VisitAssignmentStatement(v *AssignmentStatement) (err error)
@@ -51,6 +53,14 @@ func (s StubExprVisitor) VisitScript(_ *Script) error {
 
 func (s StubExprVisitor) VisitCreateProcedureStatement(_ *CreateProcedureStatement) error {
 	return errors.New("visit func for CreateProcedureStatement is not implemented")
+}
+
+func (s StubExprVisitor) VisitCreatePackageStatement(_ *CreatePackageStatement) error {
+	return errors.New("visit func for CreatePackageStatement is not implemented")
+}
+
+func (s StubExprVisitor) VisitCreatePackageBodyStatement(_ *CreatePackageBodyStatement) error {
+	return errors.New("visit func for CreatePackageBodyStatement is not implemented")
 }
 
 func (s StubExprVisitor) VisitBlockStatement(_ *BlockStatement) error {
@@ -79,6 +89,14 @@ func (b *Script) Accept(visitor StmtVisitor) (err error) {
 
 func (b *CreateProcedureStatement) Accept(visitor StmtVisitor) (err error) {
 	return visitor.VisitCreateProcedureStatement(b)
+}
+
+func (b *CreatePackageStatement) Accept(visitor StmtVisitor) (err error) {
+	return visitor.VisitCreatePackageStatement(b)
+}
+
+func (b *CreatePackageBodyStatement) Accept(visitor StmtVisitor) (err error) {
+	return visitor.VisitCreatePackageBodyStatement(b)
 }
 
 func (b *BlockStatement) Accept(visitor StmtVisitor) (err error) {
