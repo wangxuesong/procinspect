@@ -135,7 +135,7 @@ func (i *Interpreter) VisitAssignmentStatement(s *semantic.AssignmentStatement) 
 }
 
 func (i *Interpreter) VisitProcedureCall(s *semantic.ProcedureCall) (err error) {
-	proc, err := i.environment.Get(s.Name)
+	proc, err := i.environment.Get(s.Name.(*semantic.NameExpression).Name)
 	if err != nil {
 		return err
 	}

@@ -50,8 +50,8 @@ type (
 
 	DotExpression struct {
 		expression
-		Self   string
-		Member Expr
+		Name   string
+		Parent Expr
 	}
 
 	NameExpression struct {
