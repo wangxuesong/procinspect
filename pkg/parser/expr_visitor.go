@@ -51,6 +51,9 @@ func (v *exprVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.NumericContext:
 			c := child.(*plsql.NumericContext)
 			nodes = append(nodes, v.VisitNumeric(c))
+		case *plsql.Routine_nameContext:
+			c := child.(*plsql.Routine_nameContext)
+			nodes = append(nodes, v.VisitRoutine_name(c))
 		default:
 			tree := child.(antlr.ParseTree)
 			c := tree.Accept(v)
@@ -241,12 +244,17 @@ func (v *exprVisitor) VisitQuoted_string(ctx *plsql.Quoted_stringContext) interf
 }
 
 func (v *exprVisitor) VisitVariable_name(ctx *plsql.Variable_nameContext) interface{} {
-	name := &semantic.NameExpression{
-		Name: ctx.GetText(),
+	parts := strings.Split(ctx.GetText(), ".")
+	if len(parts) == 1 {
+		name := &semantic.NameExpression{
+			Name: ctx.GetText(),
+		}
+		name.SetLine(ctx.GetStart().GetLine())
+		name.SetColumn(ctx.GetStart().GetColumn())
+		return name
 	}
-	name.SetLine(ctx.GetStart().GetLine())
-	name.SetColumn(ctx.GetStart().GetColumn())
-	return name
+
+	return v.parseDotExpr(ctx.GetText())
 }
 
 func (v *exprVisitor) VisitNumeric(ctx *plsql.NumericContext) interface{} {
@@ -261,6 +269,10 @@ func (v *exprVisitor) VisitNumeric(ctx *plsql.NumericContext) interface{} {
 	return number
 }
 
+func (v *exprVisitor) VisitRoutine_name(ctx *plsql.Routine_nameContext) interface{} {
+	return v.parseDotExpr(ctx.GetText())
+}
+
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
 	parts := strings.Split(text, ".")
 	if len(parts) == 1 {
@@ -271,13 +283,13 @@ func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
 
 	length := len(parts)
 	var expr semantic.Expr = &semantic.NameExpression{
-		Name: parts[length-1],
+		Name: parts[0],
 	}
 
-	for i := length - 2; i >= 0; i-- {
+	for i := 1; i < length; i++ {
 		expr = &semantic.DotExpression{
-			Self:   parts[i],
-			Member: expr,
+			Name:   parts[i],
+			Parent: expr,
 		}
 	}
 

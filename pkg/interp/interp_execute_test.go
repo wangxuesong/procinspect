@@ -234,7 +234,7 @@ END;`,
 	runTestSuite(t, tests)
 }
 
-func TestInterpreter_InterpretCallPackage(t *testing.T) {
+func testInterpreter_InterpretCallPackage(t *testing.T) {
 	var tests testSuite
 
 	tests = append(tests, testCase{

@@ -66,7 +66,7 @@ type (
 
 	ProcedureCall struct {
 		node
-		Name      string
+		Name      Expr
 		Arguments []Expr
 	}
 

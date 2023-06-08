@@ -338,7 +338,8 @@ func (v *plsqlVisitor) VisitFunction_call(ctx *plsql.Function_callContext) inter
 	stmt := &semantic.ProcedureCall{}
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
-	stmt.Name = ctx.Routine_name().GetText()
+	visitor := &exprVisitor{}
+	stmt.Name = visitor.VisitRoutine_name(ctx.Routine_name().(*plsql.Routine_nameContext)).(semantic.Expr)
 	if ctx.Function_argument() != nil {
 		stmt.Arguments = v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]semantic.Expr)
 	}
