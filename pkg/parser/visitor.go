@@ -402,5 +402,9 @@ func (v *plsqlVisitor) VisitProcedure_body(ctx *plsql.Procedure_bodyContext) int
 	for _, p := range ctx.AllParameter() {
 		stmt.Parameters = append(stmt.Parameters, v.VisitParameter(p.(*plsql.ParameterContext)).(*semantic.Parameter))
 	}
+	if ctx.Seq_of_declare_specs() != nil {
+		stmt.Declarations = v.VisitSeq_of_declare_specs(ctx.Seq_of_declare_specs().(*plsql.Seq_of_declare_specsContext)).([]semantic.Declaration)
+	}
+	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
 	return stmt
 }

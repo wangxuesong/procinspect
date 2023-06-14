@@ -16,6 +16,23 @@ func (v *resolver) VisitCreateProcedureStatement(s *semantic.CreateProcedureStat
 	return
 }
 
+func (v *resolver) VisitCreatePackageStatement(s *semantic.CreatePackageStatement) (err error) {
+	p := &Package{Name: s.Name, Package: s}
+	v.interp.program.Packages = append(v.interp.program.Packages, p)
+	v.interp.environment.Define(s.Name, p)
+	return
+}
+
+func (v *resolver) VisitCreatePackageBodyStatement(s *semantic.CreatePackageBodyStatement) (err error) {
+	for _, p := range v.interp.program.Packages {
+		if p.Name == s.Name {
+			p.Body = s
+			return
+		}
+	}
+	return
+}
+
 func (v *resolver) VisitBlockStatement(s *semantic.BlockStatement) (err error) {
 	v.interp.program.Statements = append(v.interp.program.Statements, s)
 	for _, decl := range s.Declarations {

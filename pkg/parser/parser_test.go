@@ -99,6 +99,7 @@ end;`,
 				assert.Equal(t, len(stmt.Procedures[0].Parameters), 1)
 				assert.Equal(t, "a", stmt.Procedures[0].Parameters[0].Name)
 				assert.Equal(t, "number", stmt.Procedures[0].Parameters[0].DataType)
+				assert.NotNil(t, stmt.Procedures[0].Body)
 			}
 		},
 	})

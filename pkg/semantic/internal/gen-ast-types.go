@@ -28,6 +28,11 @@ var exprTypes = Types{
 		Fields:  "semantic.NameExpression",
 		Comment: "",
 	},
+	{
+		Name:    "DotExpression",
+		Fields:  "semantic.DotExpression",
+		Comment: "",
+	},
 }
 
 var stmtTypes = Types{
