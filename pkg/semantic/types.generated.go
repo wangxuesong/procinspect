@@ -9,6 +9,7 @@ import (
 type ExprVisitor interface {
 	VisitNumericLiteral(v *NumericLiteral) (result interface{}, err error)
 	VisitNameExpression(v *NameExpression) (result interface{}, err error)
+	VisitDotExpression(v *DotExpression) (result interface{}, err error)
 }
 
 type StubExprVisitor struct{}
@@ -23,12 +24,20 @@ func (s StubExprVisitor) VisitNameExpression(_ *NameExpression) (interface{}, er
 	return nil, errors.New("visit func for NameExpression is not implemented")
 }
 
+func (s StubExprVisitor) VisitDotExpression(_ *DotExpression) (interface{}, error) {
+	return nil, errors.New("visit func for DotExpression is not implemented")
+}
+
 func (b *NumericLiteral) Accept(visitor ExprVisitor) (result interface{}, err error) {
 	return visitor.VisitNumericLiteral(b)
 }
 
 func (b *NameExpression) Accept(visitor ExprVisitor) (result interface{}, err error) {
 	return visitor.VisitNameExpression(b)
+}
+
+func (b *DotExpression) Accept(visitor ExprVisitor) (result interface{}, err error) {
+	return visitor.VisitDotExpression(b)
 }
 
 type StmtVisitor interface {

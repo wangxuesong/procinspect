@@ -2,8 +2,9 @@ package interp
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInterpreter_ExecuteBlock(t *testing.T) {
@@ -234,22 +235,38 @@ END;`,
 	runTestSuite(t, tests)
 }
 
-func testInterpreter_InterpretCallPackage(t *testing.T) {
+func TestInterpreter_InterpretCallPackage(t *testing.T) {
 	var tests testSuite
 
 	tests = append(tests, testCase{
 		name: "call procedure in package",
-		text: `
-CREATE OR REPLACE PACKAGE foo IS
-END foo;`,
+		text: `create or replace package test is
+	procedure swth(a number);
+end;
+create or replace package body test is
+	procedure swth(a number) is
+	begin
+		foo(a);
+	end swth;
+end;
+BEGIN
+	test.swth(11);
+END;`,
 		Func: func(t *testing.T, i *Interpreter) {
 			i.environment.Define("foo", &fooProcedure{})
 			program, err := i.LoadScript(i.Source)
 			assert.Nil(t, err)
 			assert.NotNil(t, program)
-			assert.Equal(t, len(program.Statements), 0)
-			assert.Equal(t, len(i.global.values), 0)
+			assert.Equal(t, len(program.Statements), 1)
+			assert.Equal(t, len(i.global.values), 2)
 
+			ctx := context.Background()
+			err = i.Interpret(ctx, program)
+			assert.Nil(t, err)
+			assert.Equal(t, len(i.global.values), 2)
+			foo, ok := i.global.values["foo"].(*fooProcedure)
+			assert.True(t, ok)
+			assert.Equal(t, foo.value, int64(11))
 		},
 	})
 

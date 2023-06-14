@@ -85,6 +85,10 @@ func (i *Interpreter) execute(stmt semantic.Stmt) (err error) {
 	return stmt.Accept(i)
 }
 
+func (i *Interpreter) evaluate(expr semantic.Expression) (any, error) {
+	return expr.Accept(i)
+}
+
 func (i *Interpreter) VisitVariableDeclaration(s *semantic.VariableDeclaration) (err error) {
 	var value any
 	if s.Initialization != nil {
@@ -135,7 +139,7 @@ func (i *Interpreter) VisitAssignmentStatement(s *semantic.AssignmentStatement) 
 }
 
 func (i *Interpreter) VisitProcedureCall(s *semantic.ProcedureCall) (err error) {
-	proc, err := i.environment.Get(s.Name.(*semantic.NameExpression).Name)
+	callee, err := i.evaluate(s.Name.(semantic.Expression))
 	if err != nil {
 		return err
 	}
@@ -150,7 +154,7 @@ func (i *Interpreter) VisitProcedureCall(s *semantic.ProcedureCall) (err error) 
 		arguments = append(arguments, value)
 	}
 
-	callable := proc.(Callable)
+	callable := callee.(Callable)
 	if want, got := callable.Arity(), len(arguments); want != got {
 		err = fmt.Errorf("function expected %d arguments but got %d, at line %d", want, got, s.Line())
 		return
@@ -172,4 +176,18 @@ func (i *Interpreter) VisitNumericLiteral(s *semantic.NumericLiteral) (result an
 func (i *Interpreter) VisitNameExpression(s *semantic.NameExpression) (result any, err error) {
 	result, err = i.environment.Get(s.Name)
 	return
+}
+
+func (i *Interpreter) VisitDotExpression(s *semantic.DotExpression) (result any, err error) {
+	instance, err := i.evaluate(s.Parent.(semantic.Expression))
+	if err != nil {
+		return nil, err
+	}
+
+	gettable, ok := instance.(Gettable)
+	if !ok {
+		return nil, fmt.Errorf("instance is not gettable")
+	}
+
+	return gettable.Get(s.Name)
 }
