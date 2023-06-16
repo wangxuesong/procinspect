@@ -42,6 +42,15 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Create_procedure_bodyContext:
 			c := child.(*plsql.Create_procedure_bodyContext)
 			nodes = append(nodes, v.VisitCreate_procedure_body(c))
+		case *plsql.Create_typeContext:
+			c := child.(*plsql.Create_typeContext)
+			nodes = append(nodes, v.VisitCreate_type(c))
+		case *plsql.Type_definitionContext:
+			c := child.(*plsql.Type_definitionContext)
+			nodes = append(nodes, v.VisitType_definition(c))
+		case *plsql.Nested_table_type_defContext:
+			c := child.(*plsql.Nested_table_type_defContext)
+			nodes = append(nodes, v.VisitNested_table_type_def(c))
 		case *plsql.Procedure_specContext:
 			c := child.(*plsql.Procedure_specContext)
 			nodes = append(nodes, v.VisitProcedure_spec(c))
@@ -101,7 +110,14 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 func (v *plsqlVisitor) VisitSql_script(ctx *plsql.Sql_scriptContext) interface{} {
 	script := &semantic.Script{}
 	for _, stmt := range ctx.AllUnit_statement() {
-		script.Statements = append(script.Statements, stmt.Accept(v).(semantic.Statement))
+		o := stmt.Accept(v)
+		switch t := o.(type) {
+		case semantic.Statement:
+			break
+		default:
+			panic(t)
+		}
+		script.Statements = append(script.Statements, o.(semantic.Statement))
 	}
 
 	return script
@@ -406,5 +422,33 @@ func (v *plsqlVisitor) VisitProcedure_body(ctx *plsql.Procedure_bodyContext) int
 		stmt.Declarations = v.VisitSeq_of_declare_specs(ctx.Seq_of_declare_specs().(*plsql.Seq_of_declare_specsContext)).([]semantic.Declaration)
 	}
 	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitCreate_type(ctx *plsql.Create_typeContext) interface{} {
+	stmt := &semantic.CreateTypeStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	return v.VisitType_definition(ctx.Type_definition().(*plsql.Type_definitionContext))
+}
+
+func (v *plsqlVisitor) VisitType_definition(ctx *plsql.Type_definitionContext) interface{} {
+	value := ctx.Object_type_def().Accept(v)
+	switch value.(type) {
+	case *semantic.CreateNestTableStatement:
+		stmt := value.(*semantic.CreateNestTableStatement)
+		stmt.Name = ctx.Type_name().GetText()
+		return stmt
+	}
+
+	return value
+}
+
+func (v *plsqlVisitor) VisitNested_table_type_def(ctx *plsql.Nested_table_type_defContext) interface{} {
+	stmt := &semantic.CreateNestTableStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
 	return stmt
 }

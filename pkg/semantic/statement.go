@@ -40,6 +40,16 @@ type (
 		From   *FromClause
 		Where  Expr
 	}
+
+	CreateTypeStatement struct {
+		node
+		Name string
+	}
+
+	CreateNestTableStatement struct {
+		node
+		CreateTypeStatement
+	}
 )
 
 func (s *SelectStatement) Type() NodeType {
@@ -47,3 +57,7 @@ func (s *SelectStatement) Type() NodeType {
 }
 
 func (s *SelectStatement) statement() {}
+
+func (s *CreateTypeStatement) statement() {}
+
+func (s *CreateNestTableStatement) statement() {}
