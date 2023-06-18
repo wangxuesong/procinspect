@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
 
@@ -51,6 +52,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Nested_table_type_defContext:
 			c := child.(*plsql.Nested_table_type_defContext)
 			nodes = append(nodes, v.VisitNested_table_type_def(c))
+		case *plsql.Type_declarationContext:
+			c := child.(*plsql.Type_declarationContext)
+			nodes = append(nodes, v.VisitType_declaration(c))
 		case *plsql.Procedure_specContext:
 			c := child.(*plsql.Procedure_specContext)
 			nodes = append(nodes, v.VisitProcedure_spec(c))
@@ -379,7 +383,15 @@ func (v *plsqlVisitor) VisitCreate_package(ctx *plsql.Create_packageContext) int
 
 	stmt.Name = ctx.Package_name(0).GetText()
 	for _, p := range ctx.AllPackage_obj_spec() {
-		stmt.Procedures = append(stmt.Procedures, p.Accept(v).(*semantic.CreateProcedureStatement))
+		spec := p.Accept(v)
+		switch spec.(type) {
+		case *semantic.CreateProcedureStatement:
+			stmt.Procedures = append(stmt.Procedures, spec.(*semantic.CreateProcedureStatement))
+		case *semantic.NestTableTypeDeclaration:
+			stmt.Types = append(stmt.Types, spec.(*semantic.NestTableTypeDeclaration))
+		default:
+			panic(fmt.Sprintf("unprocessed syntax at line %d", p.GetStart().GetLine()))
+		}
 	}
 	return stmt
 }
@@ -426,10 +438,6 @@ func (v *plsqlVisitor) VisitProcedure_body(ctx *plsql.Procedure_bodyContext) int
 }
 
 func (v *plsqlVisitor) VisitCreate_type(ctx *plsql.Create_typeContext) interface{} {
-	stmt := &semantic.CreateTypeStatement{}
-	stmt.SetLine(ctx.GetStart().GetLine())
-	stmt.SetColumn(ctx.GetStart().GetColumn())
-
 	return v.VisitType_definition(ctx.Type_definition().(*plsql.Type_definitionContext))
 }
 
@@ -439,6 +447,8 @@ func (v *plsqlVisitor) VisitType_definition(ctx *plsql.Type_definitionContext) i
 	case *semantic.CreateNestTableStatement:
 		stmt := value.(*semantic.CreateNestTableStatement)
 		stmt.Name = ctx.Type_name().GetText()
+		stmt.SetLine(ctx.GetStart().GetLine())
+		stmt.SetColumn(ctx.GetStart().GetColumn())
 		return stmt
 	}
 
@@ -450,5 +460,23 @@ func (v *plsqlVisitor) VisitNested_table_type_def(ctx *plsql.Nested_table_type_d
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitType_declaration(ctx *plsql.Type_declarationContext) interface{} {
+	if ctx.Table_type_def() != nil {
+		stmt := v.VisitTable_type_def(ctx.Table_type_def().(*plsql.Table_type_defContext)).(*semantic.NestTableTypeDeclaration)
+		stmt.Name = ctx.Identifier().GetText()
+		stmt.SetLine(ctx.GetStart().GetLine())
+		stmt.SetColumn(ctx.GetStart().GetColumn())
+		return stmt
+	}
+	return nil
+}
+
+func (v *plsqlVisitor) VisitTable_type_def(ctx *plsql.Table_type_defContext) interface{} {
+	stmt := &semantic.NestTableTypeDeclaration{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
 	return stmt
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"procinspect/pkg/semantic"
+	"reflect"
 	"runtime/pprof"
 	"time"
 
@@ -102,7 +103,7 @@ func check(script *semantic.Script) error {
 		case *semantic.CreateNestTableStatement:
 			log.Println("unsupported nest table on line", stmt.Line())
 		default:
-			log.Println("unsupported statement %T", stmt)
+			log.Println("unsupported statement ", reflect.TypeOf(stmt).Name())
 		}
 	}
 	return nil

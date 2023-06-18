@@ -104,6 +104,31 @@ end;`,
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "create package with type",
+		text: `
+create or replace package zznode.pkg_task_info is
+  type type_date_tab is table of date index by binary_integer;
+end;
+`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			{
+				stmt, ok := node.Statements[0].(*semantic.CreatePackageStatement)
+				assert.True(t, ok)
+				assert.NotNil(t, stmt)
+				assert.Equal(t, "pkg_task_info", stmt.Name)
+				assert.Equal(t, len(stmt.Types), 1)
+				assert.IsType(t, &semantic.NestTableTypeDeclaration{}, stmt.Types[0])
+				typeStmt := stmt.Types[0].(*semantic.NestTableTypeDeclaration)
+				assert.Equal(t, "type_date_tab", typeStmt.Name)
+				assert.Equal(t, 3, typeStmt.Line())
+				assert.Equal(t, 3, typeStmt.Column())
+			}
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
@@ -196,6 +221,7 @@ func TestCreateProcedure(t *testing.T) {
 IS
 LOCAL_PARAM NUMBER;
 USER_EXCEPTION EXCEPTION;
+  type type_date_tab is table of date index by binary_integer;
 BEGIN
 LOCAL_PARAM:=1;
 END;`,
@@ -219,7 +245,7 @@ END;`,
 			assert.Equal(t, stmt.Parameters[0].DataType, "NUMBER")
 
 			assert.NotNil(t, stmt.Declarations)
-			assert.Equal(t, len(stmt.Declarations), 2)
+			assert.Equal(t, len(stmt.Declarations), 3)
 
 			assert.IsType(t, &semantic.VariableDeclaration{Name: "LOCAL_PARAM", DataType: "NUMBER"}, stmt.Declarations[0])
 			// assert line & column
@@ -234,6 +260,10 @@ END;`,
 			assert.Equal(t, 1, stmt.Declarations[1].Column())
 			decl2 := stmt.Declarations[1].(*semantic.ExceptionDeclaration)
 			assert.Equal(t, decl2.Name, "USER_EXCEPTION")
+			// assert nest table type declaration
+			assert.IsType(t, &semantic.NestTableTypeDeclaration{}, stmt.Declarations[2])
+			decl3 := stmt.Declarations[2].(*semantic.NestTableTypeDeclaration)
+			assert.Equal(t, decl3.Name, "type_date_tab")
 
 			assert.NotNil(t, stmt.Body)
 			assert.Equal(t, len(stmt.Body.Statements), 1)
@@ -241,7 +271,7 @@ END;`,
 			assert.IsType(t, &semantic.AssignmentStatement{}, stmt.Body.Statements[0])
 			stmt1 := stmt.Body.Statements[0].(*semantic.AssignmentStatement)
 			// assert line & column
-			assert.Equal(t, 6, stmt1.Line())
+			assert.Equal(t, 7, stmt1.Line())
 			assert.Equal(t, 1, stmt1.Column())
 			assert.Equal(t, stmt1.Left, "LOCAL_PARAM")
 			assert.IsType(t, &semantic.NumericLiteral{}, stmt1.Right)

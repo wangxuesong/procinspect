@@ -94,6 +94,11 @@ type (
 		Stmt       Statement
 	}
 
+	NestTableTypeDeclaration struct {
+		node
+		Name string
+	}
+
 	Parameter struct {
 		node
 		Name     string
@@ -127,6 +132,8 @@ func (d *VariableDeclaration) declaration() {}
 func (d *ExceptionDeclaration) declaration() {}
 
 func (d *CursorDeclaration) declaration() {}
+
+func (d *NestTableTypeDeclaration) declaration() {}
 
 func (i *IfStatement) statement() {}
 
