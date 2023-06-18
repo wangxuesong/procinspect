@@ -7,14 +7,29 @@ import (
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	"github.com/antlr4-go/antlr/v4"
 )
 
 type (
 	exprVisitor struct {
-		plsql.BasePlSqlParserVisitor
+		//plsql.BasePlSqlParserVisitor
 	}
 )
+
+func (v *exprVisitor) Visit(tree antlr.ParseTree) interface{} {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (v *exprVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (v *exprVisitor) VisitErrorNode(node antlr.ErrorNode) interface{} {
+	//TODO implement me
+	panic("implement me")
+}
 
 func (v *exprVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 	children := node.GetChildren()
