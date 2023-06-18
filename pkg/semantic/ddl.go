@@ -5,6 +5,7 @@ type (
 		node
 		Name       string
 		Procedures []*CreateProcedureStatement
+		Types      []Declaration
 	}
 
 	CreatePackageBodyStatement struct {
