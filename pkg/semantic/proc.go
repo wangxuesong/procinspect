@@ -99,6 +99,12 @@ type (
 		Name string
 	}
 
+	FunctionDeclaration struct {
+		node
+		Name       string
+		Parameters []*Parameter
+	}
+
 	Parameter struct {
 		node
 		Name     string
@@ -134,6 +140,8 @@ func (d *ExceptionDeclaration) declaration() {}
 func (d *CursorDeclaration) declaration() {}
 
 func (d *NestTableTypeDeclaration) declaration() {}
+
+func (d *FunctionDeclaration) declaration() {}
 
 func (i *IfStatement) statement() {}
 
