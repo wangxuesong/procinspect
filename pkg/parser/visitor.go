@@ -5,14 +5,29 @@ import (
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	"github.com/antlr4-go/antlr/v4"
 )
 
 type (
 	plsqlVisitor struct {
-		plsql.BasePlSqlParserVisitor
+		//plsql.BasePlSqlParserVisitor
 	}
 )
+
+func (v *plsqlVisitor) Visit(tree antlr.ParseTree) interface{} {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (v *plsqlVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (v *plsqlVisitor) VisitErrorNode(node antlr.ErrorNode) interface{} {
+	//TODO implement me
+	panic("implement me")
+}
 
 func GeneralScript(root plsql.ISql_scriptContext) *semantic.Script {
 	visitor := &plsqlVisitor{}
