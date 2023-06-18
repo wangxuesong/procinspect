@@ -4,6 +4,7 @@ import (
 	"fmt"
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
+	"reflect"
 
 	"github.com/antlr4-go/antlr/v4"
 )
@@ -29,10 +30,17 @@ func (v *plsqlVisitor) VisitErrorNode(node antlr.ErrorNode) interface{} {
 	panic("implement me")
 }
 
-func GeneralScript(root plsql.ISql_scriptContext) *semantic.Script {
+func GeneralScript(root plsql.ISql_scriptContext) (script *semantic.Script, err error) {
+	var e error
+	defer func() {
+		if e := recover(); e != nil {
+			err = fmt.Errorf("%v", e)
+		}
+	}()
+
 	visitor := &plsqlVisitor{}
-	script := visitor.VisitSql_script(root.(*plsql.Sql_scriptContext)).(*semantic.Script)
-	return script
+	script = visitor.VisitSql_script(root.(*plsql.Sql_scriptContext)).(*semantic.Script)
+	return script, e
 }
 
 func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
@@ -76,6 +84,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Procedure_bodyContext:
 			c := child.(*plsql.Procedure_bodyContext)
 			nodes = append(nodes, v.VisitProcedure_body(c))
+		case *plsql.Function_specContext:
+			c := child.(*plsql.Function_specContext)
+			nodes = append(nodes, v.VisitFunction_spec(c))
 		case *plsql.Variable_declarationContext:
 			c := child.(*plsql.Variable_declarationContext)
 			nodes = append(nodes, v.VisitVariable_declaration(c))
@@ -403,9 +414,11 @@ func (v *plsqlVisitor) VisitCreate_package(ctx *plsql.Create_packageContext) int
 		case *semantic.CreateProcedureStatement:
 			stmt.Procedures = append(stmt.Procedures, spec.(*semantic.CreateProcedureStatement))
 		case *semantic.NestTableTypeDeclaration:
-			stmt.Types = append(stmt.Types, spec.(*semantic.NestTableTypeDeclaration))
+			stmt.Types = append(stmt.Types, spec.(semantic.Declaration))
+		case *semantic.FunctionDeclaration:
+			stmt.Types = append(stmt.Types, spec.(semantic.Declaration))
 		default:
-			panic(fmt.Sprintf("unprocessed syntax at line %d", p.GetStart().GetLine()))
+			panic(fmt.Sprintf("unprocessed syntax %s at line %d", reflect.TypeOf(p.GetChild(0)).Elem().Name(), p.GetStart().GetLine()))
 		}
 	}
 	return stmt
@@ -494,4 +507,14 @@ func (v *plsqlVisitor) VisitTable_type_def(ctx *plsql.Table_type_defContext) int
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	return stmt
+}
+
+func (v *plsqlVisitor) VisitFunction_spec(ctx *plsql.Function_specContext) interface{} {
+	decl := &semantic.FunctionDeclaration{}
+	decl.SetLine(ctx.GetStart().GetLine())
+	decl.SetColumn(ctx.GetStart().GetColumn())
+
+	decl.Name = ctx.Identifier().GetText()
+
+	return decl
 }

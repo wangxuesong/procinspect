@@ -7,6 +7,7 @@ import (
 	"procinspect/pkg/semantic"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type (
@@ -33,7 +34,8 @@ func getRoot(t *testing.T, text string) any {
 	_, ok := root.(*plsql.Sql_scriptContext)
 	assert.True(t, ok)
 
-	node := GeneralScript(root)
+	node, err := GeneralScript(root)
+	require.Nil(t, err, err)
 	assert.NotNil(t, node)
 	assert.Greater(t, len(node.Statements), 0)
 	return node
@@ -123,6 +125,31 @@ end;
 				assert.IsType(t, &semantic.NestTableTypeDeclaration{}, stmt.Types[0])
 				typeStmt := stmt.Types[0].(*semantic.NestTableTypeDeclaration)
 				assert.Equal(t, "type_date_tab", typeStmt.Name)
+				assert.Equal(t, 3, typeStmt.Line())
+				assert.Equal(t, 3, typeStmt.Column())
+			}
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "create package with function declaration",
+		text: `
+create or replace package zznode.pkg_task_info is
+  function fun_rid_holiday(in_begin in date, in_end in date) return number;
+end;
+`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			{
+				stmt, ok := node.Statements[0].(*semantic.CreatePackageStatement)
+				assert.True(t, ok)
+				assert.NotNil(t, stmt)
+				assert.Equal(t, "pkg_task_info", stmt.Name)
+				assert.Equal(t, len(stmt.Types), 1)
+				assert.IsType(t, &semantic.FunctionDeclaration{}, stmt.Types[0])
+				typeStmt := stmt.Types[0].(*semantic.FunctionDeclaration)
+				assert.Equal(t, "fun_rid_holiday", typeStmt.Name)
 				assert.Equal(t, 3, typeStmt.Line())
 				assert.Equal(t, 3, typeStmt.Column())
 			}
