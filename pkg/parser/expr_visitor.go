@@ -17,13 +17,11 @@ type (
 )
 
 func (v *exprVisitor) Visit(tree antlr.ParseTree) interface{} {
-	//TODO implement me
-	panic("implement me")
+	return tree.Accept(v)
 }
 
 func (v *exprVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
-	//TODO implement me
-	panic("implement me")
+	return node.GetText()
 }
 
 func (v *exprVisitor) VisitErrorNode(node antlr.ErrorNode) interface{} {

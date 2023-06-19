@@ -310,6 +310,122 @@ END;`,
 	runTestSuite(t, tests)
 }
 
+func TestCreateFunction(t *testing.T) {
+	var tests = testSuite{}
+
+	tests = append(tests, testCase{
+		name: "create function",
+		text: `create or replace function test return number is
+	begin
+		select 1 from dual;
+		return 1;
+	end;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			// assert that the statement is a CreateProcedureStatement
+			assert.IsType(t, &semantic.CreateFunctionStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.CreateFunctionStatement)
+
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+
+			assert.True(t, stmt.IsReplace)
+
+			assert.Equal(t, stmt.Name, "test")
+
+			assert.NotNil(t, stmt.Body)
+			assert.Equal(t, len(stmt.Body.Statements), 2)
+
+			assert.IsType(t, &semantic.SelectStatement{}, stmt.Body.Statements[0])
+			select1 := stmt.Body.Statements[0].(*semantic.SelectStatement)
+			assert.Equal(t, select1.From.TableRefs[0].Table, "dual")
+			// assert line & column
+			assert.Equal(t, 3, select1.Line())
+			assert.Equal(t, 3, select1.Column())
+
+			assert.IsType(t, &semantic.ReturnStatement{}, stmt.Body.Statements[1])
+			r := stmt.Body.Statements[1].(*semantic.ReturnStatement)
+			// assert line & column
+			assert.Equal(t, 4, r.Line())
+			assert.Equal(t, 3, r.Column())
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "create function with parameters",
+		text: `CREATE OR REPLACE FUNCTION PROC(PARAM NUMBER) RETURN NUMBER
+IS
+LOCAL_PARAM NUMBER;
+USER_EXCEPTION EXCEPTION;
+  type type_date_tab is table of date index by binary_integer;
+BEGIN
+LOCAL_PARAM:=1;
+return 1;
+END;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			// assert that the statement is a CreateProcedureStatement
+			assert.IsType(t, &semantic.CreateFunctionStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.CreateFunctionStatement)
+
+			// assert line & column
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+
+			assert.True(t, stmt.IsReplace)
+
+			assert.Equal(t, stmt.Name, "PROC")
+
+			assert.Equal(t, len(stmt.Parameters), 1)
+			assert.Equal(t, len(stmt.Body.Statements), 2)
+			assert.Equal(t, stmt.Parameters[0].Name, "PARAM")
+			assert.Equal(t, stmt.Parameters[0].DataType, "NUMBER")
+
+			assert.NotNil(t, stmt.Declarations)
+			assert.Equal(t, len(stmt.Declarations), 3)
+
+			assert.IsType(t, &semantic.VariableDeclaration{Name: "LOCAL_PARAM", DataType: "NUMBER"}, stmt.Declarations[0])
+			// assert line & column
+			assert.Equal(t, 3, stmt.Declarations[0].Line())
+			assert.Equal(t, 1, stmt.Declarations[0].Column())
+			decl1 := stmt.Declarations[0].(*semantic.VariableDeclaration)
+			assert.Equal(t, decl1.Name, "LOCAL_PARAM")
+			assert.Equal(t, decl1.DataType, "NUMBER")
+			assert.IsType(t, &semantic.ExceptionDeclaration{Name: "USER_EXCEPTION"}, stmt.Declarations[1])
+			// assert line & column
+			assert.Equal(t, 4, stmt.Declarations[1].Line())
+			assert.Equal(t, 1, stmt.Declarations[1].Column())
+			decl2 := stmt.Declarations[1].(*semantic.ExceptionDeclaration)
+			assert.Equal(t, decl2.Name, "USER_EXCEPTION")
+			// assert nest table type declaration
+			assert.IsType(t, &semantic.NestTableTypeDeclaration{}, stmt.Declarations[2])
+			decl3 := stmt.Declarations[2].(*semantic.NestTableTypeDeclaration)
+			assert.Equal(t, decl3.Name, "type_date_tab")
+
+			assert.NotNil(t, stmt.Body)
+			assert.Equal(t, len(stmt.Body.Statements), 2)
+
+			assert.IsType(t, &semantic.AssignmentStatement{}, stmt.Body.Statements[0])
+			stmt1 := stmt.Body.Statements[0].(*semantic.AssignmentStatement)
+			// assert line & column
+			assert.Equal(t, 7, stmt1.Line())
+			assert.Equal(t, 1, stmt1.Column())
+			assert.Equal(t, stmt1.Left, "LOCAL_PARAM")
+			assert.IsType(t, &semantic.NumericLiteral{}, stmt1.Right)
+			right := stmt1.Right.(*semantic.NumericLiteral)
+			assert.Equal(t, right.Value, int64(1))
+
+			assert.IsType(t, &semantic.ReturnStatement{}, stmt.Body.Statements[1])
+			r := stmt.Body.Statements[1].(*semantic.ReturnStatement)
+			// assert line & column
+			assert.Equal(t, 8, r.Line())
+			assert.Equal(t, 1, r.Column())
+		},
+	})
+
+	runTestSuite(t, tests)
+}
+
 func TestCursorDeclaration(t *testing.T) {
 	var tests testSuite
 
