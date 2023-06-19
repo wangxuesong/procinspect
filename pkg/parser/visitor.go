@@ -65,6 +65,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Create_procedure_bodyContext:
 			c := child.(*plsql.Create_procedure_bodyContext)
 			nodes = append(nodes, v.VisitCreate_procedure_body(c))
+		case *plsql.Create_function_bodyContext:
+			c := child.(*plsql.Create_function_bodyContext)
+			nodes = append(nodes, v.VisitCreate_function_body(c))
 		case *plsql.Create_typeContext:
 			c := child.(*plsql.Create_typeContext)
 			nodes = append(nodes, v.VisitCreate_type(c))
@@ -208,6 +211,25 @@ func (v *plsqlVisitor) VisitCreate_procedure_body(ctx *plsql.Create_procedure_bo
 	}
 	if ctx.Seq_of_declare_specs() != nil {
 		stmt.Declarations = v.VisitSeq_of_declare_specs(ctx.Seq_of_declare_specs().(*plsql.Seq_of_declare_specsContext)).([]semantic.Declaration)
+	}
+	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitCreate_function_body(ctx *plsql.Create_function_bodyContext) interface{} {
+	stmt := &semantic.CreateFunctionStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	stmt.Name = ctx.Function_name().GetText()
+	stmt.IsReplace = ctx.REPLACE() != nil
+	for _, p := range ctx.AllParameter() {
+		stmt.Parameters = append(stmt.Parameters, v.VisitParameter(p.(*plsql.ParameterContext)).(*semantic.Parameter))
+	}
+	if ctx.Seq_of_declare_specs() != nil {
+		stmt.Declarations = v.VisitSeq_of_declare_specs(ctx.Seq_of_declare_specs().(*plsql.Seq_of_declare_specsContext)).([]semantic.Declaration)
+	}
+	if ctx.RETURN() != nil {
+		stmt.Return = ctx.Type_spec().GetText()
 	}
 	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
 	return stmt

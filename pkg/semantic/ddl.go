@@ -23,6 +23,16 @@ type (
 		IsReplace    bool
 	}
 
+	CreateFunctionStatement struct {
+		node
+		Name         string
+		Parameters   []*Parameter
+		Return       string
+		Declarations []Declaration
+		Body         *Body
+		IsReplace    bool
+	}
+
 	Body struct {
 		node
 		Statements []Statement
@@ -38,3 +48,5 @@ func (s *CreateProcedureStatement) statement() {}
 func (s *CreatePackageStatement) statement() {}
 
 func (s *CreatePackageBodyStatement) statement() {}
+
+func (s *CreateFunctionStatement) statement() {}
