@@ -16,8 +16,7 @@ type (
 )
 
 func (v *plsqlVisitor) Visit(tree antlr.ParseTree) interface{} {
-	//TODO implement me
-	panic("implement me")
+	return tree.Accept(v)
 }
 
 func (v *plsqlVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
@@ -120,6 +119,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Loop_statementContext:
 			c := child.(*plsql.Loop_statementContext)
 			nodes = append(nodes, v.VisitLoop_statement(c))
+		case *plsql.Return_statementContext:
+			c := child.(*plsql.Return_statementContext)
+			nodes = append(nodes, v.VisitReturn_statement(c))
 		case *plsql.Function_callContext:
 			c := child.(*plsql.Function_callContext)
 			nodes = append(nodes, v.VisitFunction_call(c))
@@ -141,11 +143,11 @@ func (v *plsqlVisitor) VisitSql_script(ctx *plsql.Sql_scriptContext) interface{}
 	script := &semantic.Script{}
 	for _, stmt := range ctx.AllUnit_statement() {
 		o := stmt.Accept(v)
-		switch t := o.(type) {
+		switch o.(type) {
 		case semantic.Statement:
 			break
 		default:
-			panic(t)
+			panic(fmt.Sprintf("unprocessed syntax %s at line %d", reflect.TypeOf(stmt.GetChild(0)).Elem().Name(), stmt.GetStart().GetLine()))
 		}
 		script.Statements = append(script.Statements, o.(semantic.Statement))
 	}
@@ -307,7 +309,11 @@ func (v *plsqlVisitor) VisitAnonymous_block(ctx *plsql.Anonymous_blockContext) i
 func (v *plsqlVisitor) VisitSeq_of_statements(ctx *plsql.Seq_of_statementsContext) interface{} {
 	stmts := make([]semantic.Statement, 0, len(ctx.AllStatement()))
 	for _, stmt := range ctx.AllStatement() {
-		stmts = append(stmts, stmt.Accept(v).(semantic.Statement))
+		s, ok := stmt.Accept(v).(semantic.Statement)
+		if !ok {
+			panic(fmt.Sprintf("unprocessed syntax %s at line %d", reflect.TypeOf(stmt.GetChild(0)).Elem().Name(), stmt.GetStart().GetLine()))
+		}
+		stmts = append(stmts, s)
 	}
 	return stmts
 }
@@ -377,6 +383,17 @@ func (v *plsqlVisitor) VisitLoop_statement(ctx *plsql.Loop_statementContext) int
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	stmt.Statements = v.VisitSeq_of_statements(ctx.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitReturn_statement(ctx *plsql.Return_statementContext) interface{} {
+	stmt := &semantic.ReturnStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.Expression() != nil {
+		visitor := exprVisitor{}
+		stmt.Name = visitor.VisitExpression(ctx.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+	}
 	return stmt
 }
 
