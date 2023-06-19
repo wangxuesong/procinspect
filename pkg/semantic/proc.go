@@ -64,6 +64,11 @@ type (
 		Condition Expr
 	}
 
+	ReturnStatement struct {
+		node
+		Name Expr
+	}
+
 	ProcedureCall struct {
 		node
 		Name      Expr
@@ -156,3 +161,5 @@ func (s *FetchStatement) statement() {}
 func (s *ExitStatement) statement() {}
 
 func (s *ProcedureCall) statement() {}
+
+func (s *ReturnStatement) statement() {}
