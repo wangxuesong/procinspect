@@ -12,6 +12,7 @@ type (
 		node
 		Name       string
 		Procedures []*CreateProcedureStatement
+		Functions  []*CreateFunctionStatement
 	}
 
 	CreateProcedureStatement struct {
