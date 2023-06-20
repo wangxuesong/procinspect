@@ -89,6 +89,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Function_specContext:
 			c := child.(*plsql.Function_specContext)
 			nodes = append(nodes, v.VisitFunction_spec(c))
+		case *plsql.Function_bodyContext:
+			c := child.(*plsql.Function_bodyContext)
+			nodes = append(nodes, v.VisitFunction_body(c))
 		case *plsql.Variable_declarationContext:
 			c := child.(*plsql.Variable_declarationContext)
 			nodes = append(nodes, v.VisitVariable_declaration(c))
@@ -470,7 +473,13 @@ func (v *plsqlVisitor) VisitCreate_package_body(ctx *plsql.Create_package_bodyCo
 
 	stmt.Name = ctx.Package_name(0).GetText()
 	for _, p := range ctx.AllPackage_obj_body() {
-		stmt.Procedures = append(stmt.Procedures, p.Accept(v).(*semantic.CreateProcedureStatement))
+		s := p.Accept(v)
+		switch s.(type) {
+		case *semantic.CreateProcedureStatement:
+			stmt.Procedures = append(stmt.Procedures, s.(*semantic.CreateProcedureStatement))
+		case *semantic.CreateFunctionStatement:
+			stmt.Functions = append(stmt.Functions, s.(*semantic.CreateFunctionStatement))
+		}
 	}
 	return stmt
 }
@@ -556,4 +565,20 @@ func (v *plsqlVisitor) VisitFunction_spec(ctx *plsql.Function_specContext) inter
 	decl.Name = ctx.Identifier().GetText()
 
 	return decl
+}
+
+func (v *plsqlVisitor) VisitFunction_body(ctx *plsql.Function_bodyContext) interface{} {
+	stmt := &semantic.CreateFunctionStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	stmt.Name = ctx.Identifier().GetText()
+	for _, p := range ctx.AllParameter() {
+		stmt.Parameters = append(stmt.Parameters, v.VisitParameter(p.(*plsql.ParameterContext)).(*semantic.Parameter))
+	}
+	if ctx.Seq_of_declare_specs() != nil {
+		stmt.Declarations = v.VisitSeq_of_declare_specs(ctx.Seq_of_declare_specs().(*plsql.Seq_of_declare_specsContext)).([]semantic.Declaration)
+	}
+	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
+	return stmt
 }

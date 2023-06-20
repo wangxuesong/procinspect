@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -49,6 +50,9 @@ func (v *exprVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.ConcatenationContext:
 			c := child.(*plsql.ConcatenationContext)
 			nodes = append(nodes, v.VisitConcatenation(c))
+		case *plsql.AtomContext:
+			c := child.(*plsql.AtomContext)
+			nodes = append(nodes, v.VisitAtom(c))
 		case *plsql.String_functionContext:
 			c := child.(*plsql.String_functionContext)
 			nodes = append(nodes, v.VisitString_function(c))
@@ -94,6 +98,18 @@ func (v *exprVisitor) VisitCondition(ctx *plsql.ConditionContext) interface{} {
 	}
 }
 
+func (v *exprVisitor) VisitExpressions(ctx *plsql.ExpressionsContext) interface{} {
+	exprs := make([]semantic.Expr, 0, len(ctx.AllExpression()))
+	for _, e := range ctx.AllExpression() {
+		expr := v.VisitExpression(e.(*plsql.ExpressionContext)).(semantic.Expr)
+		exprs = append(exprs, expr)
+	}
+	if len(exprs) == 1 {
+		return exprs[0]
+	}
+	return exprs
+}
+
 func (v *exprVisitor) VisitExpression(ctx *plsql.ExpressionContext) interface{} {
 	return ctx.Accept(v)
 }
@@ -122,7 +138,7 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 
 func (v *exprVisitor) VisitLogical_expression(ctx *plsql.Logical_expressionContext) interface{} {
 	if ctx.Unary_logical_expression() != nil {
-		return ctx.Accept(v)
+		return v.VisitUnary_logical_expression(ctx.Unary_logical_expression().(*plsql.Unary_logical_expressionContext))
 	} else {
 		expr := &semantic.BinaryExpression{}
 		expr.SetLine(ctx.GetStart().GetLine())
@@ -132,8 +148,8 @@ func (v *exprVisitor) VisitLogical_expression(ctx *plsql.Logical_expressionConte
 		} else if ctx.OR() != nil {
 			expr.Operator = "OR"
 		}
-		expr.Left = ctx.Logical_expression(0).Accept(v).(semantic.Expr)
-		expr.Right = ctx.Logical_expression(1).Accept(v).(semantic.Expr)
+		expr.Left = v.VisitLogical_expression(ctx.Logical_expression(0).(*plsql.Logical_expressionContext)).(semantic.Expr)
+		expr.Right = v.VisitLogical_expression(ctx.Logical_expression(1).(*plsql.Logical_expressionContext)).(semantic.Expr)
 		return expr
 	}
 }
@@ -205,10 +221,22 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 			i := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext))
 
 			expr.Left = i.(semantic.Expr)
-			expr.Right = ctx.Concatenation(1).Accept(v).(semantic.Expr)
+			con := v.VisitConcatenation(ctx.Concatenation(1).(*plsql.ConcatenationContext))
+			r, ok := con.(semantic.Expr)
+			if !ok {
+				panic(fmt.Sprintf("invalid concatenation %T", con))
+			}
+			expr.Right = r
 			expr.Operator = ctx.GetOp().GetText()
 			return expr
 		}
+	}
+	return ctx.Accept(v)
+}
+
+func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
+	if ctx.Expressions() != nil {
+		return v.VisitExpressions(ctx.Expressions().(*plsql.ExpressionsContext))
 	}
 	return ctx.Accept(v)
 }
