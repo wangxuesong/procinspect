@@ -37,14 +37,20 @@ type (
 
 	InExpression struct {
 		expression
-		Expr    Expr
-		InElems []Expr
+		Expr  Expr
+		Elems []Expr
 	}
 
 	LikeExpression struct {
 		expression
 		Expr     Expr
 		LikeExpr Expr
+	}
+
+	BetweenExpression struct {
+		expression
+		Expr  Expr
+		Elems []Expr
 	}
 
 	BinaryExpression struct {

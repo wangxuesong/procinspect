@@ -243,7 +243,20 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 		elems := v.VisitIn_elements(ctx.In_elements().(*plsql.In_elementsContext))
 		switch elems.(type) {
 		case []semantic.Expr:
-			expr.InElems = elems.([]semantic.Expr)
+			expr.Elems = elems.([]semantic.Expr)
+		}
+		return expr
+	}
+
+	if ctx.BETWEEN() != nil {
+		expr := &semantic.BetweenExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr.Expr = v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
+		elems := v.VisitBetween_elements(ctx.Between_elements().(*plsql.Between_elementsContext))
+		switch elems.(type) {
+		case []semantic.Expr:
+			expr.Elems = elems.([]semantic.Expr)
 		}
 		return expr
 	}
@@ -261,6 +274,18 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 }
 
 func (v *exprVisitor) VisitIn_elements(ctx *plsql.In_elementsContext) interface{} {
+	if ctx.AllConcatenation() != nil {
+		elems := make([]semantic.Expr, 0, len(ctx.AllConcatenation()))
+		for _, c := range ctx.AllConcatenation() {
+			elems = append(elems, v.VisitConcatenation(c.(*plsql.ConcatenationContext)).(semantic.Expr))
+		}
+		return elems
+	}
+
+	return ctx.Accept(v)
+}
+
+func (v *exprVisitor) VisitBetween_elements(ctx *plsql.Between_elementsContext) interface{} {
 	if ctx.AllConcatenation() != nil {
 		elems := make([]semantic.Expr, 0, len(ctx.AllConcatenation()))
 		for _, c := range ctx.AllConcatenation() {
