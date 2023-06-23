@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"procinspect/pkg/log"
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
 	"reflect"
@@ -19,6 +20,11 @@ func newPlSqlVisitor() *plsqlVisitor {
 	v := &plsqlVisitor{}
 	v.BasePlSqlParserVisitor.ParseTreeVisitor = v
 	return v
+}
+
+func (v *plsqlVisitor) ReportError(msg string, line, column int) {
+	defer log.Sync()
+	log.Warn(msg, log.Int("line", line), log.Int("column", column))
 }
 
 func (v *plsqlVisitor) Visit(tree antlr.ParseTree) interface{} {
@@ -159,7 +165,10 @@ func (v *plsqlVisitor) VisitSql_script(ctx *plsql.Sql_scriptContext) interface{}
 		case semantic.Statement:
 			break
 		default:
-			panic(fmt.Sprintf("unprocessed syntax %s at line %d", reflect.TypeOf(stmt.GetChild(0)).Elem().Name(), stmt.GetStart().GetLine()))
+			v.ReportError(fmt.Sprintf("unprocessed syntax %s",
+				reflect.TypeOf(stmt.GetChild(0)).Elem().Name()),
+				stmt.GetStart().GetLine(), stmt.GetStart().GetColumn())
+			continue
 		}
 		script.Statements = append(script.Statements, o.(semantic.Statement))
 	}
@@ -342,7 +351,10 @@ func (v *plsqlVisitor) VisitSeq_of_statements(ctx *plsql.Seq_of_statementsContex
 	for _, stmt := range ctx.AllStatement() {
 		s, ok := stmt.Accept(v).(semantic.Statement)
 		if !ok {
-			panic(fmt.Sprintf("unprocessed syntax %s at line %d", reflect.TypeOf(stmt.GetChild(0)).Elem().Name(), stmt.GetStart().GetLine()))
+			v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(stmt.GetChild(0)).Elem().Name()),
+				stmt.GetStart().GetLine(),
+				stmt.GetStart().GetColumn())
+			return stmts
 		}
 		stmts = append(stmts, s)
 	}
