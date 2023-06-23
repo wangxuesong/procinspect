@@ -567,6 +567,7 @@ Begin
       If v_Index>0 Then
         v_Areano := Substr(v_Areanos,1,v_Index-1);
         v_Areanos := Substr(v_Areanos,v_Index+1);
+        v_Areanos := Nvl(v_Areanos,v_Index+1);
       Else
         v_Areano := v_Areanos;
         v_Areanos := '';
@@ -809,7 +810,7 @@ End;
 						numericLit := relExp.Right.(*semantic.NumericLiteral)
 						assert.Equal(t, numericLit.Value, int64(0))
 						assert.NotNil(t, ifStmt.ThenBlock)
-						assert.Equal(t, len(ifStmt.ThenBlock), 2)
+						assert.Equal(t, len(ifStmt.ThenBlock), 3)
 						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
 						stmt := ifStmt.ThenBlock[0].(*semantic.AssignmentStatement)
 						assert.Equal(t, stmt.Left, "v_Areano")
@@ -842,6 +843,27 @@ End;
 						assert.IsType(t, &semantic.NameExpression{}, funcCallExp.Name)
 						nameExp = funcCallExp.Name.(*semantic.NameExpression)
 						assert.Equal(t, nameExp.Name, "SUBSTR")
+						assert.Equal(t, len(funcCallExp.Args), 2)
+						assert.IsType(t, &semantic.NameExpression{}, funcCallExp.Args[0])
+						nameExp = funcCallExp.Args[0].(*semantic.NameExpression)
+						assert.Equal(t, nameExp.Name, "v_Areanos")
+						assert.IsType(t, &semantic.BinaryExpression{}, funcCallExp.Args[1])
+						binaryExp = funcCallExp.Args[1].(*semantic.BinaryExpression)
+						assert.Equal(t, binaryExp.Operator, "+")
+						assert.IsType(t, &semantic.NameExpression{}, binaryExp.Left)
+						nameExp = binaryExp.Left.(*semantic.NameExpression)
+						assert.Equal(t, nameExp.Name, "v_Index")
+						assert.IsType(t, &semantic.NumericLiteral{}, binaryExp.Right)
+						numericLit = binaryExp.Right.(*semantic.NumericLiteral)
+						assert.Equal(t, numericLit.Value, int64(1))
+						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[2])
+						stmt = ifStmt.ThenBlock[2].(*semantic.AssignmentStatement)
+						assert.Equal(t, stmt.Left, "v_Areanos")
+						assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Right)
+						funcCallExp = stmt.Right.(*semantic.FunctionCallExpression)
+						assert.IsType(t, &semantic.NameExpression{}, funcCallExp.Name)
+						nameExp = funcCallExp.Name.(*semantic.NameExpression)
+						assert.Equal(t, nameExp.Name, "NVL")
 						assert.Equal(t, len(funcCallExp.Args), 2)
 						assert.IsType(t, &semantic.NameExpression{}, funcCallExp.Args[0])
 						nameExp = funcCallExp.Args[0].(*semantic.NameExpression)
