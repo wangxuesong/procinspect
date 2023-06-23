@@ -5,7 +5,8 @@ package parser // PlSqlParser
 import "github.com/antlr4-go/antlr/v4"
 
 type BasePlSqlParserVisitor struct {
-	*antlr.BaseParseTreeVisitor
+	//*antlr.BaseParseTreeVisitor
+	antlr.ParseTreeVisitor
 }
 
 func (v *BasePlSqlParserVisitor) VisitSql_script(ctx *Sql_scriptContext) interface{} {
