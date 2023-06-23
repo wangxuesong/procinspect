@@ -1003,7 +1003,7 @@ func TestBlock(t *testing.T) {
 		root := p.Block()
 		assert.Nil(t, p.Error())
 
-		visitor := &plsqlVisitor{}
+		visitor := newPlSqlVisitor()
 		node := visitor.VisitBlock(root.(*plsql.BlockContext)).(*semantic.BlockStatement)
 
 		return node

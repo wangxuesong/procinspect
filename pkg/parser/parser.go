@@ -17,7 +17,7 @@ func ParseScript(src string) (*semantic.Script, error) {
 	if p.Error() != nil {
 		return nil, p.Error()
 	}
-	visitor := &plsqlVisitor{}
+	visitor := newPlSqlVisitor()
 	script := visitor.VisitSql_script(root.(*parser.Sql_scriptContext)).(*semantic.Script)
 
 	return script, nil
@@ -29,7 +29,7 @@ func ParseBlock(src string) (*semantic.Script, error) {
 	if p.Error() != nil {
 		return nil, p.Error()
 	}
-	visitor := &plsqlVisitor{}
+	visitor := newPlSqlVisitor()
 	block := visitor.VisitBlock(root.(*parser.BlockContext)).(*semantic.BlockStatement)
 
 	script := &semantic.Script{}

@@ -11,9 +11,15 @@ import (
 
 type (
 	plsqlVisitor struct {
-		//plsql.BasePlSqlParserVisitor
+		plsql.BasePlSqlParserVisitor
 	}
 )
+
+func newPlSqlVisitor() *plsqlVisitor {
+	v := &plsqlVisitor{}
+	v.BasePlSqlParserVisitor.ParseTreeVisitor = v
+	return v
+}
 
 func (v *plsqlVisitor) Visit(tree antlr.ParseTree) interface{} {
 	return tree.Accept(v)
@@ -37,7 +43,7 @@ func GeneralScript(root plsql.ISql_scriptContext) (script *semantic.Script, err 
 		}
 	}()
 
-	visitor := &plsqlVisitor{}
+	visitor := newPlSqlVisitor()
 	script = visitor.VisitSql_script(root.(*plsql.Sql_scriptContext)).(*semantic.Script)
 	return script, e
 }
