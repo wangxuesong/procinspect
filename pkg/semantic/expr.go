@@ -53,6 +53,16 @@ type (
 		Elems []Expr
 	}
 
+	ExistsExpression struct {
+		expression
+		Expr Expr
+	}
+
+	QueryExpression struct {
+		expression
+		Query *SelectStatement
+	}
+
 	BinaryExpression struct {
 		expression
 		Left     Expr
