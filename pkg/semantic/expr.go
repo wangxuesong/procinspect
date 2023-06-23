@@ -35,6 +35,12 @@ type (
 		Operator string
 	}
 
+	InExpression struct {
+		expression
+		Expr    Expr
+		InElems []Expr
+	}
+
 	BinaryExpression struct {
 		expression
 		Left     Expr
