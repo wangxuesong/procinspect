@@ -14,8 +14,14 @@ import (
 type (
 	exprVisitor struct {
 		//plsql.BasePlSqlParserVisitor
+		stmtVisitor *plsqlVisitor
 	}
 )
+
+func newExprVisitor(visitor *plsqlVisitor) *exprVisitor {
+	v := &exprVisitor{stmtVisitor: visitor}
+	return v
+}
 
 func (v *exprVisitor) ReportError(msg string, line, column int) {
 	defer log.Sync()
