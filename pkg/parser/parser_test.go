@@ -215,6 +215,9 @@ func TestParseSimple(t *testing.T) {
 			assert.NotNil(t, stmt.Where)
 			assert.IsType(t, &semantic.InExpression{}, stmt.Where)
 			expr := stmt.Where.(*semantic.InExpression)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Expr)
+			name := expr.Expr.(*semantic.NameExpression)
+			assert.Equal(t, "a", name.Name)
 			assert.Equal(t, 3, len(expr.InElems))
 			assert.IsType(t, &semantic.NumericLiteral{}, expr.InElems[0])
 			elem := expr.InElems[0].(*semantic.NumericLiteral)
@@ -225,6 +228,30 @@ func TestParseSimple(t *testing.T) {
 			assert.IsType(t, &semantic.NumericLiteral{}, expr.InElems[2])
 			elem = expr.InElems[2].(*semantic.NumericLiteral)
 			assert.Equal(t, int64(3), elem.Value)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "like expression",
+		text: `select * from dual where a like '%1%';`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 1)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
+			assert.NotNil(t, stmt.Where)
+			assert.IsType(t, &semantic.LikeExpression{}, stmt.Where)
+			expr := stmt.Where.(*semantic.LikeExpression)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Expr)
+			name := expr.Expr.(*semantic.NameExpression)
+			assert.Equal(t, "a", name.Name)
 		},
 	})
 

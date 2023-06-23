@@ -248,6 +248,15 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 		return expr
 	}
 
+	if ctx.GetLike_type() != nil {
+		expr := &semantic.LikeExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr.Expr = v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
+		expr.LikeExpr = v.VisitConcatenation(ctx.Concatenation(1).(*plsql.ConcatenationContext)).(semantic.Expr)
+		return expr
+	}
+
 	return ctx.Accept(v)
 }
 
