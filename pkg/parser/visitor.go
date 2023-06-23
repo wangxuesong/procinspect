@@ -184,7 +184,7 @@ func (v *plsqlVisitor) VisitQuery_block(ctx *plsql.Query_blockContext) interface
 	stmt.From = ctx.From_clause().Accept(v).(*semantic.FromClause)
 	if ctx.Where_clause() != nil {
 		if ctx.Where_clause().Expression() != nil {
-			visitor := &exprVisitor{}
+			visitor := newExprVisitor(v)
 			stmt.Where = visitor.VisitExpression(ctx.Where_clause().Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 		}
 	}
@@ -277,7 +277,7 @@ func (v *plsqlVisitor) VisitVariable_declaration(ctx *plsql.Variable_declaration
 	varDecl.Name = ctx.Identifier().GetText()
 	varDecl.DataType = ctx.Type_spec().GetText()
 	if ctx.Default_value_part() != nil {
-		visitor := &exprVisitor{}
+		visitor := newExprVisitor(v)
 		varDecl.Initialization = visitor.VisitExpression(ctx.Default_value_part().Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 	}
 	return varDecl
@@ -366,7 +366,7 @@ func (v *plsqlVisitor) VisitAssignment_statement(ctx *plsql.Assignment_statement
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	stmt.Left = ctx.General_element().GetText()
-	visitor := &exprVisitor{}
+	visitor := newExprVisitor(v)
 	stmt.Right = visitor.VisitExpression(ctx.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 
 	return stmt
@@ -377,7 +377,7 @@ func (v *plsqlVisitor) VisitIf_statement(ctx *plsql.If_statementContext) interfa
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	if ctx.Condition() != nil {
-		vistior := exprVisitor{}
+		vistior := newExprVisitor(v)
 		stmt.Condition = vistior.VisitCondition(ctx.Condition().(*plsql.ConditionContext)).(semantic.Expr)
 	}
 	stmt.ThenBlock = v.VisitSeq_of_statements(ctx.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
@@ -415,7 +415,7 @@ func (v *plsqlVisitor) VisitExit_statement(ctx *plsql.Exit_statementContext) int
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	if ctx.Condition() != nil {
-		vistior := exprVisitor{}
+		vistior := newExprVisitor(v)
 		stmt.Condition = vistior.VisitCondition(ctx.Condition().(*plsql.ConditionContext)).(semantic.Expr)
 	}
 	return stmt
@@ -434,7 +434,7 @@ func (v *plsqlVisitor) VisitReturn_statement(ctx *plsql.Return_statementContext)
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	if ctx.Expression() != nil {
-		visitor := exprVisitor{}
+		visitor := newExprVisitor(v)
 		stmt.Name = visitor.VisitExpression(ctx.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 	}
 	return stmt
@@ -444,7 +444,7 @@ func (v *plsqlVisitor) VisitFunction_call(ctx *plsql.Function_callContext) inter
 	stmt := &semantic.ProcedureCall{}
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
-	visitor := &exprVisitor{}
+	visitor := newExprVisitor(v)
 	stmt.Name = visitor.VisitRoutine_name(ctx.Routine_name().(*plsql.Routine_nameContext)).(semantic.Expr)
 	if ctx.Function_argument() != nil {
 		stmt.Arguments = v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]semantic.Expr)
@@ -455,7 +455,7 @@ func (v *plsqlVisitor) VisitFunction_call(ctx *plsql.Function_callContext) inter
 func (v *plsqlVisitor) VisitFunction_argument(ctx *plsql.Function_argumentContext) interface{} {
 	exprs := make([]semantic.Expr, 0, len(ctx.AllArgument()))
 	for _, c := range ctx.AllArgument() {
-		visitor := &exprVisitor{}
+		visitor := newExprVisitor(v)
 		expr := visitor.VisitExpression(c.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 		exprs = append(exprs, expr)
 	}
