@@ -41,6 +41,12 @@ type (
 		InElems []Expr
 	}
 
+	LikeExpression struct {
+		expression
+		Expr     Expr
+		LikeExpr Expr
+	}
+
 	BinaryExpression struct {
 		expression
 		Left     Expr
