@@ -67,6 +67,9 @@ func (v *exprVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.ConcatenationContext:
 			c := child.(*plsql.ConcatenationContext)
 			nodes = append(nodes, v.VisitConcatenation(c))
+		case *plsql.Quantified_expressionContext:
+			c := child.(*plsql.Quantified_expressionContext)
+			nodes = append(nodes, v.VisitQuantified_expression(c))
 		case *plsql.AtomContext:
 			c := child.(*plsql.AtomContext)
 			nodes = append(nodes, v.VisitAtom(c))
@@ -365,6 +368,21 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 			expr.Operator = ctx.GetOp().GetText()
 			return expr
 		}
+	}
+	return ctx.Accept(v)
+}
+
+func (v *exprVisitor) VisitQuantified_expression(ctx *plsql.Quantified_expressionContext) interface{} {
+	if ctx.EXISTS() != nil {
+		expr := &semantic.ExistsExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		if ctx.Select_only_statement() != nil {
+			stmt := v.stmtVisitor.VisitSelect_only_statement(ctx.Select_only_statement().(*plsql.Select_only_statementContext)).(*semantic.SelectStatement)
+			query := &semantic.QueryExpression{Query: stmt}
+			expr.Expr = query
+		}
+		return expr
 	}
 	return ctx.Accept(v)
 }
