@@ -135,9 +135,8 @@ func (v *exprVisitor) VisitExpression(ctx *plsql.ExpressionContext) interface{} 
 }
 
 func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) interface{} {
-	switch ctx.GetChild(0).(type) {
-	case *plsql.Cursor_nameContext:
-		node := ctx.GetChild(0).(*plsql.Cursor_nameContext)
+	if ctx.Cursor_name() != nil {
+		node := ctx.Cursor_name().(*plsql.Cursor_nameContext)
 		ca := &semantic.CursorAttribute{Cursor: node.GetText()}
 		ca.SetLine(node.GetStart().GetLine())
 		ca.SetColumn(node.GetStart().GetColumn())
@@ -151,9 +150,16 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 			ca.Attr = "ISOPEN"
 		}
 		return ca
-	default:
-		return v.VisitChildren(ctx)
 	}
+
+	if ctx.TO_NUMBER() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "TO_NUMBER"}}
+		arg := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
+		expr.Args = append(expr.Args, arg)
+		return expr
+	}
+
+	return ctx.Accept(v)
 }
 
 func (v *exprVisitor) VisitLogical_expression(ctx *plsql.Logical_expressionContext) interface{} {
