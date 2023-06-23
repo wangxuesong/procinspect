@@ -309,6 +309,13 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		}
 		return expr
 	}
+	if ctx.NVL() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "NVL"}}
+		for _, arg := range ctx.AllExpression() {
+			expr.Args = append(expr.Args, arg.Accept(v).(semantic.Expr))
+		}
+		return expr
+	}
 	return ctx.Accept(v)
 }
 
