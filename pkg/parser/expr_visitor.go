@@ -52,6 +52,12 @@ func (v *exprVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Relational_expressionContext:
 			c := child.(*plsql.Relational_expressionContext)
 			nodes = append(nodes, v.VisitRelational_expression(c))
+		case *plsql.Compound_expressionContext:
+			c := child.(*plsql.Compound_expressionContext)
+			nodes = append(nodes, v.VisitCompound_expression(c))
+		case *plsql.In_elementsContext:
+			c := child.(*plsql.In_elementsContext)
+			nodes = append(nodes, v.VisitIn_elements(c))
 		case *plsql.ConcatenationContext:
 			c := child.(*plsql.ConcatenationContext)
 			nodes = append(nodes, v.VisitConcatenation(c))
@@ -224,8 +230,37 @@ func (v *exprVisitor) VisitRelational_expression(ctx *plsql.Relational_expressio
 		result.Operator = strings.ToUpper(ctx.Relational_operator().GetText())
 		return result
 	} else {
-		return ctx.Compound_expression().Accept(v)
+		return v.VisitCompound_expression(ctx.Compound_expression().(*plsql.Compound_expressionContext))
 	}
+}
+
+func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionContext) interface{} {
+	if ctx.IN() != nil {
+		expr := &semantic.InExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr.Expr = v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
+		elems := v.VisitIn_elements(ctx.In_elements().(*plsql.In_elementsContext))
+		switch elems.(type) {
+		case []semantic.Expr:
+			expr.InElems = elems.([]semantic.Expr)
+		}
+		return expr
+	}
+
+	return ctx.Accept(v)
+}
+
+func (v *exprVisitor) VisitIn_elements(ctx *plsql.In_elementsContext) interface{} {
+	if ctx.AllConcatenation() != nil {
+		elems := make([]semantic.Expr, 0, len(ctx.AllConcatenation()))
+		for _, c := range ctx.AllConcatenation() {
+			elems = append(elems, v.VisitConcatenation(c.(*plsql.ConcatenationContext)).(semantic.Expr))
+		}
+		return elems
+	}
+
+	return ctx.Accept(v)
 }
 
 func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interface{} {

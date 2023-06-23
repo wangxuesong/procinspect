@@ -197,6 +197,37 @@ func TestParseSimple(t *testing.T) {
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "in expression",
+		text: `select * from dual where a in (1, 2, 3);`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 1)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
+			assert.NotNil(t, stmt.Where)
+			assert.IsType(t, &semantic.InExpression{}, stmt.Where)
+			expr := stmt.Where.(*semantic.InExpression)
+			assert.Equal(t, 3, len(expr.InElems))
+			assert.IsType(t, &semantic.NumericLiteral{}, expr.InElems[0])
+			elem := expr.InElems[0].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(1), elem.Value)
+			assert.IsType(t, &semantic.NumericLiteral{}, expr.InElems[1])
+			elem = expr.InElems[1].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(2), elem.Value)
+			assert.IsType(t, &semantic.NumericLiteral{}, expr.InElems[2])
+			elem = expr.InElems[2].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(3), elem.Value)
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
