@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"fmt"
+	"procinspect/pkg/log"
 	"strconv"
 	"strings"
 
@@ -17,6 +17,11 @@ type (
 	}
 )
 
+func (v *exprVisitor) ReportError(msg string, line, column int) {
+	defer log.Sync()
+	log.Warn(msg, log.Int("line", line), log.Int("column", column))
+}
+
 func (v *exprVisitor) Visit(tree antlr.ParseTree) interface{} {
 	return tree.Accept(v)
 }
@@ -25,7 +30,7 @@ func (v *exprVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
 	return node.GetText()
 }
 
-func (v *exprVisitor) VisitErrorNode(node antlr.ErrorNode) interface{} {
+func (v *exprVisitor) VisitErrorNode(_ antlr.ErrorNode) interface{} {
 	//TODO implement me
 	panic("implement me")
 }
@@ -160,7 +165,14 @@ func (v *exprVisitor) VisitUnary_logical_expression(ctx *plsql.Unary_logical_exp
 	result.SetColumn(ctx.GetStart().GetColumn())
 	expression := ctx.Multiset_expression().Accept(v)
 	if expression != nil {
-		result.Expr = expression.(semantic.Expr)
+		var ok bool
+		result.Expr, ok = expression.(semantic.Expr)
+		if !ok {
+			v.ReportError("unsupported expression",
+				ctx.Multiset_expression().GetStart().GetLine(),
+				ctx.Multiset_expression().GetStart().GetColumn())
+			return result
+		}
 	} else {
 		name := &semantic.NameExpression{
 			Name: ctx.Multiset_expression().GetText(),
@@ -189,10 +201,26 @@ func (v *exprVisitor) VisitRelational_expression(ctx *plsql.Relational_expressio
 	result.SetLine(ctx.GetStart().GetLine())
 	result.SetColumn(ctx.GetStart().GetColumn())
 	if len(ctx.AllRelational_expression()) > 0 {
-		left := ctx.Relational_expression(0).Accept(v)
-		right := ctx.Relational_expression(1).Accept(v)
-		result.Left = left.(semantic.Expr)
-		result.Right = right.(semantic.Expr)
+		var ok bool
+		var node antlr.ParserRuleContext
+		node = ctx.Relational_expression(0)
+		left := node.Accept(v)
+		result.Left, ok = left.(semantic.Expr)
+		if !ok {
+			v.ReportError("unsupported expression",
+				node.GetStart().GetLine(),
+				node.GetStart().GetColumn())
+			return result
+		}
+		node = ctx.Relational_expression(1)
+		right := node.Accept(v)
+		result.Right, ok = right.(semantic.Expr)
+		if !ok {
+			v.ReportError("unsupported expression",
+				node.GetStart().GetLine(),
+				node.GetStart().GetColumn())
+			return result
+		}
 		result.Operator = strings.ToUpper(ctx.Relational_operator().GetText())
 		return result
 	} else {
@@ -208,25 +236,57 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 			expr := &semantic.BinaryExpression{}
 			expr.SetLine(ctx.GetStart().GetLine())
 			expr.SetColumn(ctx.GetStart().GetColumn())
-			i := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext))
 
-			expr.Left = i.(semantic.Expr)
-			expr.Right = ctx.Concatenation(1).Accept(v).(semantic.Expr)
+			var ok bool
+			var node antlr.ParserRuleContext
+			node = ctx.Concatenation(0)
+			left := v.VisitConcatenation(node.(*plsql.ConcatenationContext))
+			expr.Left, ok = left.(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					node.GetStart().GetLine(),
+					node.GetStart().GetColumn())
+				return expr
+			}
+
+			node = ctx.Concatenation(1)
+			right := node.Accept(v)
+			expr.Right, ok = right.(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					node.GetStart().GetLine(),
+					node.GetStart().GetColumn())
+				return expr
+			}
+
 			expr.Operator = "||"
 			return expr
 		} else if ctx.GetOp() != nil {
 			expr := &semantic.BinaryExpression{}
 			expr.SetLine(ctx.GetStart().GetLine())
 			expr.SetColumn(ctx.GetStart().GetColumn())
-			i := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext))
+			var ok bool
+			var node antlr.ParserRuleContext
 
-			expr.Left = i.(semantic.Expr)
-			con := v.VisitConcatenation(ctx.Concatenation(1).(*plsql.ConcatenationContext))
-			r, ok := con.(semantic.Expr)
+			node = ctx.Concatenation(0)
+			left := v.VisitConcatenation(node.(*plsql.ConcatenationContext))
+			expr.Left, ok = left.(semantic.Expr)
 			if !ok {
-				panic(fmt.Sprintf("invalid concatenation %T", con))
+				v.ReportError("unsupported expression",
+					node.GetStart().GetLine(),
+					node.GetStart().GetColumn())
+				return expr
 			}
-			expr.Right = r
+
+			node = ctx.Concatenation(1)
+			right := v.VisitConcatenation(node.(*plsql.ConcatenationContext))
+			expr.Right, ok = right.(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					node.GetStart().GetLine(),
+					node.GetStart().GetColumn())
+				return expr
+			}
 			expr.Operator = ctx.GetOp().GetText()
 			return expr
 		}

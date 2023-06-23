@@ -23,6 +23,21 @@ func ParseScript(src string) (*semantic.Script, error) {
 	return script, nil
 }
 
+func ParseSql(src string) (func() (*semantic.Script, error), error) {
+	p := parser.NewParser(src)
+	root := p.Sql_script()
+	if p.Error() != nil {
+		return nil, p.Error()
+	}
+
+	return func() (*semantic.Script, error) {
+		visitor := newPlSqlVisitor()
+		script := visitor.VisitSql_script(root.(*parser.Sql_scriptContext)).(*semantic.Script)
+
+		return script, nil
+	}, nil
+}
+
 func ParseBlock(src string) (*semantic.Script, error) {
 	p := parser.NewParser(src)
 	root := p.Block()
