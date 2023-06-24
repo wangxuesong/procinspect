@@ -140,6 +140,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Return_statementContext:
 			c := child.(*plsql.Return_statementContext)
 			nodes = append(nodes, v.VisitReturn_statement(c))
+		case *plsql.Null_statementContext:
+			c := child.(*plsql.Null_statementContext)
+			nodes = append(nodes, v.VisitNull_statement(c))
 		case *plsql.Function_callContext:
 			c := child.(*plsql.Function_callContext)
 			nodes = append(nodes, v.VisitFunction_call(c))
@@ -437,6 +440,13 @@ func (v *plsqlVisitor) VisitReturn_statement(ctx *plsql.Return_statementContext)
 		visitor := newExprVisitor(v)
 		stmt.Name = visitor.VisitExpression(ctx.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitNull_statement(ctx *plsql.Null_statementContext) interface{} {
+	stmt := &semantic.NullStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
 	return stmt
 }
 

@@ -51,3 +51,5 @@ func (s *CreatePackageStatement) statement() {}
 func (s *CreatePackageBodyStatement) statement() {}
 
 func (s *CreateFunctionStatement) statement() {}
+
+func (s *Body) statement() {}
