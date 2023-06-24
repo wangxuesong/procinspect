@@ -95,6 +95,12 @@ type (
 	NullExpression struct {
 		expression
 	}
+
+	SignExpression struct {
+		expression
+		Expr Expr
+		Sign string
+	}
 )
 
 func (n *expression) expr() {}
