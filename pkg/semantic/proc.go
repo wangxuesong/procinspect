@@ -98,9 +98,11 @@ type (
 
 	CursorDeclaration struct {
 		node
-		Name       string
-		Parameters []*Parameter
-		Stmt       Statement
+		Name        string
+		Parameters  []*Parameter
+		Stmt        Statement
+		Return      string
+		IsReference bool
 	}
 
 	NestTableTypeDeclaration struct {

@@ -483,9 +483,7 @@ func (v *plsqlVisitor) VisitCreate_package(ctx *plsql.Create_packageContext) int
 		switch spec.(type) {
 		case *semantic.CreateProcedureStatement:
 			stmt.Procedures = append(stmt.Procedures, spec.(*semantic.CreateProcedureStatement))
-		case *semantic.NestTableTypeDeclaration:
-			stmt.Types = append(stmt.Types, spec.(semantic.Declaration))
-		case *semantic.FunctionDeclaration:
+		case semantic.Declaration:
 			stmt.Types = append(stmt.Types, spec.(semantic.Declaration))
 		case *semantic.VariableDeclaration:
 			stmt.Variables = append(stmt.Variables, spec.(semantic.Declaration))
@@ -573,11 +571,19 @@ func (v *plsqlVisitor) VisitNested_table_type_def(ctx *plsql.Nested_table_type_d
 
 func (v *plsqlVisitor) VisitType_declaration(ctx *plsql.Type_declarationContext) interface{} {
 	if ctx.Table_type_def() != nil {
-		stmt := v.VisitTable_type_def(ctx.Table_type_def().(*plsql.Table_type_defContext)).(*semantic.NestTableTypeDeclaration)
-		stmt.Name = ctx.Identifier().GetText()
-		stmt.SetLine(ctx.GetStart().GetLine())
-		stmt.SetColumn(ctx.GetStart().GetColumn())
-		return stmt
+		decl := v.VisitTable_type_def(ctx.Table_type_def().(*plsql.Table_type_defContext)).(*semantic.NestTableTypeDeclaration)
+		decl.Name = ctx.Identifier().GetText()
+		decl.SetLine(ctx.GetStart().GetLine())
+		decl.SetColumn(ctx.GetStart().GetColumn())
+		return decl
+	}
+
+	if ctx.Ref_cursor_type_def() != nil {
+		decl := v.VisitRef_cursor_type_def(ctx.Ref_cursor_type_def().(*plsql.Ref_cursor_type_defContext)).(*semantic.CursorDeclaration)
+		decl.Name = ctx.Identifier().GetText()
+		decl.SetLine(ctx.GetStart().GetLine())
+		decl.SetColumn(ctx.GetStart().GetColumn())
+		return decl
 	}
 	return nil
 }
@@ -587,6 +593,17 @@ func (v *plsqlVisitor) VisitTable_type_def(ctx *plsql.Table_type_defContext) int
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	return stmt
+}
+
+func (v *plsqlVisitor) VisitRef_cursor_type_def(ctx *plsql.Ref_cursor_type_defContext) interface{} {
+	decl := &semantic.CursorDeclaration{}
+	decl.SetLine(ctx.GetStart().GetLine())
+	decl.SetColumn(ctx.GetStart().GetColumn())
+	decl.IsReference = true
+	if ctx.Type_spec() != nil {
+		decl.Return = ctx.Type_spec().GetText()
+	}
+	return decl
 }
 
 func (v *plsqlVisitor) VisitFunction_spec(ctx *plsql.Function_specContext) interface{} {
