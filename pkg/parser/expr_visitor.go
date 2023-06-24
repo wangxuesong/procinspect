@@ -82,6 +82,9 @@ func (v *exprVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.General_element_partContext:
 			c := child.(*plsql.General_element_partContext)
 			nodes = append(nodes, v.VisitGeneral_element_part(c))
+		case *plsql.ConstantContext:
+			c := child.(*plsql.ConstantContext)
+			nodes = append(nodes, v.VisitConstant(c))
 		case *plsql.Quoted_stringContext:
 			c := child.(*plsql.Quoted_stringContext)
 			nodes = append(nodes, v.VisitQuoted_string(c))
@@ -462,6 +465,13 @@ func (v *exprVisitor) VisitQuoted_string(ctx *plsql.Quoted_stringContext) interf
 		return ctx.Accept(v)
 	}
 	return &semantic.StringLiteral{Value: ctx.GetText()}
+}
+
+func (v *exprVisitor) VisitConstant(ctx *plsql.ConstantContext) interface{} {
+	if ctx.NULL_() != nil {
+		return &semantic.NullExpression{}
+	}
+	return ctx.Accept(v)
 }
 
 func (v *exprVisitor) VisitVariable_name(ctx *plsql.Variable_nameContext) interface{} {
