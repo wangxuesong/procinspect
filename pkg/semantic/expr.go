@@ -91,6 +91,10 @@ type (
 		expression
 		Value string
 	}
+
+	NullExpression struct {
+		expression
+	}
 )
 
 func (n *expression) expr() {}

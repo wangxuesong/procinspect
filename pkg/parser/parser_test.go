@@ -474,7 +474,7 @@ USER_EXCEPTION EXCEPTION;
   type type_date_tab is table of date index by binary_integer;
 BEGIN
 LOCAL_PARAM:=1;
-return 1;
+return null;
 END;`,
 		Func: func(t *testing.T, root any) {
 			node := root.(*semantic.Script)
@@ -531,6 +531,7 @@ END;`,
 
 			assert.IsType(t, &semantic.ReturnStatement{}, stmt.Body.Statements[1])
 			r := stmt.Body.Statements[1].(*semantic.ReturnStatement)
+			assert.IsType(t, &semantic.NullExpression{}, r.Name)
 			// assert line & column
 			assert.Equal(t, 8, r.Line())
 			assert.Equal(t, 1, r.Column())
