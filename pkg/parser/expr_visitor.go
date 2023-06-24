@@ -76,6 +76,9 @@ func (v *exprVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.String_functionContext:
 			c := child.(*plsql.String_functionContext)
 			nodes = append(nodes, v.VisitString_function(c))
+		case *plsql.Numeric_functionContext:
+			c := child.(*plsql.Numeric_functionContext)
+			nodes = append(nodes, v.VisitNumeric_function(c))
 		case *plsql.General_element_partContext:
 			c := child.(*plsql.General_element_partContext)
 			nodes = append(nodes, v.VisitGeneral_element_part(c))
@@ -412,6 +415,17 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "NVL"}}
 		for _, arg := range ctx.AllExpression() {
 			expr.Args = append(expr.Args, arg.Accept(v).(semantic.Expr))
+		}
+		return expr
+	}
+	return ctx.Accept(v)
+}
+
+func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) interface{} {
+	if ctx.ROUND() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "ROUND"}}
+		if arg := ctx.Expression(); arg != nil {
+			expr.Args = append(expr.Args, v.VisitExpression(arg.(*plsql.ExpressionContext)).(semantic.Expr))
 		}
 		return expr
 	}
