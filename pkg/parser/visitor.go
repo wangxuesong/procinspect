@@ -487,8 +487,12 @@ func (v *plsqlVisitor) VisitCreate_package(ctx *plsql.Create_packageContext) int
 			stmt.Types = append(stmt.Types, spec.(semantic.Declaration))
 		case *semantic.FunctionDeclaration:
 			stmt.Types = append(stmt.Types, spec.(semantic.Declaration))
+		case *semantic.VariableDeclaration:
+			stmt.Variables = append(stmt.Variables, spec.(semantic.Declaration))
 		default:
-			panic(fmt.Sprintf("unprocessed syntax %s at line %d", reflect.TypeOf(p.GetChild(0)).Elem().Name(), p.GetStart().GetLine()))
+			v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(p.GetChild(0)).Elem().Name()),
+				p.GetStart().GetLine(),
+				p.GetStart().GetColumn())
 		}
 	}
 	return stmt

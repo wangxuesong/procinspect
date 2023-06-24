@@ -6,6 +6,7 @@ type (
 		Name       string
 		Procedures []*CreateProcedureStatement
 		Types      []Declaration
+		Variables  []Declaration
 	}
 
 	CreatePackageBodyStatement struct {
