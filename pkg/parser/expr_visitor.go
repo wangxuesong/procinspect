@@ -67,6 +67,9 @@ func (v *exprVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.ConcatenationContext:
 			c := child.(*plsql.ConcatenationContext)
 			nodes = append(nodes, v.VisitConcatenation(c))
+		case *plsql.Unary_expressionContext:
+			c := child.(*plsql.Unary_expressionContext)
+			nodes = append(nodes, v.VisitUnary_expression(c))
 		case *plsql.Quantified_expressionContext:
 			c := child.(*plsql.Quantified_expressionContext)
 			nodes = append(nodes, v.VisitQuantified_expression(c))
@@ -380,6 +383,31 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 			expr.Operator = ctx.GetOp().GetText()
 			return expr
 		}
+	}
+	return ctx.Accept(v)
+}
+
+func (v *exprVisitor) VisitUnary_expression(ctx *plsql.Unary_expressionContext) interface{} {
+	if ctx.MINUS_SIGN() != nil || ctx.PLUS_SIGN() != nil {
+		expr := &semantic.SignExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		var ok bool
+		expr.Expr, ok = v.VisitUnary_expression(ctx.Unary_expression().(*plsql.Unary_expressionContext)).(semantic.Expr)
+		if !ok {
+			v.ReportError("unsupported expression",
+				ctx.Unary_expression().GetStart().GetLine(),
+				ctx.Unary_expression().GetStart().GetColumn())
+			return expr
+		}
+		var sign string
+		if ctx.MINUS_SIGN() != nil {
+			sign = "-"
+		} else if ctx.PLUS_SIGN() != nil {
+			sign = "+"
+		}
+		expr.Sign = sign
+		return expr
 	}
 	return ctx.Accept(v)
 }
