@@ -69,6 +69,10 @@ type (
 		Name Expr
 	}
 
+	NullStatement struct {
+		node
+	}
+
 	ProcedureCall struct {
 		node
 		Name      Expr
@@ -163,3 +167,5 @@ func (s *ExitStatement) statement() {}
 func (s *ProcedureCall) statement() {}
 
 func (s *ReturnStatement) statement() {}
+
+func (s *NullStatement) statement() {}
