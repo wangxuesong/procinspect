@@ -163,7 +163,10 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 
 	if ctx.TO_NUMBER() != nil {
 		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "TO_NUMBER"}}
-		arg := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
+		arg, ok := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
+		if !ok {
+			v.ReportError("unsupported expression", ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+		}
 		expr.Args = append(expr.Args, arg)
 		return expr
 	}
@@ -301,7 +304,14 @@ func (v *exprVisitor) VisitIn_elements(ctx *plsql.In_elementsContext) interface{
 	if ctx.AllConcatenation() != nil {
 		elems := make([]semantic.Expr, 0, len(ctx.AllConcatenation()))
 		for _, c := range ctx.AllConcatenation() {
-			elems = append(elems, v.VisitConcatenation(c.(*plsql.ConcatenationContext)).(semantic.Expr))
+			elem, ok := v.VisitConcatenation(c.(*plsql.ConcatenationContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					c.GetStart().GetLine(),
+					c.GetStart().GetColumn())
+				continue
+			}
+			elems = append(elems, elem)
 		}
 		return elems
 	}

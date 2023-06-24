@@ -268,7 +268,15 @@ func (v *plsqlVisitor) VisitParameter(ctx *plsql.ParameterContext) interface{} {
 func (v *plsqlVisitor) VisitSeq_of_declare_specs(ctx *plsql.Seq_of_declare_specsContext) interface{} {
 	decls := make([]semantic.Declaration, 0, len(ctx.AllDeclare_spec()))
 	for _, d := range ctx.AllDeclare_spec() {
-		decls = append(decls, d.Accept(v).(semantic.Declaration))
+		node := d.Accept(v)
+		decl, ok := node.(semantic.Declaration)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed syntax %s",
+				reflect.TypeOf(d.GetChild(0)).Elem().Name()),
+				d.GetStart().GetLine(), d.GetStart().GetColumn())
+			continue
+		}
+		decls = append(decls, decl)
 	}
 	return decls
 }
@@ -302,7 +310,13 @@ func (v *plsqlVisitor) VisitCursor_declaration(ctx *plsql.Cursor_declarationCont
 	for _, p := range ctx.AllParameter_spec() {
 		cursor.Parameters = append(cursor.Parameters, v.VisitParameter_spec(p.(*plsql.Parameter_specContext)).(*semantic.Parameter))
 	}
-	cursor.Stmt = ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
+	var ok bool
+	cursor.Stmt, ok = ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unprocessed syntax %s",
+			reflect.TypeOf(ctx.Select_statement().GetChild(0)).Elem().Name()),
+			ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+	}
 	return cursor
 }
 
