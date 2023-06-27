@@ -2,12 +2,13 @@ package parser
 
 import (
 	"fmt"
-	"procinspect/pkg/log"
-	plsql "procinspect/pkg/parser/internal/plsql/parser"
-	"procinspect/pkg/semantic"
 	"reflect"
 
 	"github.com/antlr4-go/antlr/v4"
+
+	"procinspect/pkg/log"
+	plsql "procinspect/pkg/parser/internal/plsql/parser"
+	"procinspect/pkg/semantic"
 )
 
 type (
@@ -203,6 +204,17 @@ func (v *plsqlVisitor) VisitSelected_list(ctx *plsql.Selected_listContext) inter
 			fields.Fields,
 			&semantic.SelectField{WildCard: &semantic.WildCardField{Table: "*", Schema: "*"}},
 		)
+	} else {
+		for _, elem := range ctx.AllSelect_list_elements() {
+			ev := newExprVisitor(v)
+			expr, ok := elem.Accept(ev).(semantic.Expr)
+			if !ok {
+				v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(elem).Elem().Name()),
+					elem.GetStart().GetLine(), elem.GetStart().GetColumn())
+				continue
+			}
+			fields.Fields = append(fields.Fields, &semantic.SelectField{Expr: expr})
+		}
 	}
 
 	return fields
