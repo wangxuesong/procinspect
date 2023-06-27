@@ -101,6 +101,11 @@ type (
 		Expr Expr
 		Sign string
 	}
+
+	OuterJoinExpression struct {
+		expression
+		Expr Expr
+	}
 )
 
 func (n *expression) expr() {}

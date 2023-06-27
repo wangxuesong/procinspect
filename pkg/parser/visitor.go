@@ -382,7 +382,11 @@ func (v *plsqlVisitor) VisitAssignment_statement(ctx *plsql.Assignment_statement
 	stmt := &semantic.AssignmentStatement{}
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
-	stmt.Left = ctx.General_element().GetText()
+	if ctx.General_element() != nil {
+		stmt.Left = ctx.General_element().GetText()
+	} else if ctx.Bind_variable() != nil {
+		stmt.Left = ctx.Bind_variable().GetText()
+	}
 	visitor := newExprVisitor(v)
 	stmt.Right = visitor.VisitExpression(ctx.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 

@@ -311,6 +311,41 @@ func TestParseSimple(t *testing.T) {
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "out join expression",
+		text: `select * from t1,t2 where t1.id=t2.id(+);`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 2)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "t1")
+			assert.NotNil(t, stmt.Where)
+			assert.IsType(t, &semantic.RelationalExpression{}, stmt.Where)
+			expr := stmt.Where.(*semantic.RelationalExpression)
+			assert.IsType(t, &semantic.DotExpression{}, expr.Left)
+			dot := expr.Left.(*semantic.DotExpression)
+			assert.Equal(t, "id", dot.Name)
+			assert.IsType(t, &semantic.NameExpression{}, dot.Parent)
+			name := dot.Parent.(*semantic.NameExpression)
+			assert.Equal(t, "t1", name.Name)
+			assert.IsType(t, &semantic.OuterJoinExpression{}, expr.Right)
+			join := expr.Right.(*semantic.OuterJoinExpression)
+			assert.IsType(t, &semantic.DotExpression{}, join.Expr)
+			dot = join.Expr.(*semantic.DotExpression)
+			assert.Equal(t, "id", dot.Name)
+			assert.IsType(t, &semantic.NameExpression{}, dot.Parent)
+			name = dot.Parent.(*semantic.NameExpression)
+			assert.Equal(t, "t2", name.Name)
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
