@@ -5,10 +5,10 @@ import (
 	"procinspect/pkg/semantic"
 )
 
-func Parse(text string) error {
+func Parse(text string) (any, error) {
 	p := parser.NewParser(text)
-	_ = p.Sql_script()
-	return p.Error()
+	root := p.Sql_script()
+	return root, p.Error()
 }
 
 func ParseScript(src string) (*semantic.Script, error) {
