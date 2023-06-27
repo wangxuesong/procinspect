@@ -93,7 +93,6 @@ func parseFile(sql string) error {
 	} else {
 		fmt.Print("ok;")
 		fmt.Printf(" lines: %d, time: %s\n", lines, elapsed)
-		//fmt.Printf(" time: %s\n", elapsed)
 		return nil
 	}
 }
