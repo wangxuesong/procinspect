@@ -556,6 +556,49 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		}
 		return expr
 	}
+	if ctx.TO_CHAR() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "TO_CHAR"}}
+		var arg semantic.Expr
+		if ctx.Table_element() != nil {
+			arg, ok = v.VisitTable_element(ctx.Table_element().(*plsql.Table_elementContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					ctx.Table_element().GetStart().GetLine(),
+					ctx.Table_element().GetStart().GetColumn())
+				return expr
+			}
+			expr.Args = append(expr.Args, arg)
+		} else if ctx.Standard_function() != nil {
+			arg, ok = v.Visit(ctx.Standard_function().(*plsql.Standard_functionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					ctx.Standard_function().GetStart().GetLine(),
+					ctx.Standard_function().GetStart().GetColumn())
+				return expr
+			}
+			expr.Args = append(expr.Args, arg)
+		} else if ctx.Expression(0) != nil {
+			arg, ok = v.VisitExpression(ctx.Expression(0).(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					ctx.Expression(0).GetStart().GetLine(),
+					ctx.Expression(0).GetStart().GetColumn())
+				return expr
+			}
+			expr.Args = append(expr.Args, arg)
+		}
+		for _, arg := range ctx.AllQuoted_string() {
+			node, ok := v.VisitQuoted_string(arg.(*plsql.Quoted_stringContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					arg.GetStart().GetLine(),
+					arg.GetStart().GetColumn())
+				continue
+			}
+			expr.Args = append(expr.Args, node)
+		}
+		return expr
+	}
 	if ctx.NVL() != nil {
 		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "NVL"}}
 		for _, arg := range ctx.AllExpression() {

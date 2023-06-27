@@ -346,6 +346,62 @@ func TestParseSimple(t *testing.T) {
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "functions",
+		text: `select to_char(id), to_char(id, 'DD-MM-YYYY'), to_char(id, 'DD-MM-YYYY', 'HH24:MI:SS') from t1;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 3)
+			assert.NotNil(t, stmt.Fields.Fields[0].Expr)
+			assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[0].Expr)
+			expr := stmt.Fields.Fields[0].Expr.(*semantic.FunctionCallExpression)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+			name := expr.Name.(*semantic.NameExpression)
+			assert.Equal(t, "TO_CHAR", name.Name)
+			assert.Equal(t, len(expr.Args), 1)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+			name = expr.Args[0].(*semantic.NameExpression)
+			assert.Equal(t, "id", name.Name)
+
+			assert.NotNil(t, stmt.Fields.Fields[1].Expr)
+			assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[0].Expr)
+			expr = stmt.Fields.Fields[1].Expr.(*semantic.FunctionCallExpression)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+			name = expr.Name.(*semantic.NameExpression)
+			assert.Equal(t, "TO_CHAR", name.Name)
+			assert.Equal(t, len(expr.Args), 2)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+			name = expr.Args[0].(*semantic.NameExpression)
+			assert.Equal(t, "id", name.Name)
+			assert.IsType(t, &semantic.StringLiteral{}, expr.Args[1])
+			str := expr.Args[1].(*semantic.StringLiteral)
+			assert.Equal(t, "'DD-MM-YYYY'", str.Value)
+
+			assert.NotNil(t, stmt.Fields.Fields[2].Expr)
+			assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[0].Expr)
+			expr = stmt.Fields.Fields[2].Expr.(*semantic.FunctionCallExpression)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+			name = expr.Name.(*semantic.NameExpression)
+			assert.Equal(t, "TO_CHAR", name.Name)
+			assert.Equal(t, len(expr.Args), 3)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+			name = expr.Args[0].(*semantic.NameExpression)
+			assert.Equal(t, "id", name.Name)
+			assert.IsType(t, &semantic.StringLiteral{}, expr.Args[1])
+			str = expr.Args[1].(*semantic.StringLiteral)
+			assert.Equal(t, "'DD-MM-YYYY'", str.Value)
+			assert.IsType(t, &semantic.StringLiteral{}, expr.Args[2])
+			str = expr.Args[2].(*semantic.StringLiteral)
+			assert.Equal(t, "'HH24:MI:SS'", str.Value)
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
