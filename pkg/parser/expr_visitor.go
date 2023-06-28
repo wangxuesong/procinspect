@@ -706,6 +706,22 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 		}
 		return expr
 	}
+	if ctx.MAX() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "MAX"}}
+		if arg := ctx.Expression(); arg != nil {
+			node := arg.(*plsql.ExpressionContext)
+			arg, ok := v.VisitExpression(node).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					node.GetStart().GetLine(),
+					node.GetStart().GetColumn())
+				return expr
+			}
+
+			expr.Args = append(expr.Args, arg)
+		}
+		return expr
+	}
 	_ = ok
 	return v.VisitChildren(ctx)
 }
