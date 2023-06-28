@@ -348,7 +348,7 @@ func TestParseSimple(t *testing.T) {
 
 	tests = append(tests, testCase{
 		name: "functions",
-		text: `select to_char(id), to_char(id, 'DD-MM-YYYY'), to_char(id, 'DD-MM-YYYY', 'HH24:MI:SS') from t1;`,
+		text: `select to_char(id) a, to_char(id, 'DD-MM-YYYY'), to_char(id, 'DD-MM-YYYY', 'HH24:MI:SS') from t1;`,
 		Func: func(t *testing.T, root any) {
 			node := root.(*semantic.Script)
 			assert.Greater(t, len(node.Statements), 0)
@@ -359,8 +359,11 @@ func TestParseSimple(t *testing.T) {
 			assert.Equal(t, 1, stmt.Column())
 			assert.Equal(t, len(stmt.Fields.Fields), 3)
 			assert.NotNil(t, stmt.Fields.Fields[0].Expr)
-			assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[0].Expr)
-			expr := stmt.Fields.Fields[0].Expr.(*semantic.FunctionCallExpression)
+			assert.IsType(t, &semantic.AliasExpression{}, stmt.Fields.Fields[0].Expr)
+			alias := stmt.Fields.Fields[0].Expr.(*semantic.AliasExpression)
+			assert.Equal(t, "a", alias.Alias)
+			assert.IsType(t, &semantic.FunctionCallExpression{}, alias.Expr)
+			expr := alias.Expr.(*semantic.FunctionCallExpression)
 			assert.IsType(t, &semantic.NameExpression{}, expr.Name)
 			name := expr.Name.(*semantic.NameExpression)
 			assert.Equal(t, "TO_CHAR", name.Name)
@@ -370,7 +373,7 @@ func TestParseSimple(t *testing.T) {
 			assert.Equal(t, "id", name.Name)
 
 			assert.NotNil(t, stmt.Fields.Fields[1].Expr)
-			assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[0].Expr)
+			assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[1].Expr)
 			expr = stmt.Fields.Fields[1].Expr.(*semantic.FunctionCallExpression)
 			assert.IsType(t, &semantic.NameExpression{}, expr.Name)
 			name = expr.Name.(*semantic.NameExpression)
@@ -384,7 +387,7 @@ func TestParseSimple(t *testing.T) {
 			assert.Equal(t, "'DD-MM-YYYY'", str.Value)
 
 			assert.NotNil(t, stmt.Fields.Fields[2].Expr)
-			assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[0].Expr)
+			assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[2].Expr)
 			expr = stmt.Fields.Fields[2].Expr.(*semantic.FunctionCallExpression)
 			assert.IsType(t, &semantic.NameExpression{}, expr.Name)
 			name = expr.Name.(*semantic.NameExpression)
