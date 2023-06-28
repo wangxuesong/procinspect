@@ -106,6 +106,12 @@ type (
 		expression
 		Expr Expr
 	}
+
+	AliasExpression struct {
+		expression
+		Expr  Expr
+		Alias string
+	}
 )
 
 func (n *expression) expr() {}

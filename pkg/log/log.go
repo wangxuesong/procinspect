@@ -39,4 +39,4 @@ var (
 	Sync  = logger.Sync
 )
 
-var logger, _ = zap.NewDevelopment(zap.WithCaller(false), zap.AddStacktrace(ErrorLevel))
+var logger, _ = zap.NewProduction(zap.WithCaller(false), zap.AddStacktrace(ErrorLevel))

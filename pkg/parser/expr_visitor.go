@@ -13,13 +13,14 @@ import (
 
 type (
 	exprVisitor struct {
-		//plsql.BasePlSqlParserVisitor
+		plsql.BasePlSqlParserVisitor
 		stmtVisitor *plsqlVisitor
 	}
 )
 
 func newExprVisitor(visitor *plsqlVisitor) *exprVisitor {
 	v := &exprVisitor{stmtVisitor: visitor}
+	v.BasePlSqlParserVisitor.ParseTreeVisitor = v
 	return v
 }
 
@@ -150,9 +151,9 @@ func (v *exprVisitor) VisitExpressions(ctx *plsql.ExpressionsContext) interface{
 	return exprs
 }
 
-func (v *exprVisitor) VisitExpression(ctx *plsql.ExpressionContext) interface{} {
-	return ctx.Accept(v)
-}
+//func (v *exprVisitor) VisitExpression(ctx *plsql.ExpressionContext) interface{} {
+//	return ctx.Accept(v)
+//}
 
 func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) interface{} {
 	if ctx.Cursor_name() != nil {
@@ -182,7 +183,7 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 		return expr
 	}
 
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitLogical_expression(ctx *plsql.Logical_expressionContext) interface{} {
@@ -363,7 +364,7 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 		return expr
 	}
 
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitIn_elements(ctx *plsql.In_elementsContext) interface{} {
@@ -382,7 +383,7 @@ func (v *exprVisitor) VisitIn_elements(ctx *plsql.In_elementsContext) interface{
 		return elems
 	}
 
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitBetween_elements(ctx *plsql.Between_elementsContext) interface{} {
@@ -404,12 +405,12 @@ func (v *exprVisitor) VisitBetween_elements(ctx *plsql.Between_elementsContext) 
 		return elems
 	}
 
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interface{} {
 	if ctx.Model_expression() != nil {
-		return ctx.Accept(v)
+		return ctx.Model_expression().Accept(v)
 	} else {
 		if ctx.BAR(0) != nil {
 			expr := &semantic.BinaryExpression{}
@@ -470,7 +471,7 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 			return expr
 		}
 	}
-	return ctx.Accept(v)
+	panic("unreachable")
 }
 
 func (v *exprVisitor) VisitUnary_expression(ctx *plsql.Unary_expressionContext) interface{} {
@@ -495,7 +496,7 @@ func (v *exprVisitor) VisitUnary_expression(ctx *plsql.Unary_expressionContext) 
 		expr.Sign = sign
 		return expr
 	}
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitQuantified_expression(ctx *plsql.Quantified_expressionContext) interface{} {
@@ -510,7 +511,7 @@ func (v *exprVisitor) VisitQuantified_expression(ctx *plsql.Quantified_expressio
 		}
 		return expr
 	}
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
@@ -531,7 +532,7 @@ func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
 	if ctx.Expressions() != nil {
 		return v.VisitExpressions(ctx.Expressions().(*plsql.ExpressionsContext))
 	}
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitTable_element(ctx *plsql.Table_elementContext) interface{} {
@@ -615,7 +616,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		return expr
 	}
 	_ = ok
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) interface{} {
@@ -637,7 +638,7 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 		return expr
 	}
 	_ = ok
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partContext) interface{} {
@@ -661,7 +662,7 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 		expr.Name = v.parseDotExpr(ctx.Id_expression(0).GetText())
 		return expr
 	}
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitFunction_argument(ctx *plsql.Function_argumentContext) interface{} {
@@ -676,7 +677,7 @@ func (v *exprVisitor) VisitFunction_argument(ctx *plsql.Function_argumentContext
 
 func (v *exprVisitor) VisitQuoted_string(ctx *plsql.Quoted_stringContext) interface{} {
 	if ctx.Variable_name() != nil {
-		return ctx.Accept(v)
+		return v.VisitChildren(ctx)
 	}
 	return &semantic.StringLiteral{Value: ctx.GetText()}
 }
@@ -685,7 +686,7 @@ func (v *exprVisitor) VisitConstant(ctx *plsql.ConstantContext) interface{} {
 	if ctx.NULL_() != nil {
 		return &semantic.NullExpression{}
 	}
-	return ctx.Accept(v)
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitVariable_name(ctx *plsql.Variable_nameContext) interface{} {
@@ -716,6 +717,22 @@ func (v *exprVisitor) VisitNumeric(ctx *plsql.NumericContext) interface{} {
 
 func (v *exprVisitor) VisitRoutine_name(ctx *plsql.Routine_nameContext) interface{} {
 	return v.parseDotExpr(ctx.GetText())
+}
+
+func (v *exprVisitor) VisitSelect_list_elements(ctx *plsql.Select_list_elementsContext) interface{} {
+	if ctx.Column_alias() != nil {
+		expr := &semantic.AliasExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr.Expr = ctx.Expression().Accept(v).(semantic.Expr)
+		if ctx.Column_alias().Quoted_string() != nil {
+			expr.Alias = ctx.Column_alias().Quoted_string().GetText()
+		} else if ctx.Column_alias().Identifier() != nil {
+			expr.Alias = ctx.Column_alias().Identifier().GetText()
+		}
+		return expr
+	}
+	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
