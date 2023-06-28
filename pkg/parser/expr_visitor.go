@@ -151,10 +151,6 @@ func (v *exprVisitor) VisitExpressions(ctx *plsql.ExpressionsContext) interface{
 	return exprs
 }
 
-//func (v *exprVisitor) VisitExpression(ctx *plsql.ExpressionContext) interface{} {
-//	return ctx.Accept(v)
-//}
-
 func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) interface{} {
 	if ctx.Cursor_name() != nil {
 		node := ctx.Cursor_name().(*plsql.Cursor_nameContext)
@@ -612,6 +608,20 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 			}
 
 			expr.Args = append(expr.Args, node)
+		}
+		return expr
+	}
+	if ctx.DECODE() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "DECODE"}}
+		{
+			node, ok := ctx.Expressions().Accept(v).([]semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					ctx.Expressions().GetStart().GetLine(),
+					ctx.Expressions().GetStart().GetColumn())
+				return expr
+			}
+			expr.Args = node
 		}
 		return expr
 	}
