@@ -528,6 +528,20 @@ func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
 	if ctx.Expressions() != nil {
 		return v.VisitExpressions(ctx.Expressions().(*plsql.ExpressionsContext))
 	}
+	if ctx.Subquery() != nil {
+		expr := &semantic.StatementExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		stmt, ok := v.stmtVisitor.VisitSubquery(ctx.Subquery().(*plsql.SubqueryContext)).(semantic.Statement)
+		if !ok {
+			v.ReportError("unsupported statement",
+				ctx.Subquery().GetStart().GetLine(),
+				ctx.Subquery().GetStart().GetColumn())
+			return expr
+		}
+		expr.Stmt = stmt
+		return expr
+	}
 	return v.VisitChildren(ctx)
 }
 
