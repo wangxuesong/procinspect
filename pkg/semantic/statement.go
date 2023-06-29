@@ -50,6 +50,20 @@ type (
 		node
 		CreateTypeStatement
 	}
+
+	CaseWhenStatement struct {
+		node
+		Expr        Expr
+		WhenClauses []*CaseWhenBlock
+		ElseClause  *CaseWhenBlock
+	}
+
+	CaseWhenBlock struct {
+		node
+		Condition Expr
+		Expr      Expr
+		Stmts     []Statement
+	}
 )
 
 func (s *SelectStatement) Type() NodeType {
@@ -61,3 +75,5 @@ func (s *SelectStatement) statement() {}
 func (s *CreateTypeStatement) statement() {}
 
 func (s *CreateNestTableStatement) statement() {}
+
+func (s *CaseWhenStatement) statement() {}

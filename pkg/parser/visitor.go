@@ -147,6 +147,12 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Function_callContext:
 			c := child.(*plsql.Function_callContext)
 			nodes = append(nodes, v.VisitFunction_call(c))
+		case *plsql.Simple_case_statementContext:
+			c := child.(*plsql.Simple_case_statementContext)
+			nodes = append(nodes, v.VisitSimple_case_statement(c))
+		case *plsql.Searched_case_statementContext:
+			c := child.(*plsql.Searched_case_statementContext)
+			nodes = append(nodes, v.VisitSearched_case_statement(c))
 		case antlr.TerminalNode:
 			break
 		default:
@@ -659,5 +665,127 @@ func (v *plsqlVisitor) VisitFunction_body(ctx *plsql.Function_bodyContext) inter
 		stmt.Declarations = v.VisitSeq_of_declare_specs(ctx.Seq_of_declare_specs().(*plsql.Seq_of_declare_specsContext)).([]semantic.Declaration)
 	}
 	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitSimple_case_statement(ctx *plsql.Simple_case_statementContext) interface{} {
+	stmt := &semantic.CaseWhenStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.Expression() != nil {
+		visitor := newExprVisitor(v)
+		stmt.Expr = visitor.VisitExpression(ctx.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+	}
+	for _, item := range ctx.AllSimple_case_when_part() {
+		block := &semantic.CaseWhenBlock{}
+		block.SetLine(item.GetStart().GetLine())
+		block.SetColumn(item.GetStart().GetColumn())
+		if item.Expression(0) != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression(0).(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression(0).GetStart().GetLine(),
+					item.Expression(0).GetStart().GetColumn())
+			} else {
+				block.Condition = expr
+			}
+		}
+		if item.Seq_of_statements() != nil {
+			block.Stmts = v.VisitSeq_of_statements(item.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
+		}
+		if item.Expression(1) != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression(1).(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression(1).GetStart().GetLine(),
+					item.Expression(1).GetStart().GetColumn())
+			} else {
+				block.Expr = expr
+			}
+		}
+		stmt.WhenClauses = append(stmt.WhenClauses, block)
+	}
+	if ctx.Case_else_part() != nil {
+		item := ctx.Case_else_part()
+		block := &semantic.CaseWhenBlock{}
+		block.SetLine(item.GetStart().GetLine())
+		block.SetColumn(item.GetStart().GetColumn())
+		if item.Seq_of_statements() != nil {
+			block.Stmts = v.VisitSeq_of_statements(item.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
+		}
+		if item.Expression() != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression().GetStart().GetLine(),
+					item.Expression().GetStart().GetColumn())
+			} else {
+				block.Expr = expr
+			}
+		}
+		stmt.ElseClause = block
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitSearched_case_statement(ctx *plsql.Searched_case_statementContext) interface{} {
+	stmt := &semantic.CaseWhenStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	for _, item := range ctx.AllSearched_case_when_part() {
+		block := &semantic.CaseWhenBlock{}
+		block.SetLine(item.GetStart().GetLine())
+		block.SetColumn(item.GetStart().GetColumn())
+		if item.Expression(0) != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression(0).(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression(0).GetStart().GetLine(),
+					item.Expression(0).GetStart().GetColumn())
+			} else {
+				block.Condition = expr
+			}
+		}
+		if item.Seq_of_statements() != nil {
+			block.Stmts = v.VisitSeq_of_statements(item.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
+		}
+		if item.Expression(1) != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression(1).(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression(1).GetStart().GetLine(),
+					item.Expression(1).GetStart().GetColumn())
+			} else {
+				block.Expr = expr
+			}
+		}
+		stmt.WhenClauses = append(stmt.WhenClauses, block)
+	}
+	if ctx.Case_else_part() != nil {
+		item := ctx.Case_else_part()
+		block := &semantic.CaseWhenBlock{}
+		block.SetLine(item.GetStart().GetLine())
+		block.SetColumn(item.GetStart().GetColumn())
+		if item.Seq_of_statements() != nil {
+			block.Stmts = v.VisitSeq_of_statements(item.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
+		}
+		if item.Expression() != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression().GetStart().GetLine(),
+					item.Expression().GetStart().GetColumn())
+			} else {
+				block.Expr = expr
+			}
+		}
+		stmt.ElseClause = block
+	}
 	return stmt
 }
