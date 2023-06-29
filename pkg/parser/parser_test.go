@@ -7,6 +7,7 @@ import (
 	"procinspect/pkg/semantic"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type (
@@ -33,7 +34,8 @@ func getRoot(t *testing.T, text string) any {
 	_, ok := root.(*plsql.Sql_scriptContext)
 	assert.True(t, ok)
 
-	node := GeneralScript(root)
+	node, err := GeneralScript(root)
+	require.Nil(t, err, err)
 	assert.NotNil(t, node)
 	assert.Greater(t, len(node.Statements), 0)
 	return node
@@ -129,6 +131,31 @@ end;
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "create package with function declaration",
+		text: `
+create or replace package zznode.pkg_task_info is
+  function fun_rid_holiday(in_begin in date, in_end in date) return number;
+end;
+`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			{
+				stmt, ok := node.Statements[0].(*semantic.CreatePackageStatement)
+				assert.True(t, ok)
+				assert.NotNil(t, stmt)
+				assert.Equal(t, "pkg_task_info", stmt.Name)
+				assert.Equal(t, len(stmt.Types), 1)
+				assert.IsType(t, &semantic.FunctionDeclaration{}, stmt.Types[0])
+				typeStmt := stmt.Types[0].(*semantic.FunctionDeclaration)
+				assert.Equal(t, "fun_rid_holiday", typeStmt.Name)
+				assert.Equal(t, 3, typeStmt.Line())
+				assert.Equal(t, 3, typeStmt.Column())
+			}
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
@@ -167,6 +194,245 @@ func TestParseSimple(t *testing.T) {
 			assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
 			assert.Equal(t, stmt.From.TableRefs[1].Table, "test")
 
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "in expression",
+		text: `select * from dual where a in (1, 2, 3);`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 1)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
+			assert.NotNil(t, stmt.Where)
+			assert.IsType(t, &semantic.InExpression{}, stmt.Where)
+			expr := stmt.Where.(*semantic.InExpression)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Expr)
+			name := expr.Expr.(*semantic.NameExpression)
+			assert.Equal(t, "a", name.Name)
+			assert.Equal(t, 3, len(expr.Elems))
+			assert.IsType(t, &semantic.NumericLiteral{}, expr.Elems[0])
+			elem := expr.Elems[0].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(1), elem.Value)
+			assert.IsType(t, &semantic.NumericLiteral{}, expr.Elems[1])
+			elem = expr.Elems[1].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(2), elem.Value)
+			assert.IsType(t, &semantic.NumericLiteral{}, expr.Elems[2])
+			elem = expr.Elems[2].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(3), elem.Value)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "between expression",
+		text: `select * from dual where a between 1 and 2;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 1)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
+			assert.NotNil(t, stmt.Where)
+			assert.IsType(t, &semantic.BetweenExpression{}, stmt.Where)
+			expr := stmt.Where.(*semantic.BetweenExpression)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Expr)
+			name := expr.Expr.(*semantic.NameExpression)
+			assert.Equal(t, "a", name.Name)
+			assert.Equal(t, 2, len(expr.Elems))
+			assert.IsType(t, &semantic.NumericLiteral{}, expr.Elems[0])
+			elem := expr.Elems[0].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(1), elem.Value)
+			assert.IsType(t, &semantic.NumericLiteral{}, expr.Elems[1])
+			elem = expr.Elems[1].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(2), elem.Value)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "like expression",
+		text: `select * from dual where a like '%1%';`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 1)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
+			assert.NotNil(t, stmt.Where)
+			assert.IsType(t, &semantic.LikeExpression{}, stmt.Where)
+			expr := stmt.Where.(*semantic.LikeExpression)
+			assert.IsType(t, &semantic.NameExpression{}, expr.Expr)
+			name := expr.Expr.(*semantic.NameExpression)
+			assert.Equal(t, "a", name.Name)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "exists expression",
+		text: `select * from dual where exists (select * from dual);`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 1)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
+			assert.NotNil(t, stmt.Where)
+			assert.IsType(t, &semantic.ExistsExpression{}, stmt.Where)
+			expr := stmt.Where.(*semantic.ExistsExpression)
+			assert.IsType(t, &semantic.QueryExpression{}, expr.Expr)
+			query := expr.Expr.(*semantic.QueryExpression).Query
+			assert.Equal(t, query.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "out join expression",
+		text: `select * from t1,t2 where t1.id=t2.id(+);`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 2)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "t1")
+			assert.NotNil(t, stmt.Where)
+			assert.IsType(t, &semantic.RelationalExpression{}, stmt.Where)
+			expr := stmt.Where.(*semantic.RelationalExpression)
+			assert.IsType(t, &semantic.DotExpression{}, expr.Left)
+			dot := expr.Left.(*semantic.DotExpression)
+			assert.Equal(t, "id", dot.Name)
+			assert.IsType(t, &semantic.NameExpression{}, dot.Parent)
+			name := dot.Parent.(*semantic.NameExpression)
+			assert.Equal(t, "t1", name.Name)
+			assert.IsType(t, &semantic.OuterJoinExpression{}, expr.Right)
+			join := expr.Right.(*semantic.OuterJoinExpression)
+			assert.IsType(t, &semantic.DotExpression{}, join.Expr)
+			dot = join.Expr.(*semantic.DotExpression)
+			assert.Equal(t, "id", dot.Name)
+			assert.IsType(t, &semantic.NameExpression{}, dot.Parent)
+			name = dot.Parent.(*semantic.NameExpression)
+			assert.Equal(t, "t2", name.Name)
+		},
+	})
+
+	runTestSuite(t, tests)
+}
+
+func TestParseFunctionCall(t *testing.T) {
+	tests := testSuite{}
+
+	tests = append(tests, testCase{
+		name: "functions",
+		text: `select to_char(id) a, to_char(id, 'DD-MM-YYYY'), to_char(id, 'DD-MM-YYYY', 'HH24:MI:SS'),
+decode(m.move_kind||m.order_type,'LOADDELIVER',wi1.wi_dest_loc,'') from t1;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 4)
+			{ // to_char(id) a
+				assert.NotNil(t, stmt.Fields.Fields[0].Expr)
+				assert.IsType(t, &semantic.AliasExpression{}, stmt.Fields.Fields[0].Expr)
+				alias := stmt.Fields.Fields[0].Expr.(*semantic.AliasExpression)
+				assert.Equal(t, "a", alias.Alias)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, alias.Expr)
+				expr := alias.Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "TO_CHAR", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+				name = expr.Args[0].(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
+			}
+			{ // to_char(id, 'DD-MM-YYYY')
+				assert.NotNil(t, stmt.Fields.Fields[1].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[1].Expr)
+				expr := stmt.Fields.Fields[1].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "TO_CHAR", name.Name)
+				assert.Equal(t, len(expr.Args), 2)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+				name = expr.Args[0].(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
+				assert.IsType(t, &semantic.StringLiteral{}, expr.Args[1])
+				str := expr.Args[1].(*semantic.StringLiteral)
+				assert.Equal(t, "'DD-MM-YYYY'", str.Value)
+			}
+			{ // to_char(id, 'DD-MM-YYYY', 'HH24:MI:SS')
+				assert.NotNil(t, stmt.Fields.Fields[2].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[2].Expr)
+				expr := stmt.Fields.Fields[2].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "TO_CHAR", name.Name)
+				assert.Equal(t, len(expr.Args), 3)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+				name = expr.Args[0].(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
+				assert.IsType(t, &semantic.StringLiteral{}, expr.Args[1])
+				str := expr.Args[1].(*semantic.StringLiteral)
+				assert.Equal(t, "'DD-MM-YYYY'", str.Value)
+				assert.IsType(t, &semantic.StringLiteral{}, expr.Args[2])
+				str = expr.Args[2].(*semantic.StringLiteral)
+				assert.Equal(t, "'HH24:MI:SS'", str.Value)
+			}
+			{ // decode(m.move_kind||m.order_type,'LOADDELIVER',wi1.wi_dest_loc,'')
+				i := 3
+				assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
+				expr := stmt.Fields.Fields[i].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "DECODE", name.Name)
+				assert.Equal(t, len(expr.Args), 4)
+				assert.IsType(t, &semantic.BinaryExpression{}, expr.Args[0])
+				binary := expr.Args[0].(*semantic.BinaryExpression)
+				assert.IsType(t, &semantic.DotExpression{}, binary.Left)
+				assert.IsType(t, &semantic.DotExpression{}, binary.Right)
+				assert.IsType(t, &semantic.StringLiteral{}, expr.Args[1])
+				str := expr.Args[1].(*semantic.StringLiteral)
+				assert.Equal(t, "'LOADDELIVER'", str.Value)
+				assert.IsType(t, &semantic.StringLiteral{}, expr.Args[3])
+				str = expr.Args[3].(*semantic.StringLiteral)
+				assert.Equal(t, "''", str.Value)
+			}
 		},
 	})
 
@@ -277,6 +543,123 @@ END;`,
 			assert.IsType(t, &semantic.NumericLiteral{}, stmt1.Right)
 			right := stmt1.Right.(*semantic.NumericLiteral)
 			assert.Equal(t, right.Value, int64(1))
+		},
+	})
+
+	runTestSuite(t, tests)
+}
+
+func TestCreateFunction(t *testing.T) {
+	var tests = testSuite{}
+
+	tests = append(tests, testCase{
+		name: "create function",
+		text: `create or replace function test return number is
+	begin
+		select 1 from dual;
+		return 1;
+	end;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			// assert that the statement is a CreateProcedureStatement
+			assert.IsType(t, &semantic.CreateFunctionStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.CreateFunctionStatement)
+
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+
+			assert.True(t, stmt.IsReplace)
+
+			assert.Equal(t, stmt.Name, "test")
+
+			assert.NotNil(t, stmt.Body)
+			assert.Equal(t, len(stmt.Body.Statements), 2)
+
+			assert.IsType(t, &semantic.SelectStatement{}, stmt.Body.Statements[0])
+			select1 := stmt.Body.Statements[0].(*semantic.SelectStatement)
+			assert.Equal(t, select1.From.TableRefs[0].Table, "dual")
+			// assert line & column
+			assert.Equal(t, 3, select1.Line())
+			assert.Equal(t, 3, select1.Column())
+
+			assert.IsType(t, &semantic.ReturnStatement{}, stmt.Body.Statements[1])
+			r := stmt.Body.Statements[1].(*semantic.ReturnStatement)
+			// assert line & column
+			assert.Equal(t, 4, r.Line())
+			assert.Equal(t, 3, r.Column())
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "create function with parameters",
+		text: `CREATE OR REPLACE FUNCTION PROC(PARAM NUMBER) RETURN NUMBER
+IS
+LOCAL_PARAM NUMBER;
+USER_EXCEPTION EXCEPTION;
+  type type_date_tab is table of date index by binary_integer;
+BEGIN
+LOCAL_PARAM:=1;
+return null;
+END;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			// assert that the statement is a CreateProcedureStatement
+			assert.IsType(t, &semantic.CreateFunctionStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.CreateFunctionStatement)
+
+			// assert line & column
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+
+			assert.True(t, stmt.IsReplace)
+
+			assert.Equal(t, stmt.Name, "PROC")
+
+			assert.Equal(t, len(stmt.Parameters), 1)
+			assert.Equal(t, len(stmt.Body.Statements), 2)
+			assert.Equal(t, stmt.Parameters[0].Name, "PARAM")
+			assert.Equal(t, stmt.Parameters[0].DataType, "NUMBER")
+
+			assert.NotNil(t, stmt.Declarations)
+			assert.Equal(t, len(stmt.Declarations), 3)
+
+			assert.IsType(t, &semantic.VariableDeclaration{Name: "LOCAL_PARAM", DataType: "NUMBER"}, stmt.Declarations[0])
+			// assert line & column
+			assert.Equal(t, 3, stmt.Declarations[0].Line())
+			assert.Equal(t, 1, stmt.Declarations[0].Column())
+			decl1 := stmt.Declarations[0].(*semantic.VariableDeclaration)
+			assert.Equal(t, decl1.Name, "LOCAL_PARAM")
+			assert.Equal(t, decl1.DataType, "NUMBER")
+			assert.IsType(t, &semantic.ExceptionDeclaration{Name: "USER_EXCEPTION"}, stmt.Declarations[1])
+			// assert line & column
+			assert.Equal(t, 4, stmt.Declarations[1].Line())
+			assert.Equal(t, 1, stmt.Declarations[1].Column())
+			decl2 := stmt.Declarations[1].(*semantic.ExceptionDeclaration)
+			assert.Equal(t, decl2.Name, "USER_EXCEPTION")
+			// assert nest table type declaration
+			assert.IsType(t, &semantic.NestTableTypeDeclaration{}, stmt.Declarations[2])
+			decl3 := stmt.Declarations[2].(*semantic.NestTableTypeDeclaration)
+			assert.Equal(t, decl3.Name, "type_date_tab")
+
+			assert.NotNil(t, stmt.Body)
+			assert.Equal(t, len(stmt.Body.Statements), 2)
+
+			assert.IsType(t, &semantic.AssignmentStatement{}, stmt.Body.Statements[0])
+			stmt1 := stmt.Body.Statements[0].(*semantic.AssignmentStatement)
+			// assert line & column
+			assert.Equal(t, 7, stmt1.Line())
+			assert.Equal(t, 1, stmt1.Column())
+			assert.Equal(t, stmt1.Left, "LOCAL_PARAM")
+			assert.IsType(t, &semantic.NumericLiteral{}, stmt1.Right)
+			right := stmt1.Right.(*semantic.NumericLiteral)
+			assert.Equal(t, right.Value, int64(1))
+
+			assert.IsType(t, &semantic.ReturnStatement{}, stmt.Body.Statements[1])
+			r := stmt.Body.Statements[1].(*semantic.ReturnStatement)
+			assert.IsType(t, &semantic.NullExpression{}, r.Name)
+			// assert line & column
+			assert.Equal(t, 8, r.Line())
+			assert.Equal(t, 1, r.Column())
 		},
 	})
 
@@ -424,6 +807,7 @@ Begin
       If v_Index>0 Then
         v_Areano := Substr(v_Areanos,1,v_Index-1);
         v_Areanos := Substr(v_Areanos,v_Index+1);
+        v_Areanos := Nvl(v_Areanos,v_Index+1);
       Else
         v_Areano := v_Areanos;
         v_Areanos := '';
@@ -666,7 +1050,7 @@ End;
 						numericLit := relExp.Right.(*semantic.NumericLiteral)
 						assert.Equal(t, numericLit.Value, int64(0))
 						assert.NotNil(t, ifStmt.ThenBlock)
-						assert.Equal(t, len(ifStmt.ThenBlock), 2)
+						assert.Equal(t, len(ifStmt.ThenBlock), 3)
 						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[0])
 						stmt := ifStmt.ThenBlock[0].(*semantic.AssignmentStatement)
 						assert.Equal(t, stmt.Left, "v_Areano")
@@ -699,6 +1083,27 @@ End;
 						assert.IsType(t, &semantic.NameExpression{}, funcCallExp.Name)
 						nameExp = funcCallExp.Name.(*semantic.NameExpression)
 						assert.Equal(t, nameExp.Name, "SUBSTR")
+						assert.Equal(t, len(funcCallExp.Args), 2)
+						assert.IsType(t, &semantic.NameExpression{}, funcCallExp.Args[0])
+						nameExp = funcCallExp.Args[0].(*semantic.NameExpression)
+						assert.Equal(t, nameExp.Name, "v_Areanos")
+						assert.IsType(t, &semantic.BinaryExpression{}, funcCallExp.Args[1])
+						binaryExp = funcCallExp.Args[1].(*semantic.BinaryExpression)
+						assert.Equal(t, binaryExp.Operator, "+")
+						assert.IsType(t, &semantic.NameExpression{}, binaryExp.Left)
+						nameExp = binaryExp.Left.(*semantic.NameExpression)
+						assert.Equal(t, nameExp.Name, "v_Index")
+						assert.IsType(t, &semantic.NumericLiteral{}, binaryExp.Right)
+						numericLit = binaryExp.Right.(*semantic.NumericLiteral)
+						assert.Equal(t, numericLit.Value, int64(1))
+						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ThenBlock[2])
+						stmt = ifStmt.ThenBlock[2].(*semantic.AssignmentStatement)
+						assert.Equal(t, stmt.Left, "v_Areanos")
+						assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Right)
+						funcCallExp = stmt.Right.(*semantic.FunctionCallExpression)
+						assert.IsType(t, &semantic.NameExpression{}, funcCallExp.Name)
+						nameExp = funcCallExp.Name.(*semantic.NameExpression)
+						assert.Equal(t, nameExp.Name, "NVL")
 						assert.Equal(t, len(funcCallExp.Args), 2)
 						assert.IsType(t, &semantic.NameExpression{}, funcCallExp.Args[0])
 						nameExp = funcCallExp.Args[0].(*semantic.NameExpression)
@@ -860,7 +1265,7 @@ func TestBlock(t *testing.T) {
 		root := p.Block()
 		assert.Nil(t, p.Error())
 
-		visitor := &plsqlVisitor{}
+		visitor := newPlSqlVisitor()
 		node := visitor.VisitBlock(root.(*plsql.BlockContext)).(*semantic.BlockStatement)
 
 		return node

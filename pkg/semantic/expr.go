@@ -35,6 +35,34 @@ type (
 		Operator string
 	}
 
+	InExpression struct {
+		expression
+		Expr  Expr
+		Elems []Expr
+	}
+
+	LikeExpression struct {
+		expression
+		Expr     Expr
+		LikeExpr Expr
+	}
+
+	BetweenExpression struct {
+		expression
+		Expr  Expr
+		Elems []Expr
+	}
+
+	ExistsExpression struct {
+		expression
+		Expr Expr
+	}
+
+	QueryExpression struct {
+		expression
+		Query *SelectStatement
+	}
+
 	BinaryExpression struct {
 		expression
 		Left     Expr
@@ -62,6 +90,27 @@ type (
 	StringLiteral struct {
 		expression
 		Value string
+	}
+
+	NullExpression struct {
+		expression
+	}
+
+	SignExpression struct {
+		expression
+		Expr Expr
+		Sign string
+	}
+
+	OuterJoinExpression struct {
+		expression
+		Expr Expr
+	}
+
+	AliasExpression struct {
+		expression
+		Expr  Expr
+		Alias string
 	}
 )
 

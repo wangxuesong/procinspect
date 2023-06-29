@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/pprof"
+	"strings"
 	"time"
 
 	"procinspect/pkg/parser"
@@ -73,18 +74,25 @@ func parseFile(sql string) error {
 		fmt.Println(err)
 		return err
 	}
+	src := string(text)
+	count := make(chan int)
+	go func() {
+		lines := strings.Split(src, "\r\n")
+		count <- len(lines)
+	}()
 	// parse file
 	fmt.Print("parse ", filepath.Base(absPath), " ")
 	start := time.Now()
-	err = parser.Parse(string(text))
+	_, err = parser.Parse(src)
 	elapsed := time.Since(start)
+	lines := <-count
 	if err != nil {
 		//name := filepath.Base(absPath)
 		fmt.Printf("error: %s\n", err)
 		return err
 	} else {
 		fmt.Print("ok;")
-		fmt.Printf(" time: %s\n", elapsed)
+		fmt.Printf(" lines: %d, time: %s\n", lines, elapsed)
 		return nil
 	}
 }

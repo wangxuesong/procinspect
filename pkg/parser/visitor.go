@@ -2,21 +2,34 @@ package parser
 
 import (
 	"fmt"
-	plsql "procinspect/pkg/parser/internal/plsql/parser"
-	"procinspect/pkg/semantic"
+	"reflect"
 
 	"github.com/antlr4-go/antlr/v4"
+
+	"procinspect/pkg/log"
+	plsql "procinspect/pkg/parser/internal/plsql/parser"
+	"procinspect/pkg/semantic"
 )
 
 type (
 	plsqlVisitor struct {
-		//plsql.BasePlSqlParserVisitor
+		plsql.BasePlSqlParserVisitor
 	}
 )
 
+func newPlSqlVisitor() *plsqlVisitor {
+	v := &plsqlVisitor{}
+	v.BasePlSqlParserVisitor.ParseTreeVisitor = v
+	return v
+}
+
+func (v *plsqlVisitor) ReportError(msg string, line, column int) {
+	defer log.Sync()
+	log.Warn(msg, log.Int("line", line), log.Int("column", column))
+}
+
 func (v *plsqlVisitor) Visit(tree antlr.ParseTree) interface{} {
-	//TODO implement me
-	panic("implement me")
+	return tree.Accept(v)
 }
 
 func (v *plsqlVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
@@ -29,10 +42,17 @@ func (v *plsqlVisitor) VisitErrorNode(node antlr.ErrorNode) interface{} {
 	panic("implement me")
 }
 
-func GeneralScript(root plsql.ISql_scriptContext) *semantic.Script {
-	visitor := &plsqlVisitor{}
-	script := visitor.VisitSql_script(root.(*plsql.Sql_scriptContext)).(*semantic.Script)
-	return script
+func GeneralScript(root plsql.ISql_scriptContext) (script *semantic.Script, err error) {
+	var e error
+	defer func() {
+		if e := recover(); e != nil {
+			err = fmt.Errorf("%v", e)
+		}
+	}()
+
+	visitor := newPlSqlVisitor()
+	script = visitor.VisitSql_script(root.(*plsql.Sql_scriptContext)).(*semantic.Script)
+	return script, e
 }
 
 func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
@@ -58,6 +78,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Create_procedure_bodyContext:
 			c := child.(*plsql.Create_procedure_bodyContext)
 			nodes = append(nodes, v.VisitCreate_procedure_body(c))
+		case *plsql.Create_function_bodyContext:
+			c := child.(*plsql.Create_function_bodyContext)
+			nodes = append(nodes, v.VisitCreate_function_body(c))
 		case *plsql.Create_typeContext:
 			c := child.(*plsql.Create_typeContext)
 			nodes = append(nodes, v.VisitCreate_type(c))
@@ -76,6 +99,12 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Procedure_bodyContext:
 			c := child.(*plsql.Procedure_bodyContext)
 			nodes = append(nodes, v.VisitProcedure_body(c))
+		case *plsql.Function_specContext:
+			c := child.(*plsql.Function_specContext)
+			nodes = append(nodes, v.VisitFunction_spec(c))
+		case *plsql.Function_bodyContext:
+			c := child.(*plsql.Function_bodyContext)
+			nodes = append(nodes, v.VisitFunction_body(c))
 		case *plsql.Variable_declarationContext:
 			c := child.(*plsql.Variable_declarationContext)
 			nodes = append(nodes, v.VisitVariable_declaration(c))
@@ -109,6 +138,12 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Loop_statementContext:
 			c := child.(*plsql.Loop_statementContext)
 			nodes = append(nodes, v.VisitLoop_statement(c))
+		case *plsql.Return_statementContext:
+			c := child.(*plsql.Return_statementContext)
+			nodes = append(nodes, v.VisitReturn_statement(c))
+		case *plsql.Null_statementContext:
+			c := child.(*plsql.Null_statementContext)
+			nodes = append(nodes, v.VisitNull_statement(c))
 		case *plsql.Function_callContext:
 			c := child.(*plsql.Function_callContext)
 			nodes = append(nodes, v.VisitFunction_call(c))
@@ -130,11 +165,14 @@ func (v *plsqlVisitor) VisitSql_script(ctx *plsql.Sql_scriptContext) interface{}
 	script := &semantic.Script{}
 	for _, stmt := range ctx.AllUnit_statement() {
 		o := stmt.Accept(v)
-		switch t := o.(type) {
+		switch o.(type) {
 		case semantic.Statement:
 			break
 		default:
-			panic(t)
+			v.ReportError(fmt.Sprintf("unprocessed syntax %s",
+				reflect.TypeOf(stmt.GetChild(0)).Elem().Name()),
+				stmt.GetStart().GetLine(), stmt.GetStart().GetColumn())
+			continue
 		}
 		script.Statements = append(script.Statements, o.(semantic.Statement))
 	}
@@ -150,7 +188,7 @@ func (v *plsqlVisitor) VisitQuery_block(ctx *plsql.Query_blockContext) interface
 	stmt.From = ctx.From_clause().Accept(v).(*semantic.FromClause)
 	if ctx.Where_clause() != nil {
 		if ctx.Where_clause().Expression() != nil {
-			visitor := &exprVisitor{}
+			visitor := newExprVisitor(v)
 			stmt.Where = visitor.VisitExpression(ctx.Where_clause().Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 		}
 	}
@@ -166,6 +204,17 @@ func (v *plsqlVisitor) VisitSelected_list(ctx *plsql.Selected_listContext) inter
 			fields.Fields,
 			&semantic.SelectField{WildCard: &semantic.WildCardField{Table: "*", Schema: "*"}},
 		)
+	} else {
+		for _, elem := range ctx.AllSelect_list_elements() {
+			ev := newExprVisitor(v)
+			expr, ok := elem.Accept(ev).(semantic.Expr)
+			if !ok {
+				v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(elem).Elem().Name()),
+					elem.GetStart().GetLine(), elem.GetStart().GetColumn())
+				continue
+			}
+			fields.Fields = append(fields.Fields, &semantic.SelectField{Expr: expr})
+		}
 	}
 
 	return fields
@@ -200,6 +249,25 @@ func (v *plsqlVisitor) VisitCreate_procedure_body(ctx *plsql.Create_procedure_bo
 	return stmt
 }
 
+func (v *plsqlVisitor) VisitCreate_function_body(ctx *plsql.Create_function_bodyContext) interface{} {
+	stmt := &semantic.CreateFunctionStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	stmt.Name = ctx.Function_name().GetText()
+	stmt.IsReplace = ctx.REPLACE() != nil
+	for _, p := range ctx.AllParameter() {
+		stmt.Parameters = append(stmt.Parameters, v.VisitParameter(p.(*plsql.ParameterContext)).(*semantic.Parameter))
+	}
+	if ctx.Seq_of_declare_specs() != nil {
+		stmt.Declarations = v.VisitSeq_of_declare_specs(ctx.Seq_of_declare_specs().(*plsql.Seq_of_declare_specsContext)).([]semantic.Declaration)
+	}
+	if ctx.RETURN() != nil {
+		stmt.Return = ctx.Type_spec().GetText()
+	}
+	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
+	return stmt
+}
+
 func (v *plsqlVisitor) VisitParameter(ctx *plsql.ParameterContext) interface{} {
 	param := &semantic.Parameter{}
 	param.SetLine(ctx.GetStart().GetLine())
@@ -212,7 +280,15 @@ func (v *plsqlVisitor) VisitParameter(ctx *plsql.ParameterContext) interface{} {
 func (v *plsqlVisitor) VisitSeq_of_declare_specs(ctx *plsql.Seq_of_declare_specsContext) interface{} {
 	decls := make([]semantic.Declaration, 0, len(ctx.AllDeclare_spec()))
 	for _, d := range ctx.AllDeclare_spec() {
-		decls = append(decls, d.Accept(v).(semantic.Declaration))
+		node := d.Accept(v)
+		decl, ok := node.(semantic.Declaration)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed syntax %s",
+				reflect.TypeOf(d.GetChild(0)).Elem().Name()),
+				d.GetStart().GetLine(), d.GetStart().GetColumn())
+			continue
+		}
+		decls = append(decls, decl)
 	}
 	return decls
 }
@@ -224,7 +300,7 @@ func (v *plsqlVisitor) VisitVariable_declaration(ctx *plsql.Variable_declaration
 	varDecl.Name = ctx.Identifier().GetText()
 	varDecl.DataType = ctx.Type_spec().GetText()
 	if ctx.Default_value_part() != nil {
-		visitor := &exprVisitor{}
+		visitor := newExprVisitor(v)
 		varDecl.Initialization = visitor.VisitExpression(ctx.Default_value_part().Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 	}
 	return varDecl
@@ -246,7 +322,13 @@ func (v *plsqlVisitor) VisitCursor_declaration(ctx *plsql.Cursor_declarationCont
 	for _, p := range ctx.AllParameter_spec() {
 		cursor.Parameters = append(cursor.Parameters, v.VisitParameter_spec(p.(*plsql.Parameter_specContext)).(*semantic.Parameter))
 	}
-	cursor.Stmt = ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
+	var ok bool
+	cursor.Stmt, ok = ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unprocessed syntax %s",
+			reflect.TypeOf(ctx.Select_statement().GetChild(0)).Elem().Name()),
+			ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+	}
 	return cursor
 }
 
@@ -296,7 +378,14 @@ func (v *plsqlVisitor) VisitAnonymous_block(ctx *plsql.Anonymous_blockContext) i
 func (v *plsqlVisitor) VisitSeq_of_statements(ctx *plsql.Seq_of_statementsContext) interface{} {
 	stmts := make([]semantic.Statement, 0, len(ctx.AllStatement()))
 	for _, stmt := range ctx.AllStatement() {
-		stmts = append(stmts, stmt.Accept(v).(semantic.Statement))
+		s, ok := stmt.Accept(v).(semantic.Statement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(stmt.GetChild(0)).Elem().Name()),
+				stmt.GetStart().GetLine(),
+				stmt.GetStart().GetColumn())
+			return stmts
+		}
+		stmts = append(stmts, s)
 	}
 	return stmts
 }
@@ -305,8 +394,12 @@ func (v *plsqlVisitor) VisitAssignment_statement(ctx *plsql.Assignment_statement
 	stmt := &semantic.AssignmentStatement{}
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
-	stmt.Left = ctx.General_element().GetText()
-	visitor := &exprVisitor{}
+	if ctx.General_element() != nil {
+		stmt.Left = ctx.General_element().GetText()
+	} else if ctx.Bind_variable() != nil {
+		stmt.Left = ctx.Bind_variable().GetText()
+	}
+	visitor := newExprVisitor(v)
 	stmt.Right = visitor.VisitExpression(ctx.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 
 	return stmt
@@ -317,7 +410,7 @@ func (v *plsqlVisitor) VisitIf_statement(ctx *plsql.If_statementContext) interfa
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	if ctx.Condition() != nil {
-		vistior := exprVisitor{}
+		vistior := newExprVisitor(v)
 		stmt.Condition = vistior.VisitCondition(ctx.Condition().(*plsql.ConditionContext)).(semantic.Expr)
 	}
 	stmt.ThenBlock = v.VisitSeq_of_statements(ctx.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
@@ -355,7 +448,7 @@ func (v *plsqlVisitor) VisitExit_statement(ctx *plsql.Exit_statementContext) int
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	if ctx.Condition() != nil {
-		vistior := exprVisitor{}
+		vistior := newExprVisitor(v)
 		stmt.Condition = vistior.VisitCondition(ctx.Condition().(*plsql.ConditionContext)).(semantic.Expr)
 	}
 	return stmt
@@ -369,11 +462,29 @@ func (v *plsqlVisitor) VisitLoop_statement(ctx *plsql.Loop_statementContext) int
 	return stmt
 }
 
+func (v *plsqlVisitor) VisitReturn_statement(ctx *plsql.Return_statementContext) interface{} {
+	stmt := &semantic.ReturnStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.Expression() != nil {
+		visitor := newExprVisitor(v)
+		stmt.Name = visitor.VisitExpression(ctx.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitNull_statement(ctx *plsql.Null_statementContext) interface{} {
+	stmt := &semantic.NullStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	return stmt
+}
+
 func (v *plsqlVisitor) VisitFunction_call(ctx *plsql.Function_callContext) interface{} {
 	stmt := &semantic.ProcedureCall{}
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
-	visitor := &exprVisitor{}
+	visitor := newExprVisitor(v)
 	stmt.Name = visitor.VisitRoutine_name(ctx.Routine_name().(*plsql.Routine_nameContext)).(semantic.Expr)
 	if ctx.Function_argument() != nil {
 		stmt.Arguments = v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]semantic.Expr)
@@ -384,7 +495,7 @@ func (v *plsqlVisitor) VisitFunction_call(ctx *plsql.Function_callContext) inter
 func (v *plsqlVisitor) VisitFunction_argument(ctx *plsql.Function_argumentContext) interface{} {
 	exprs := make([]semantic.Expr, 0, len(ctx.AllArgument()))
 	for _, c := range ctx.AllArgument() {
-		visitor := &exprVisitor{}
+		visitor := newExprVisitor(v)
 		expr := visitor.VisitExpression(c.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
 		exprs = append(exprs, expr)
 	}
@@ -402,10 +513,14 @@ func (v *plsqlVisitor) VisitCreate_package(ctx *plsql.Create_packageContext) int
 		switch spec.(type) {
 		case *semantic.CreateProcedureStatement:
 			stmt.Procedures = append(stmt.Procedures, spec.(*semantic.CreateProcedureStatement))
-		case *semantic.NestTableTypeDeclaration:
-			stmt.Types = append(stmt.Types, spec.(*semantic.NestTableTypeDeclaration))
+		case semantic.Declaration:
+			stmt.Types = append(stmt.Types, spec.(semantic.Declaration))
+		case *semantic.VariableDeclaration:
+			stmt.Variables = append(stmt.Variables, spec.(semantic.Declaration))
 		default:
-			panic(fmt.Sprintf("unprocessed syntax at line %d", p.GetStart().GetLine()))
+			v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(p.GetChild(0)).Elem().Name()),
+				p.GetStart().GetLine(),
+				p.GetStart().GetColumn())
 		}
 	}
 	return stmt
@@ -418,7 +533,13 @@ func (v *plsqlVisitor) VisitCreate_package_body(ctx *plsql.Create_package_bodyCo
 
 	stmt.Name = ctx.Package_name(0).GetText()
 	for _, p := range ctx.AllPackage_obj_body() {
-		stmt.Procedures = append(stmt.Procedures, p.Accept(v).(*semantic.CreateProcedureStatement))
+		s := p.Accept(v)
+		switch s.(type) {
+		case *semantic.CreateProcedureStatement:
+			stmt.Procedures = append(stmt.Procedures, s.(*semantic.CreateProcedureStatement))
+		case *semantic.CreateFunctionStatement:
+			stmt.Functions = append(stmt.Functions, s.(*semantic.CreateFunctionStatement))
+		}
 	}
 	return stmt
 }
@@ -480,11 +601,19 @@ func (v *plsqlVisitor) VisitNested_table_type_def(ctx *plsql.Nested_table_type_d
 
 func (v *plsqlVisitor) VisitType_declaration(ctx *plsql.Type_declarationContext) interface{} {
 	if ctx.Table_type_def() != nil {
-		stmt := v.VisitTable_type_def(ctx.Table_type_def().(*plsql.Table_type_defContext)).(*semantic.NestTableTypeDeclaration)
-		stmt.Name = ctx.Identifier().GetText()
-		stmt.SetLine(ctx.GetStart().GetLine())
-		stmt.SetColumn(ctx.GetStart().GetColumn())
-		return stmt
+		decl := v.VisitTable_type_def(ctx.Table_type_def().(*plsql.Table_type_defContext)).(*semantic.NestTableTypeDeclaration)
+		decl.Name = ctx.Identifier().GetText()
+		decl.SetLine(ctx.GetStart().GetLine())
+		decl.SetColumn(ctx.GetStart().GetColumn())
+		return decl
+	}
+
+	if ctx.Ref_cursor_type_def() != nil {
+		decl := v.VisitRef_cursor_type_def(ctx.Ref_cursor_type_def().(*plsql.Ref_cursor_type_defContext)).(*semantic.CursorDeclaration)
+		decl.Name = ctx.Identifier().GetText()
+		decl.SetLine(ctx.GetStart().GetLine())
+		decl.SetColumn(ctx.GetStart().GetColumn())
+		return decl
 	}
 	return nil
 }
@@ -493,5 +622,42 @@ func (v *plsqlVisitor) VisitTable_type_def(ctx *plsql.Table_type_defContext) int
 	stmt := &semantic.NestTableTypeDeclaration{}
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitRef_cursor_type_def(ctx *plsql.Ref_cursor_type_defContext) interface{} {
+	decl := &semantic.CursorDeclaration{}
+	decl.SetLine(ctx.GetStart().GetLine())
+	decl.SetColumn(ctx.GetStart().GetColumn())
+	decl.IsReference = true
+	if ctx.Type_spec() != nil {
+		decl.Return = ctx.Type_spec().GetText()
+	}
+	return decl
+}
+
+func (v *plsqlVisitor) VisitFunction_spec(ctx *plsql.Function_specContext) interface{} {
+	decl := &semantic.FunctionDeclaration{}
+	decl.SetLine(ctx.GetStart().GetLine())
+	decl.SetColumn(ctx.GetStart().GetColumn())
+
+	decl.Name = ctx.Identifier().GetText()
+
+	return decl
+}
+
+func (v *plsqlVisitor) VisitFunction_body(ctx *plsql.Function_bodyContext) interface{} {
+	stmt := &semantic.CreateFunctionStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	stmt.Name = ctx.Identifier().GetText()
+	for _, p := range ctx.AllParameter() {
+		stmt.Parameters = append(stmt.Parameters, v.VisitParameter(p.(*plsql.ParameterContext)).(*semantic.Parameter))
+	}
+	if ctx.Seq_of_declare_specs() != nil {
+		stmt.Declarations = v.VisitSeq_of_declare_specs(ctx.Seq_of_declare_specs().(*plsql.Seq_of_declare_specsContext)).([]semantic.Declaration)
+	}
+	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
 	return stmt
 }

@@ -5,10 +5,10 @@ import (
 	"procinspect/pkg/semantic"
 )
 
-func Parse(text string) error {
+func Parse(text string) (any, error) {
 	p := parser.NewParser(text)
-	_ = p.Sql_script()
-	return p.Error()
+	root := p.Sql_script()
+	return root, p.Error()
 }
 
 func ParseScript(src string) (*semantic.Script, error) {
@@ -17,10 +17,25 @@ func ParseScript(src string) (*semantic.Script, error) {
 	if p.Error() != nil {
 		return nil, p.Error()
 	}
-	visitor := &plsqlVisitor{}
+	visitor := newPlSqlVisitor()
 	script := visitor.VisitSql_script(root.(*parser.Sql_scriptContext)).(*semantic.Script)
 
 	return script, nil
+}
+
+func ParseSql(src string) (func() (*semantic.Script, error), error) {
+	p := parser.NewParser(src)
+	root := p.Sql_script()
+	if p.Error() != nil {
+		return nil, p.Error()
+	}
+
+	return func() (*semantic.Script, error) {
+		visitor := newPlSqlVisitor()
+		script := visitor.VisitSql_script(root.(*parser.Sql_scriptContext)).(*semantic.Script)
+
+		return script, nil
+	}, nil
 }
 
 func ParseBlock(src string) (*semantic.Script, error) {
@@ -29,7 +44,7 @@ func ParseBlock(src string) (*semantic.Script, error) {
 	if p.Error() != nil {
 		return nil, p.Error()
 	}
-	visitor := &plsqlVisitor{}
+	visitor := newPlSqlVisitor()
 	block := visitor.VisitBlock(root.(*parser.BlockContext)).(*semantic.BlockStatement)
 
 	script := &semantic.Script{}

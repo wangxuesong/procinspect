@@ -64,6 +64,15 @@ type (
 		Condition Expr
 	}
 
+	ReturnStatement struct {
+		node
+		Name Expr
+	}
+
+	NullStatement struct {
+		node
+	}
+
 	ProcedureCall struct {
 		node
 		Name      Expr
@@ -89,14 +98,22 @@ type (
 
 	CursorDeclaration struct {
 		node
-		Name       string
-		Parameters []*Parameter
-		Stmt       Statement
+		Name        string
+		Parameters  []*Parameter
+		Stmt        Statement
+		Return      string
+		IsReference bool
 	}
 
 	NestTableTypeDeclaration struct {
 		node
 		Name string
+	}
+
+	FunctionDeclaration struct {
+		node
+		Name       string
+		Parameters []*Parameter
 	}
 
 	Parameter struct {
@@ -135,6 +152,8 @@ func (d *CursorDeclaration) declaration() {}
 
 func (d *NestTableTypeDeclaration) declaration() {}
 
+func (d *FunctionDeclaration) declaration() {}
+
 func (i *IfStatement) statement() {}
 
 func (l *LoopStatement) statement() {}
@@ -148,3 +167,7 @@ func (s *FetchStatement) statement() {}
 func (s *ExitStatement) statement() {}
 
 func (s *ProcedureCall) statement() {}
+
+func (s *ReturnStatement) statement() {}
+
+func (s *NullStatement) statement() {}
