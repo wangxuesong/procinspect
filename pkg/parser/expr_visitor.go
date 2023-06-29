@@ -178,6 +178,23 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 		expr.Args = append(expr.Args, arg)
 		return expr
 	}
+	if ctx.CAST() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "CAST"}}
+		if ctx.Concatenation(0) != nil {
+			cast := &semantic.CastExpression{}
+			cast.SetLine(ctx.Concatenation(0).GetStart().GetLine())
+			cast.SetColumn(ctx.Concatenation(0).GetStart().GetColumn())
+			arg, ok := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression", ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+				return expr
+			}
+			cast.Expr = arg
+			cast.DataType = ctx.Type_spec().GetText()
+			expr.Args = append(expr.Args, cast)
+		}
+		return expr
+	}
 
 	return v.VisitChildren(ctx)
 }
