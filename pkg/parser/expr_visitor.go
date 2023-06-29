@@ -492,6 +492,14 @@ func (v *exprVisitor) VisitUnary_expression(ctx *plsql.Unary_expressionContext) 
 		expr.Sign = sign
 		return expr
 	}
+	if ctx.Case_statement() != nil {
+		expr := &semantic.StatementExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		stmt := v.stmtVisitor.VisitCase_statement(ctx.Case_statement().(*plsql.Case_statementContext)).(*semantic.CaseWhenStatement)
+		expr.Stmt = stmt
+		return expr
+	}
 	return v.VisitChildren(ctx)
 }
 

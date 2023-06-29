@@ -1303,3 +1303,37 @@ END`,
 
 	runTestSuite(t, tests)
 }
+
+func TestCaseWhenStatement(t *testing.T) {
+	tests := testSuite{}
+
+	tests = append(tests, testCase{
+		name: "searched case statement",
+		text: `
+select case when a=b then 1 else 2 end from dual;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 2, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.IsType(t, &semantic.StatementExpression{}, stmt.Fields.Fields[0].Expr)
+			stmtExpr := stmt.Fields.Fields[0].Expr.(*semantic.StatementExpression)
+			assert.IsType(t, &semantic.CaseWhenStatement{}, stmtExpr.Stmt)
+			caseStmt := stmtExpr.Stmt.(*semantic.CaseWhenStatement)
+			assert.Nil(t, caseStmt.Expr)
+			assert.Equal(t, 1, len(caseStmt.WhenClauses))
+			assert.IsType(t, &semantic.CaseWhenBlock{}, caseStmt.WhenClauses[0])
+			whenBlock := caseStmt.WhenClauses[0]
+			assert.NotNil(t, whenBlock.Expr)
+			assert.Equal(t, 0, len(whenBlock.Stmts))
+			assert.NotNil(t, caseStmt.ElseClause.Expr)
+			assert.Equal(t, 0, len(caseStmt.ElseClause.Stmts))
+		},
+	})
+
+	runTestSuite(t, tests)
+}
