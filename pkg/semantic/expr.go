@@ -117,6 +117,12 @@ type (
 		expression
 		Stmt Statement
 	}
+
+	CastExpression struct {
+		expression
+		Expr     Expr
+		DataType string
+	}
 )
 
 func (n *expression) expr() {}
