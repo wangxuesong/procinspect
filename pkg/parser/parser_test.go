@@ -436,6 +436,78 @@ decode(m.move_kind||m.order_type,'LOADDELIVER',wi1.wi_dest_loc,'') from t1;`,
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "count",
+		text: `select count(*) a, count(1), count(id), count(t.id)
+-- , count(distinct t.d),count(unique t.id), count(all t.id)
+-- ,count(id) over partition by t.id
+from t;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 4)
+			{ // count(*) a
+				assert.NotNil(t, stmt.Fields.Fields[0].Expr)
+				assert.IsType(t, &semantic.AliasExpression{}, stmt.Fields.Fields[0].Expr)
+				alias := stmt.Fields.Fields[0].Expr.(*semantic.AliasExpression)
+				assert.Equal(t, "a", alias.Alias)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, alias.Expr)
+				expr := alias.Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "COUNT", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.StringLiteral{}, expr.Args[0])
+				str := expr.Args[0].(*semantic.StringLiteral)
+				assert.Equal(t, "*", str.Value)
+			}
+			{ // count(1)
+				assert.NotNil(t, stmt.Fields.Fields[1].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[1].Expr)
+				expr := stmt.Fields.Fields[1].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "COUNT", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.NumericLiteral{}, expr.Args[0])
+				num := expr.Args[0].(*semantic.NumericLiteral)
+				assert.Equal(t, int64(1), num.Value)
+			}
+			{ // count(id)
+				assert.NotNil(t, stmt.Fields.Fields[2].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[2].Expr)
+				expr := stmt.Fields.Fields[2].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "COUNT", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+				name = expr.Args[0].(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
+			}
+			{ // count(t.id)
+				i := 3
+				assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
+				expr := stmt.Fields.Fields[i].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "COUNT", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.DotExpression{}, expr.Args[0])
+				dot := expr.Args[0].(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Parent)
+				assert.Equal(t, "id", dot.Name)
+				assert.Equal(t, "id", dot.Name)
+			}
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 

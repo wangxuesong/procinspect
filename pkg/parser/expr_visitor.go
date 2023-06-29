@@ -761,6 +761,24 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 		}
 		return expr
 	}
+	if ctx.COUNT() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "COUNT"}}
+		if concatenation := ctx.Concatenation(); concatenation != nil {
+			node := concatenation.(*plsql.ConcatenationContext)
+			arg, ok := v.VisitConcatenation(node).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					node.GetStart().GetLine(),
+					node.GetStart().GetColumn())
+				return expr
+			}
+			expr.Args = append(expr.Args, arg)
+		}
+		if ctx.ASTERISK() != nil {
+			expr.Args = append(expr.Args, &semantic.StringLiteral{Value: "*"})
+		}
+		return expr
+	}
 	_ = ok
 	return v.VisitChildren(ctx)
 }
