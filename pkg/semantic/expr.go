@@ -112,6 +112,11 @@ type (
 		Expr  Expr
 		Alias string
 	}
+
+	StatementExpression struct {
+		expression
+		Stmt Statement
+	}
 )
 
 func (n *expression) expr() {}
