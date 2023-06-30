@@ -508,6 +508,50 @@ from t;`,
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "min",
+		text: `select min(id), min(t.id)
+from t;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 2)
+			{ // min(id)
+				i := 0
+				assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
+				expr := stmt.Fields.Fields[i].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "min", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+				name = expr.Args[0].(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
+			}
+			{ // min(t.id)
+				i := 1
+				assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
+				expr := stmt.Fields.Fields[i].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "min", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.DotExpression{}, expr.Args[0])
+				dot := expr.Args[0].(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Parent)
+				assert.Equal(t, "id", dot.Name)
+				assert.Equal(t, "id", dot.Name)
+			}
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
