@@ -196,6 +196,45 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 		return expr
 	}
 
+	if ctx.Over_clause_keyword() != nil {
+		name := ctx.Over_clause_keyword().GetText()
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: name}}
+		var arg semantic.Expr
+		var ok bool
+		for _, child := range ctx.Function_argument_analytic().GetChildren() {
+			switch child.(type) {
+			case antlr.TerminalNode:
+				if child.(antlr.TerminalNode) == ctx.Function_argument_analytic().LEFT_PAREN() {
+					continue
+				}
+				if child.(antlr.TerminalNode) == ctx.Function_argument_analytic().RIGHT_PAREN() {
+					expr.Args = append(expr.Args, arg)
+					arg = nil
+				}
+				if child.(antlr.TerminalNode).GetSymbol().GetTokenType() == plsql.PlSqlParserCOMMA {
+					expr.Args = append(expr.Args, arg)
+					arg = nil
+				}
+			case *plsql.ArgumentContext:
+				context := child.(*plsql.ArgumentContext)
+				arg, ok = v.VisitArgument(context).(semantic.Expr)
+				if !ok {
+					v.ReportError("unsupported expression",
+						context.GetStart().GetLine(), context.GetStart().GetColumn())
+				}
+			case *plsql.Respect_or_ignore_nullsContext:
+				context := child.(*plsql.Respect_or_ignore_nullsContext)
+				v.ReportError("unsupported expression",
+					context.GetStart().GetLine(), context.GetStart().GetColumn())
+			case *plsql.Keep_clauseContext:
+				context := child.(*plsql.Keep_clauseContext)
+				v.ReportError("unsupported expression",
+					context.GetStart().GetLine(), context.GetStart().GetColumn())
+			}
+		}
+		return expr
+	}
+
 	return v.VisitChildren(ctx)
 }
 
