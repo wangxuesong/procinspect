@@ -78,7 +78,7 @@ type (
 
 	DotExpression struct {
 		expression
-		Name   string
+		Name   Expr
 		Parent Expr
 	}
 

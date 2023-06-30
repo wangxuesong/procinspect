@@ -924,17 +924,12 @@ func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
 		}
 	}
 
-	length := len(parts)
-	var expr semantic.Expr = &semantic.NameExpression{
-		Name: parts[0],
-	}
-
-	for i := 1; i < length; i++ {
-		expr = &semantic.DotExpression{
-			Name:   parts[i],
-			Parent: expr,
+	var dotExpr semantic.Expr
+	for _, part := range parts {
+		dotExpr = &semantic.DotExpression{
+			Name:   &semantic.NameExpression{Name: part},
+			Parent: dotExpr,
 		}
 	}
-
-	return expr
+	return dotExpr
 }
