@@ -1568,3 +1568,29 @@ select case when a=b then 1 else 2 end from dual;`,
 
 	runTestSuite(t, tests)
 }
+
+func TestParseSelectStatement(t *testing.T) {
+	tests := testSuite{}
+
+	tests = append(tests, testCase{
+		name: "select for update",
+		text: `select * from test for update nowait;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 1)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "test")
+			assert.NotNil(t, stmt.ForUpdate)
+			assert.NotNil(t, stmt.ForUpdate.Options)
+		},
+	})
+
+	runTestSuite(t, tests)
+}

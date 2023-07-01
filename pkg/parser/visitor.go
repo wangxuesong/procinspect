@@ -186,6 +186,52 @@ func (v *plsqlVisitor) VisitSql_script(ctx *plsql.Sql_scriptContext) interface{}
 	return script
 }
 
+func (v *plsqlVisitor) VisitSelect_statement(ctx *plsql.Select_statementContext) interface{} {
+	object := ctx.Select_only_statement().Accept(v)
+	stmt, ok := object.(*semantic.SelectStatement)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unprocessed syntax %T", ctx.Select_only_statement()),
+			ctx.GetStart().GetLine(),
+			ctx.GetStart().GetColumn())
+	}
+	if ctx.For_update_clause(0) != nil {
+		expr, ok := ctx.For_update_clause(0).Accept(v).(*semantic.ForUpdateClause)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed expression %T", ctx.For_update_clause(0)),
+				ctx.For_update_clause(0).GetStart().GetLine(),
+				ctx.For_update_clause(0).GetStart().GetColumn())
+			return stmt
+		}
+		stmt.ForUpdate = expr
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitFor_update_clause(ctx *plsql.For_update_clauseContext) interface{} {
+	clause := &semantic.ForUpdateClause{}
+	clause.SetLine(ctx.GetStart().GetLine())
+	clause.SetColumn(ctx.GetStart().GetColumn())
+
+	if ctx.For_update_of_part() != nil {
+		v.ReportError(fmt.Sprintf("unsupported %T", ctx.For_update_of_part()),
+			ctx.For_update_of_part().GetStart().GetLine(),
+			ctx.For_update_of_part().GetStart().GetColumn())
+	}
+
+	if ctx.For_update_options() != nil {
+		visitor := newExprVisitor(v)
+		var ok bool
+		clause.Options, ok = ctx.For_update_options().Accept(visitor).(semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed expression %T", ctx.For_update_options()),
+				ctx.For_update_options().GetStart().GetLine(),
+				ctx.For_update_options().GetStart().GetColumn())
+		}
+	}
+
+	return clause
+}
+
 func (v *plsqlVisitor) VisitQuery_block(ctx *plsql.Query_blockContext) interface{} {
 	stmt := &semantic.SelectStatement{}
 	stmt.SetLine(ctx.GetStart().GetLine())
