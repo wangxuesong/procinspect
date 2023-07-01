@@ -606,6 +606,18 @@ func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
 		expr.Stmt = stmt
 		return expr
 	}
+	if ctx.Bind_variable() != nil {
+		var expr semantic.Expr
+		var ok bool = false
+		expr, ok = v.VisitBind_variable(ctx.Bind_variable().(*plsql.Bind_variableContext)).(semantic.Expr)
+		if !ok {
+			v.ReportError("unsupported expression",
+				ctx.Bind_variable().GetStart().GetLine(),
+				ctx.Bind_variable().GetStart().GetColumn())
+			return nil
+		}
+		return expr
+	}
 	return v.VisitChildren(ctx)
 }
 
@@ -822,7 +834,70 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 	return v.VisitChildren(ctx)
 }
 
+func (v *exprVisitor) VisitBind_variable(ctx *plsql.Bind_variableContext) interface{} {
+	var expr semantic.Expr
+	if ctx.BINDVAR(0) == ctx.GetChild(0) {
+		bindExpr := &semantic.BindNameExpression{
+			Name: &semantic.NameExpression{
+				Name: ctx.BINDVAR(0).GetText()}}
+		bindExpr.SetLine(ctx.BINDVAR(0).GetSymbol().GetLine())
+		bindExpr.SetColumn(ctx.BINDVAR(0).GetSymbol().GetColumn())
+		expr = bindExpr
+	}
+	if len(ctx.AllGeneral_element_part()) > 0 {
+		var dotExpr semantic.Expr
+		for i, elem := range ctx.AllGeneral_element_part() {
+			elemExpr := v.VisitGeneral_element_part(elem.(*plsql.General_element_partContext)).(semantic.Expr)
+			if i == 0 {
+				dotExpr = elemExpr
+				continue
+			}
+			dotExpr = &semantic.DotExpression{
+				Name:   elemExpr,
+				Parent: dotExpr,
+			}
+		}
+		switch dotExpr.(type) {
+		case *semantic.NameExpression:
+			dotExpr = &semantic.DotExpression{
+				Name: dotExpr,
+				Parent: &semantic.DotExpression{
+					Name: expr,
+				},
+			}
+		case *semantic.DotExpression:
+			parent := dotExpr.(*semantic.DotExpression)
+			for parent.Parent != nil {
+				parent = parent.Parent.(*semantic.DotExpression)
+			}
+			parent.Parent = &semantic.DotExpression{
+				Name: expr,
+			}
+		}
+		expr = dotExpr
+	}
+	return expr
+}
+
 func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partContext) interface{} {
+	var dotExpr semantic.Expr
+	if ctx.Id_expression(0) != nil {
+		dotExpr = &semantic.NameExpression{Name: ctx.Id_expression(0).GetText()}
+	}
+	if len(ctx.AllId_expression()) > 1 {
+		for i, id := range ctx.AllId_expression() {
+			if i == 0 {
+				dotExpr = &semantic.DotExpression{
+					Name: dotExpr,
+				}
+				continue
+			}
+			dotExpr = &semantic.DotExpression{
+				Name:   &semantic.NameExpression{Name: id.GetText()},
+				Parent: dotExpr,
+			}
+		}
+	}
 	if ctx.Function_argument() != nil {
 		args := v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]interface{})
 		expr := &semantic.FunctionCallExpression{}
@@ -840,8 +915,10 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 
 			expr.Args = append(expr.Args, elems)
 		}
-		expr.Name = v.parseDotExpr(ctx.Id_expression(0).GetText())
+		expr.Name = dotExpr
 		return expr
+	} else {
+		return dotExpr
 	}
 	return v.VisitChildren(ctx)
 }
