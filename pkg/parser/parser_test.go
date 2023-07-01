@@ -198,6 +198,26 @@ func TestParseSimple(t *testing.T) {
 	})
 
 	tests = append(tests, testCase{
+		name: "simple projection",
+		text: `select t.* from dual, test;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "t")
+			assert.Equal(t, len(stmt.From.TableRefs), 2)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
+			assert.Equal(t, stmt.From.TableRefs[1].Table, "test")
+
+		},
+	})
+
+	tests = append(tests, testCase{
 		name: "in expression",
 		text: `select * from dual where a in (1, 2, 3);`,
 		Func: func(t *testing.T, root any) {

@@ -990,6 +990,11 @@ func (v *exprVisitor) VisitSelect_list_elements(ctx *plsql.Select_list_elementsC
 		}
 		return expr
 	}
+
+	if ctx.Tableview_name() != nil {
+		tableName := ctx.Tableview_name().GetText()
+		return &semantic.SelectField{WildCard: &semantic.WildCardField{Table: tableName, Schema: "*"}}
+	}
 	return v.VisitChildren(ctx)
 }
 
