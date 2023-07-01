@@ -153,6 +153,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Searched_case_statementContext:
 			c := child.(*plsql.Searched_case_statementContext)
 			nodes = append(nodes, v.VisitSearched_case_statement(c))
+		case *plsql.Commit_statementContext:
+			c := child.(*plsql.Commit_statementContext)
+			nodes = append(nodes, v.VisitCommit_statement(c))
 		case antlr.TerminalNode:
 			break
 		default:
@@ -839,6 +842,41 @@ func (v *plsqlVisitor) VisitSearched_case_statement(ctx *plsql.Searched_case_sta
 			}
 		}
 		stmt.ElseClause = block
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitCommit_statement(ctx *plsql.Commit_statementContext) interface{} {
+	stmt := &semantic.CommitStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.COMMENT() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.COMMENT()),
+			ctx.COMMENT().GetSymbol().GetLine(),
+			ctx.COMMENT().GetSymbol().GetColumn())
+	}
+	if ctx.FORCE() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.FORCE()),
+			ctx.FORCE().GetSymbol().GetLine(),
+			ctx.FORCE().GetSymbol().GetColumn())
+	}
+
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitRollback_statement(ctx *plsql.Rollback_statementContext) interface{} {
+	stmt := &semantic.RollbackStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.TO() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.TO()),
+			ctx.TO().GetSymbol().GetLine(),
+			ctx.TO().GetSymbol().GetColumn())
+	}
+	if ctx.FORCE() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.FORCE()),
+			ctx.FORCE().GetSymbol().GetLine(),
+			ctx.FORCE().GetSymbol().GetColumn())
 	}
 	return stmt
 }
