@@ -213,13 +213,20 @@ func (v *plsqlVisitor) VisitSelected_list(ctx *plsql.Selected_listContext) inter
 	} else {
 		for _, elem := range ctx.AllSelect_list_elements() {
 			ev := newExprVisitor(v)
-			expr, ok := elem.Accept(ev).(semantic.Expr)
-			if !ok {
+			expt := elem.Accept(ev)
+			var filed *semantic.SelectField
+			switch expt.(type) {
+			case *semantic.SelectField:
+				filed = expt.(*semantic.SelectField)
+				fields.Fields = append(fields.Fields, filed)
+			case semantic.Expr:
+				expr := expt.(semantic.Expr)
+				filed = &semantic.SelectField{Expr: expr}
+				fields.Fields = append(fields.Fields, filed)
+			default:
 				v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(elem).Elem().Name()),
 					elem.GetStart().GetLine(), elem.GetStart().GetColumn())
-				continue
 			}
-			fields.Fields = append(fields.Fields, &semantic.SelectField{Expr: expr})
 		}
 	}
 
