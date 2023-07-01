@@ -29,6 +29,11 @@ type (
 		TableRefs []*TableRef
 	}
 
+	ForUpdateClause struct {
+		node
+		Options Expr
+	}
+
 	Statement interface {
 		Node
 		statement()
@@ -36,9 +41,10 @@ type (
 
 	SelectStatement struct {
 		node
-		Fields *FieldList
-		From   *FromClause
-		Where  Expr
+		Fields    *FieldList
+		From      *FromClause
+		Where     Expr
+		ForUpdate *ForUpdateClause
 	}
 
 	CreateTypeStatement struct {
@@ -49,6 +55,20 @@ type (
 	CreateNestTableStatement struct {
 		node
 		CreateTypeStatement
+	}
+
+	CaseWhenStatement struct {
+		node
+		Expr        Expr
+		WhenClauses []*CaseWhenBlock
+		ElseClause  *CaseWhenBlock
+	}
+
+	CaseWhenBlock struct {
+		node
+		Condition Expr
+		Expr      Expr
+		Stmts     []Statement
 	}
 )
 
@@ -61,3 +81,5 @@ func (s *SelectStatement) statement() {}
 func (s *CreateTypeStatement) statement() {}
 
 func (s *CreateNestTableStatement) statement() {}
+
+func (s *CaseWhenStatement) statement() {}

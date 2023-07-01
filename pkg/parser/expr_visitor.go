@@ -178,6 +178,62 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 		expr.Args = append(expr.Args, arg)
 		return expr
 	}
+	if ctx.CAST() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "CAST"}}
+		if ctx.Concatenation(0) != nil {
+			cast := &semantic.CastExpression{}
+			cast.SetLine(ctx.Concatenation(0).GetStart().GetLine())
+			cast.SetColumn(ctx.Concatenation(0).GetStart().GetColumn())
+			arg, ok := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression", ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+				return expr
+			}
+			cast.Expr = arg
+			cast.DataType = ctx.Type_spec().GetText()
+			expr.Args = append(expr.Args, cast)
+		}
+		return expr
+	}
+
+	if ctx.Over_clause_keyword() != nil {
+		name := ctx.Over_clause_keyword().GetText()
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: name}}
+		var arg semantic.Expr
+		var ok bool
+		for _, child := range ctx.Function_argument_analytic().GetChildren() {
+			switch child.(type) {
+			case antlr.TerminalNode:
+				if child.(antlr.TerminalNode) == ctx.Function_argument_analytic().LEFT_PAREN() {
+					continue
+				}
+				if child.(antlr.TerminalNode) == ctx.Function_argument_analytic().RIGHT_PAREN() {
+					expr.Args = append(expr.Args, arg)
+					arg = nil
+				}
+				if child.(antlr.TerminalNode).GetSymbol().GetTokenType() == plsql.PlSqlParserCOMMA {
+					expr.Args = append(expr.Args, arg)
+					arg = nil
+				}
+			case *plsql.ArgumentContext:
+				context := child.(*plsql.ArgumentContext)
+				arg, ok = v.VisitArgument(context).(semantic.Expr)
+				if !ok {
+					v.ReportError("unsupported expression",
+						context.GetStart().GetLine(), context.GetStart().GetColumn())
+				}
+			case *plsql.Respect_or_ignore_nullsContext:
+				context := child.(*plsql.Respect_or_ignore_nullsContext)
+				v.ReportError("unsupported expression",
+					context.GetStart().GetLine(), context.GetStart().GetColumn())
+			case *plsql.Keep_clauseContext:
+				context := child.(*plsql.Keep_clauseContext)
+				v.ReportError("unsupported expression",
+					context.GetStart().GetLine(), context.GetStart().GetColumn())
+			}
+		}
+		return expr
+	}
 
 	return v.VisitChildren(ctx)
 }
@@ -492,6 +548,14 @@ func (v *exprVisitor) VisitUnary_expression(ctx *plsql.Unary_expressionContext) 
 		expr.Sign = sign
 		return expr
 	}
+	if ctx.Case_statement() != nil {
+		expr := &semantic.StatementExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		stmt := v.stmtVisitor.VisitCase_statement(ctx.Case_statement().(*plsql.Case_statementContext)).(*semantic.CaseWhenStatement)
+		expr.Stmt = stmt
+		return expr
+	}
 	return v.VisitChildren(ctx)
 }
 
@@ -527,6 +591,32 @@ func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
 	}
 	if ctx.Expressions() != nil {
 		return v.VisitExpressions(ctx.Expressions().(*plsql.ExpressionsContext))
+	}
+	if ctx.Subquery() != nil {
+		expr := &semantic.StatementExpression{}
+		expr.SetLine(ctx.GetStart().GetLine())
+		expr.SetColumn(ctx.GetStart().GetColumn())
+		stmt, ok := v.stmtVisitor.VisitSubquery(ctx.Subquery().(*plsql.SubqueryContext)).(semantic.Statement)
+		if !ok {
+			v.ReportError("unsupported statement",
+				ctx.Subquery().GetStart().GetLine(),
+				ctx.Subquery().GetStart().GetColumn())
+			return expr
+		}
+		expr.Stmt = stmt
+		return expr
+	}
+	if ctx.Bind_variable() != nil {
+		var expr semantic.Expr
+		var ok bool = false
+		expr, ok = v.VisitBind_variable(ctx.Bind_variable().(*plsql.Bind_variableContext)).(semantic.Expr)
+		if !ok {
+			v.ReportError("unsupported expression",
+				ctx.Bind_variable().GetStart().GetLine(),
+				ctx.Bind_variable().GetStart().GetColumn())
+			return nil
+		}
+		return expr
 	}
 	return v.VisitChildren(ctx)
 }
@@ -722,11 +812,92 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 		}
 		return expr
 	}
+	if ctx.COUNT() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "COUNT"}}
+		if concatenation := ctx.Concatenation(); concatenation != nil {
+			node := concatenation.(*plsql.ConcatenationContext)
+			arg, ok := v.VisitConcatenation(node).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					node.GetStart().GetLine(),
+					node.GetStart().GetColumn())
+				return expr
+			}
+			expr.Args = append(expr.Args, arg)
+		}
+		if ctx.ASTERISK() != nil {
+			expr.Args = append(expr.Args, &semantic.StringLiteral{Value: "*"})
+		}
+		return expr
+	}
 	_ = ok
 	return v.VisitChildren(ctx)
 }
 
+func (v *exprVisitor) VisitBind_variable(ctx *plsql.Bind_variableContext) interface{} {
+	var expr semantic.Expr
+	if ctx.BINDVAR(0) == ctx.GetChild(0) {
+		bindExpr := &semantic.BindNameExpression{
+			Name: &semantic.NameExpression{
+				Name: ctx.BINDVAR(0).GetText()}}
+		bindExpr.SetLine(ctx.BINDVAR(0).GetSymbol().GetLine())
+		bindExpr.SetColumn(ctx.BINDVAR(0).GetSymbol().GetColumn())
+		expr = bindExpr
+	}
+	if len(ctx.AllGeneral_element_part()) > 0 {
+		var dotExpr semantic.Expr
+		for i, elem := range ctx.AllGeneral_element_part() {
+			elemExpr := v.VisitGeneral_element_part(elem.(*plsql.General_element_partContext)).(semantic.Expr)
+			if i == 0 {
+				dotExpr = elemExpr
+				continue
+			}
+			dotExpr = &semantic.DotExpression{
+				Name:   elemExpr,
+				Parent: dotExpr,
+			}
+		}
+		switch dotExpr.(type) {
+		case *semantic.NameExpression:
+			dotExpr = &semantic.DotExpression{
+				Name: dotExpr,
+				Parent: &semantic.DotExpression{
+					Name: expr,
+				},
+			}
+		case *semantic.DotExpression:
+			parent := dotExpr.(*semantic.DotExpression)
+			for parent.Parent != nil {
+				parent = parent.Parent.(*semantic.DotExpression)
+			}
+			parent.Parent = &semantic.DotExpression{
+				Name: expr,
+			}
+		}
+		expr = dotExpr
+	}
+	return expr
+}
+
 func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partContext) interface{} {
+	var dotExpr semantic.Expr
+	if ctx.Id_expression(0) != nil {
+		dotExpr = &semantic.NameExpression{Name: ctx.Id_expression(0).GetText()}
+	}
+	if len(ctx.AllId_expression()) > 1 {
+		for i, id := range ctx.AllId_expression() {
+			if i == 0 {
+				dotExpr = &semantic.DotExpression{
+					Name: dotExpr,
+				}
+				continue
+			}
+			dotExpr = &semantic.DotExpression{
+				Name:   &semantic.NameExpression{Name: id.GetText()},
+				Parent: dotExpr,
+			}
+		}
+	}
 	if ctx.Function_argument() != nil {
 		args := v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]interface{})
 		expr := &semantic.FunctionCallExpression{}
@@ -744,8 +915,10 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 
 			expr.Args = append(expr.Args, elems)
 		}
-		expr.Name = v.parseDotExpr(ctx.Id_expression(0).GetText())
+		expr.Name = dotExpr
 		return expr
+	} else {
+		return dotExpr
 	}
 	return v.VisitChildren(ctx)
 }
@@ -817,7 +990,30 @@ func (v *exprVisitor) VisitSelect_list_elements(ctx *plsql.Select_list_elementsC
 		}
 		return expr
 	}
+
+	if ctx.Tableview_name() != nil {
+		tableName := ctx.Tableview_name().GetText()
+		return &semantic.SelectField{WildCard: &semantic.WildCardField{Table: tableName, Schema: "*"}}
+	}
 	return v.VisitChildren(ctx)
+}
+
+func (v *exprVisitor) VisitFor_update_options(ctx *plsql.For_update_optionsContext) interface{} {
+	expr := &semantic.ForUpdateOptionsExpression{}
+
+	if ctx.SKIP_() != nil {
+		expr.SkipLocked = true
+	}
+
+	if ctx.NOWAIT() != nil {
+		expr.NoWait = true
+	}
+
+	if ctx.WAIT() != nil {
+		v.ReportError("unsupported expression", ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+	}
+
+	return expr
 }
 
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
@@ -828,17 +1024,12 @@ func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
 		}
 	}
 
-	length := len(parts)
-	var expr semantic.Expr = &semantic.NameExpression{
-		Name: parts[0],
-	}
-
-	for i := 1; i < length; i++ {
-		expr = &semantic.DotExpression{
-			Name:   parts[i],
-			Parent: expr,
+	var dotExpr semantic.Expr
+	for _, part := range parts {
+		dotExpr = &semantic.DotExpression{
+			Name:   &semantic.NameExpression{Name: part},
+			Parent: dotExpr,
 		}
 	}
-
-	return expr
+	return dotExpr
 }

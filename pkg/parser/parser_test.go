@@ -198,6 +198,26 @@ func TestParseSimple(t *testing.T) {
 	})
 
 	tests = append(tests, testCase{
+		name: "simple projection",
+		text: `select t.* from dual, test;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "t")
+			assert.Equal(t, len(stmt.From.TableRefs), 2)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "dual")
+			assert.Equal(t, stmt.From.TableRefs[1].Table, "test")
+
+		},
+	})
+
+	tests = append(tests, testCase{
 		name: "in expression",
 		text: `select * from dual where a in (1, 2, 3);`,
 		Func: func(t *testing.T, root any) {
@@ -331,18 +351,27 @@ func TestParseSimple(t *testing.T) {
 			expr := stmt.Where.(*semantic.RelationalExpression)
 			assert.IsType(t, &semantic.DotExpression{}, expr.Left)
 			dot := expr.Left.(*semantic.DotExpression)
-			assert.Equal(t, "id", dot.Name)
-			assert.IsType(t, &semantic.NameExpression{}, dot.Parent)
-			name := dot.Parent.(*semantic.NameExpression)
+			assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+			name := dot.Name.(*semantic.NameExpression)
+			assert.Equal(t, "id", name.Name)
+			assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+			dot = dot.Parent.(*semantic.DotExpression)
+			assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+			name = dot.Name.(*semantic.NameExpression)
 			assert.Equal(t, "t1", name.Name)
 			assert.IsType(t, &semantic.OuterJoinExpression{}, expr.Right)
 			join := expr.Right.(*semantic.OuterJoinExpression)
 			assert.IsType(t, &semantic.DotExpression{}, join.Expr)
 			dot = join.Expr.(*semantic.DotExpression)
-			assert.Equal(t, "id", dot.Name)
-			assert.IsType(t, &semantic.NameExpression{}, dot.Parent)
-			name = dot.Parent.(*semantic.NameExpression)
+			assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+			name = dot.Name.(*semantic.NameExpression)
+			assert.Equal(t, "id", name.Name)
+			assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+			dot = dot.Parent.(*semantic.DotExpression)
+			assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+			name = dot.Name.(*semantic.NameExpression)
 			assert.Equal(t, "t2", name.Name)
+			assert.Nil(t, dot.Parent)
 		},
 	})
 
@@ -432,6 +461,124 @@ decode(m.move_kind||m.order_type,'LOADDELIVER',wi1.wi_dest_loc,'') from t1;`,
 				assert.IsType(t, &semantic.StringLiteral{}, expr.Args[3])
 				str = expr.Args[3].(*semantic.StringLiteral)
 				assert.Equal(t, "''", str.Value)
+			}
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "count",
+		text: `select count(*) a, count(1), count(id), count(t.id)
+-- , count(distinct t.d),count(unique t.id), count(all t.id)
+-- ,count(id) over partition by t.id
+from t;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 4)
+			{ // count(*) a
+				assert.NotNil(t, stmt.Fields.Fields[0].Expr)
+				assert.IsType(t, &semantic.AliasExpression{}, stmt.Fields.Fields[0].Expr)
+				alias := stmt.Fields.Fields[0].Expr.(*semantic.AliasExpression)
+				assert.Equal(t, "a", alias.Alias)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, alias.Expr)
+				expr := alias.Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "COUNT", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.StringLiteral{}, expr.Args[0])
+				str := expr.Args[0].(*semantic.StringLiteral)
+				assert.Equal(t, "*", str.Value)
+			}
+			{ // count(1)
+				assert.NotNil(t, stmt.Fields.Fields[1].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[1].Expr)
+				expr := stmt.Fields.Fields[1].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "COUNT", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.NumericLiteral{}, expr.Args[0])
+				num := expr.Args[0].(*semantic.NumericLiteral)
+				assert.Equal(t, int64(1), num.Value)
+			}
+			{ // count(id)
+				assert.NotNil(t, stmt.Fields.Fields[2].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[2].Expr)
+				expr := stmt.Fields.Fields[2].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "COUNT", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+				name = expr.Args[0].(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
+			}
+			{ // count(t.id)
+				i := 3
+				assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
+				expr := stmt.Fields.Fields[i].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "COUNT", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.DotExpression{}, expr.Args[0])
+				dot := expr.Args[0].(*semantic.DotExpression)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
+			}
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "min",
+		text: `select min(id), min(t.id)
+from t;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 2)
+			{ // min(id)
+				i := 0
+				assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
+				expr := stmt.Fields.Fields[i].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "min", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+				name = expr.Args[0].(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
+			}
+			{ // min(t.id)
+				i := 1
+				assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
+				expr := stmt.Fields.Fields[i].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "min", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.DotExpression{}, expr.Args[0])
+				dot := expr.Args[0].(*semantic.DotExpression)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
 			}
 		},
 	})
@@ -983,9 +1130,13 @@ End;
 						assert.Equal(t, stmt.Left, "v_Asc_Ids")
 						assert.IsType(t, &semantic.DotExpression{}, stmt.Right)
 						dotExp := stmt.Right.(*semantic.DotExpression)
-						assert.Equal(t, dotExp.Name, "Aws_Asc_Id")
-						assert.IsType(t, &semantic.NameExpression{}, dotExp.Parent)
-						nameExp = dotExp.Parent.(*semantic.NameExpression)
+						assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+						nameExp = dotExp.Name.(*semantic.NameExpression)
+						assert.Equal(t, nameExp.Name, "Aws_Asc_Id")
+						assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+						dotExp = dotExp.Parent.(*semantic.DotExpression)
+						assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+						nameExp = dotExp.Name.(*semantic.NameExpression)
 						assert.Equal(t, nameExp.Name, "Rec_AllAws")
 						assert.IsType(t, &semantic.AssignmentStatement{}, ifStmt.ElseBlock[0])
 						stmt = ifStmt.ElseBlock[0].(*semantic.AssignmentStatement)
@@ -996,9 +1147,13 @@ End;
 						assert.IsType(t, &semantic.BinaryExpression{}, binaryExp.Left)
 						assert.IsType(t, &semantic.DotExpression{}, binaryExp.Right)
 						dotExp = binaryExp.Right.(*semantic.DotExpression)
-						assert.Equal(t, dotExp.Name, "Aws_Asc_Id")
-						assert.IsType(t, &semantic.NameExpression{}, dotExp.Parent)
-						nameExp = dotExp.Parent.(*semantic.NameExpression)
+						assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+						nameExp = dotExp.Name.(*semantic.NameExpression)
+						assert.Equal(t, nameExp.Name, "Aws_Asc_Id")
+						assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+						dotExp = dotExp.Parent.(*semantic.DotExpression)
+						assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+						nameExp = dotExp.Name.(*semantic.NameExpression)
 						assert.Equal(t, nameExp.Name, "Rec_AllAws")
 						binaryExp = binaryExp.Left.(*semantic.BinaryExpression)
 						assert.Equal(t, binaryExp.Operator, "||")
@@ -1190,9 +1345,13 @@ End;
 							assert.Equal(t, stmt.Left, "v_Asc_Ids")
 							assert.IsType(t, &semantic.DotExpression{}, stmt.Right)
 							dotExp := stmt.Right.(*semantic.DotExpression)
-							assert.Equal(t, dotExp.Name, "Aws_Asc_Id")
-							assert.IsType(t, &semantic.NameExpression{}, dotExp.Parent)
-							relExp := dotExp.Parent.(*semantic.NameExpression)
+							assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+							nameExp := dotExp.Name.(*semantic.NameExpression)
+							assert.Equal(t, nameExp.Name, "Aws_Asc_Id")
+							assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+							dotExp = dotExp.Parent.(*semantic.DotExpression)
+							assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+							relExp := dotExp.Name.(*semantic.NameExpression)
 							assert.Equal(t, relExp.Name, "Rec_Aws")
 							assert.NotNil(t, ifStmt.ElseBlock)
 							assert.Equal(t, len(ifStmt.ElseBlock), 1)
@@ -1205,9 +1364,13 @@ End;
 							assert.IsType(t, &semantic.BinaryExpression{}, binaryExp.Left)
 							assert.IsType(t, &semantic.DotExpression{}, binaryExp.Right)
 							dotExp = binaryExp.Right.(*semantic.DotExpression)
-							assert.Equal(t, dotExp.Name, "Aws_Asc_Id")
-							assert.IsType(t, &semantic.NameExpression{}, dotExp.Parent)
-							nameExp = dotExp.Parent.(*semantic.NameExpression)
+							assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+							nameExp = dotExp.Name.(*semantic.NameExpression)
+							assert.Equal(t, nameExp.Name, "Aws_Asc_Id")
+							assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+							dotExp = dotExp.Parent.(*semantic.DotExpression)
+							assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+							nameExp = dotExp.Name.(*semantic.NameExpression)
 							assert.Equal(t, nameExp.Name, "Rec_Aws")
 							binaryExp = binaryExp.Left.(*semantic.BinaryExpression)
 							assert.Equal(t, binaryExp.Operator, "||")
@@ -1241,9 +1404,13 @@ End;
 						procCall := ifStmt.ThenBlock[0].(*semantic.ProcedureCall)
 						assert.IsType(t, &semantic.DotExpression{}, procCall.Name)
 						dotExp := procCall.Name.(*semantic.DotExpression)
-						assert.Equal(t, dotExp.Name, "gen_Anchor_Job_P")
-						assert.IsType(t, &semantic.NameExpression{}, dotExp.Parent)
-						nameExp := dotExp.Parent.(*semantic.NameExpression)
+						assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+						nameExp := dotExp.Name.(*semantic.NameExpression)
+						assert.Equal(t, nameExp.Name, "gen_Anchor_Job_P")
+						assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+						dotExp = dotExp.Parent.(*semantic.DotExpression)
+						assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+						nameExp = dotExp.Name.(*semantic.NameExpression)
 						assert.Equal(t, nameExp.Name, "Mon_Abb_Pak")
 						assert.Equal(t, len(procCall.Arguments), 1)
 						assert.IsType(t, &semantic.NameExpression{}, procCall.Arguments[0])
@@ -1298,6 +1465,130 @@ END`,
 			assert.IsType(t, &semantic.NumericLiteral{}, stmt.Right)
 			lit := stmt.Right.(*semantic.NumericLiteral)
 			assert.Equal(t, lit.Value, int64(1))
+		},
+	})
+	tests = append(tests, testCase{
+		name: "bind variable",
+		root: getBlock,
+		text: `
+DECLARE
+	a NUMBER := 1;
+BEGIN
+	a:=:New.id.c;
+	a:=:Old.id;
+END`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.BlockStatement)
+			assert.Equal(t, len(node.Declarations), 1)
+			assert.IsType(t, &semantic.VariableDeclaration{}, node.Declarations[0])
+			decl := node.Declarations[0].(*semantic.VariableDeclaration)
+			assert.Equal(t, decl.Name, "a")
+			assert.Equal(t, decl.DataType, "NUMBER")
+			assert.NotNil(t, decl.Initialization)
+			assert.IsType(t, &semantic.NumericLiteral{}, decl.Initialization)
+			assert.NotNil(t, node.Body)
+			assert.Equal(t, len(node.Body.Statements), 2)
+			{ // a:=:New.id.c;
+				i := 0
+				assert.IsType(t, &semantic.AssignmentStatement{}, node.Body.Statements[i])
+				stmt := node.Body.Statements[i].(*semantic.AssignmentStatement)
+				assert.Equal(t, stmt.Left, "a")
+				assert.IsType(t, &semantic.DotExpression{}, stmt.Right)
+				dotExp := stmt.Right.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+				name := dotExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, name.Name, "c")
+				assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+				dotExp = dotExp.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+				name = dotExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, name.Name, "id")
+				assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+				dotExp = dotExp.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.BindNameExpression{}, dotExp.Name)
+				bindExp := dotExp.Name.(*semantic.BindNameExpression)
+				assert.IsType(t, &semantic.NameExpression{}, bindExp.Name)
+				nameExp := bindExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, nameExp.Name, ":New")
+			}
+			{ // a:=:Old.id;
+				i := 1
+				assert.IsType(t, &semantic.AssignmentStatement{}, node.Body.Statements[i])
+				stmt := node.Body.Statements[i].(*semantic.AssignmentStatement)
+				assert.Equal(t, stmt.Left, "a")
+				assert.IsType(t, &semantic.DotExpression{}, stmt.Right)
+				dotExp := stmt.Right.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+				name := dotExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, name.Name, "id")
+				assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+				dotExp = dotExp.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.BindNameExpression{}, dotExp.Name)
+				bindExp := dotExp.Name.(*semantic.BindNameExpression)
+				assert.IsType(t, &semantic.NameExpression{}, bindExp.Name)
+				nameExp := bindExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, nameExp.Name, ":Old")
+			}
+		},
+	})
+
+	runTestSuite(t, tests)
+}
+
+func TestCaseWhenStatement(t *testing.T) {
+	tests := testSuite{}
+
+	tests = append(tests, testCase{
+		name: "searched case statement",
+		text: `
+select case when a=b then 1 else 2 end from dual;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 2, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.IsType(t, &semantic.StatementExpression{}, stmt.Fields.Fields[0].Expr)
+			stmtExpr := stmt.Fields.Fields[0].Expr.(*semantic.StatementExpression)
+			assert.IsType(t, &semantic.CaseWhenStatement{}, stmtExpr.Stmt)
+			caseStmt := stmtExpr.Stmt.(*semantic.CaseWhenStatement)
+			assert.Nil(t, caseStmt.Expr)
+			assert.Equal(t, 1, len(caseStmt.WhenClauses))
+			assert.IsType(t, &semantic.CaseWhenBlock{}, caseStmt.WhenClauses[0])
+			whenBlock := caseStmt.WhenClauses[0]
+			assert.NotNil(t, whenBlock.Expr)
+			assert.Equal(t, 0, len(whenBlock.Stmts))
+			assert.NotNil(t, caseStmt.ElseClause.Expr)
+			assert.Equal(t, 0, len(caseStmt.ElseClause.Stmts))
+		},
+	})
+
+	runTestSuite(t, tests)
+}
+
+func TestParseSelectStatement(t *testing.T) {
+	tests := testSuite{}
+
+	tests = append(tests, testCase{
+		name: "select for update",
+		text: `select * from test for update nowait;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 1)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "test")
+			assert.NotNil(t, stmt.ForUpdate)
+			assert.NotNil(t, stmt.ForUpdate.Options)
 		},
 	})
 

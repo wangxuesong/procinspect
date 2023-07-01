@@ -78,7 +78,7 @@ type (
 
 	DotExpression struct {
 		expression
-		Name   string
+		Name   Expr
 		Parent Expr
 	}
 
@@ -111,6 +111,29 @@ type (
 		expression
 		Expr  Expr
 		Alias string
+	}
+
+	StatementExpression struct {
+		expression
+		Stmt Statement
+	}
+
+	CastExpression struct {
+		expression
+		Expr     Expr
+		DataType string
+	}
+
+	BindNameExpression struct {
+		expression
+		Name Expr
+	}
+
+	ForUpdateOptionsExpression struct {
+		expression
+		SkipLocked bool
+		NoWait     bool
+		Wait       Expr
 	}
 )
 

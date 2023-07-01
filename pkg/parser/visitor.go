@@ -147,6 +147,12 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Function_callContext:
 			c := child.(*plsql.Function_callContext)
 			nodes = append(nodes, v.VisitFunction_call(c))
+		case *plsql.Simple_case_statementContext:
+			c := child.(*plsql.Simple_case_statementContext)
+			nodes = append(nodes, v.VisitSimple_case_statement(c))
+		case *plsql.Searched_case_statementContext:
+			c := child.(*plsql.Searched_case_statementContext)
+			nodes = append(nodes, v.VisitSearched_case_statement(c))
 		case antlr.TerminalNode:
 			break
 		default:
@@ -180,6 +186,52 @@ func (v *plsqlVisitor) VisitSql_script(ctx *plsql.Sql_scriptContext) interface{}
 	return script
 }
 
+func (v *plsqlVisitor) VisitSelect_statement(ctx *plsql.Select_statementContext) interface{} {
+	object := ctx.Select_only_statement().Accept(v)
+	stmt, ok := object.(*semantic.SelectStatement)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unprocessed syntax %T", ctx.Select_only_statement()),
+			ctx.GetStart().GetLine(),
+			ctx.GetStart().GetColumn())
+	}
+	if ctx.For_update_clause(0) != nil {
+		expr, ok := ctx.For_update_clause(0).Accept(v).(*semantic.ForUpdateClause)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed expression %T", ctx.For_update_clause(0)),
+				ctx.For_update_clause(0).GetStart().GetLine(),
+				ctx.For_update_clause(0).GetStart().GetColumn())
+			return stmt
+		}
+		stmt.ForUpdate = expr
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitFor_update_clause(ctx *plsql.For_update_clauseContext) interface{} {
+	clause := &semantic.ForUpdateClause{}
+	clause.SetLine(ctx.GetStart().GetLine())
+	clause.SetColumn(ctx.GetStart().GetColumn())
+
+	if ctx.For_update_of_part() != nil {
+		v.ReportError(fmt.Sprintf("unsupported %T", ctx.For_update_of_part()),
+			ctx.For_update_of_part().GetStart().GetLine(),
+			ctx.For_update_of_part().GetStart().GetColumn())
+	}
+
+	if ctx.For_update_options() != nil {
+		visitor := newExprVisitor(v)
+		var ok bool
+		clause.Options, ok = ctx.For_update_options().Accept(visitor).(semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed expression %T", ctx.For_update_options()),
+				ctx.For_update_options().GetStart().GetLine(),
+				ctx.For_update_options().GetStart().GetColumn())
+		}
+	}
+
+	return clause
+}
+
 func (v *plsqlVisitor) VisitQuery_block(ctx *plsql.Query_blockContext) interface{} {
 	stmt := &semantic.SelectStatement{}
 	stmt.SetLine(ctx.GetStart().GetLine())
@@ -207,13 +259,20 @@ func (v *plsqlVisitor) VisitSelected_list(ctx *plsql.Selected_listContext) inter
 	} else {
 		for _, elem := range ctx.AllSelect_list_elements() {
 			ev := newExprVisitor(v)
-			expr, ok := elem.Accept(ev).(semantic.Expr)
-			if !ok {
+			expt := elem.Accept(ev)
+			var filed *semantic.SelectField
+			switch expt.(type) {
+			case *semantic.SelectField:
+				filed = expt.(*semantic.SelectField)
+				fields.Fields = append(fields.Fields, filed)
+			case semantic.Expr:
+				expr := expt.(semantic.Expr)
+				filed = &semantic.SelectField{Expr: expr}
+				fields.Fields = append(fields.Fields, filed)
+			default:
 				v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(elem).Elem().Name()),
 					elem.GetStart().GetLine(), elem.GetStart().GetColumn())
-				continue
 			}
-			fields.Fields = append(fields.Fields, &semantic.SelectField{Expr: expr})
 		}
 	}
 
@@ -659,5 +718,127 @@ func (v *plsqlVisitor) VisitFunction_body(ctx *plsql.Function_bodyContext) inter
 		stmt.Declarations = v.VisitSeq_of_declare_specs(ctx.Seq_of_declare_specs().(*plsql.Seq_of_declare_specsContext)).([]semantic.Declaration)
 	}
 	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitSimple_case_statement(ctx *plsql.Simple_case_statementContext) interface{} {
+	stmt := &semantic.CaseWhenStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.Expression() != nil {
+		visitor := newExprVisitor(v)
+		stmt.Expr = visitor.VisitExpression(ctx.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+	}
+	for _, item := range ctx.AllSimple_case_when_part() {
+		block := &semantic.CaseWhenBlock{}
+		block.SetLine(item.GetStart().GetLine())
+		block.SetColumn(item.GetStart().GetColumn())
+		if item.Expression(0) != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression(0).(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression(0).GetStart().GetLine(),
+					item.Expression(0).GetStart().GetColumn())
+			} else {
+				block.Condition = expr
+			}
+		}
+		if item.Seq_of_statements() != nil {
+			block.Stmts = v.VisitSeq_of_statements(item.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
+		}
+		if item.Expression(1) != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression(1).(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression(1).GetStart().GetLine(),
+					item.Expression(1).GetStart().GetColumn())
+			} else {
+				block.Expr = expr
+			}
+		}
+		stmt.WhenClauses = append(stmt.WhenClauses, block)
+	}
+	if ctx.Case_else_part() != nil {
+		item := ctx.Case_else_part()
+		block := &semantic.CaseWhenBlock{}
+		block.SetLine(item.GetStart().GetLine())
+		block.SetColumn(item.GetStart().GetColumn())
+		if item.Seq_of_statements() != nil {
+			block.Stmts = v.VisitSeq_of_statements(item.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
+		}
+		if item.Expression() != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression().GetStart().GetLine(),
+					item.Expression().GetStart().GetColumn())
+			} else {
+				block.Expr = expr
+			}
+		}
+		stmt.ElseClause = block
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitSearched_case_statement(ctx *plsql.Searched_case_statementContext) interface{} {
+	stmt := &semantic.CaseWhenStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	for _, item := range ctx.AllSearched_case_when_part() {
+		block := &semantic.CaseWhenBlock{}
+		block.SetLine(item.GetStart().GetLine())
+		block.SetColumn(item.GetStart().GetColumn())
+		if item.Expression(0) != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression(0).(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression(0).GetStart().GetLine(),
+					item.Expression(0).GetStart().GetColumn())
+			} else {
+				block.Condition = expr
+			}
+		}
+		if item.Seq_of_statements() != nil {
+			block.Stmts = v.VisitSeq_of_statements(item.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
+		}
+		if item.Expression(1) != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression(1).(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression(1).GetStart().GetLine(),
+					item.Expression(1).GetStart().GetColumn())
+			} else {
+				block.Expr = expr
+			}
+		}
+		stmt.WhenClauses = append(stmt.WhenClauses, block)
+	}
+	if ctx.Case_else_part() != nil {
+		item := ctx.Case_else_part()
+		block := &semantic.CaseWhenBlock{}
+		block.SetLine(item.GetStart().GetLine())
+		block.SetColumn(item.GetStart().GetColumn())
+		if item.Seq_of_statements() != nil {
+			block.Stmts = v.VisitSeq_of_statements(item.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
+		}
+		if item.Expression() != nil {
+			visitor := newExprVisitor(v)
+			expr, ok := visitor.VisitExpression(item.Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					item.Expression().GetStart().GetLine(),
+					item.Expression().GetStart().GetColumn())
+			} else {
+				block.Expr = expr
+			}
+		}
+		stmt.ElseClause = block
+	}
 	return stmt
 }

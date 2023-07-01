@@ -179,7 +179,16 @@ func (i *Interpreter) VisitNameExpression(s *semantic.NameExpression) (result an
 }
 
 func (i *Interpreter) VisitDotExpression(s *semantic.DotExpression) (result any, err error) {
-	instance, err := i.evaluate(s.Parent.(semantic.Expression))
+	expr := s.Parent
+	if expr == nil {
+		expr = s.Name
+		instance, err := i.evaluate(expr.(semantic.Expression))
+		if err != nil {
+			return nil, err
+		}
+		return instance, nil
+	}
+	instance, err := i.evaluate(expr.(semantic.Expression))
 	if err != nil {
 		return nil, err
 	}
@@ -189,5 +198,6 @@ func (i *Interpreter) VisitDotExpression(s *semantic.DotExpression) (result any,
 		return nil, fmt.Errorf("instance is not gettable")
 	}
 
-	return gettable.Get(s.Name)
+	name := s.Name.(*semantic.NameExpression).Name
+	return gettable.Get(name)
 }
