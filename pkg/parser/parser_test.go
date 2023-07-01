@@ -1447,6 +1447,70 @@ END`,
 			assert.Equal(t, lit.Value, int64(1))
 		},
 	})
+	tests = append(tests, testCase{
+		name: "bind variable",
+		root: getBlock,
+		text: `
+DECLARE
+	a NUMBER := 1;
+BEGIN
+	a:=:New.id.c;
+	a:=:Old.id;
+END`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.BlockStatement)
+			assert.Equal(t, len(node.Declarations), 1)
+			assert.IsType(t, &semantic.VariableDeclaration{}, node.Declarations[0])
+			decl := node.Declarations[0].(*semantic.VariableDeclaration)
+			assert.Equal(t, decl.Name, "a")
+			assert.Equal(t, decl.DataType, "NUMBER")
+			assert.NotNil(t, decl.Initialization)
+			assert.IsType(t, &semantic.NumericLiteral{}, decl.Initialization)
+			assert.NotNil(t, node.Body)
+			assert.Equal(t, len(node.Body.Statements), 2)
+			{ // a:=:New.id.c;
+				i := 0
+				assert.IsType(t, &semantic.AssignmentStatement{}, node.Body.Statements[i])
+				stmt := node.Body.Statements[i].(*semantic.AssignmentStatement)
+				assert.Equal(t, stmt.Left, "a")
+				assert.IsType(t, &semantic.DotExpression{}, stmt.Right)
+				dotExp := stmt.Right.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+				name := dotExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, name.Name, "c")
+				assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+				dotExp = dotExp.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+				name = dotExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, name.Name, "id")
+				assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+				dotExp = dotExp.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.BindNameExpression{}, dotExp.Name)
+				bindExp := dotExp.Name.(*semantic.BindNameExpression)
+				assert.IsType(t, &semantic.NameExpression{}, bindExp.Name)
+				nameExp := bindExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, nameExp.Name, ":New")
+			}
+			{ // a:=:Old.id;
+				i := 1
+				assert.IsType(t, &semantic.AssignmentStatement{}, node.Body.Statements[i])
+				stmt := node.Body.Statements[i].(*semantic.AssignmentStatement)
+				assert.Equal(t, stmt.Left, "a")
+				assert.IsType(t, &semantic.DotExpression{}, stmt.Right)
+				dotExp := stmt.Right.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+				name := dotExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, name.Name, "id")
+				assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+				dotExp = dotExp.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.BindNameExpression{}, dotExp.Name)
+				bindExp := dotExp.Name.(*semantic.BindNameExpression)
+				assert.IsType(t, &semantic.NameExpression{}, bindExp.Name)
+				nameExp := bindExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, nameExp.Name, ":Old")
+			}
+		},
+	})
 
 	runTestSuite(t, tests)
 }

@@ -123,6 +123,11 @@ type (
 		Expr     Expr
 		DataType string
 	}
+
+	BindNameExpression struct {
+		expression
+		Name Expr
+	}
 )
 
 func (n *expression) expr() {}
