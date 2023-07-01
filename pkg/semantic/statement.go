@@ -70,6 +70,14 @@ type (
 		Expr      Expr
 		Stmts     []Statement
 	}
+
+	CommitStatement struct {
+		node
+	}
+
+	RollbackStatement struct {
+		node
+	}
 )
 
 func (s *SelectStatement) Type() NodeType {
@@ -83,3 +91,7 @@ func (s *CreateTypeStatement) statement() {}
 func (s *CreateNestTableStatement) statement() {}
 
 func (s *CaseWhenStatement) statement() {}
+
+func (s *CommitStatement) statement() {}
+
+func (s *RollbackStatement) statement() {}

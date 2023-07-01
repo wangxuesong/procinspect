@@ -375,6 +375,18 @@ func TestParseSimple(t *testing.T) {
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "commit & rollback",
+		text: `commit;
+rollback;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			assert.IsType(t, &semantic.CommitStatement{}, node.Statements[0])
+			assert.IsType(t, &semantic.RollbackStatement{}, node.Statements[1])
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
