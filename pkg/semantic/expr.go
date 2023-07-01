@@ -128,6 +128,13 @@ type (
 		expression
 		Name Expr
 	}
+
+	ForUpdateOptionsExpression struct {
+		expression
+		SkipLocked bool
+		NoWait     bool
+		Wait       Expr
+	}
 )
 
 func (n *expression) expr() {}

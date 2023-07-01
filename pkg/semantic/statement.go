@@ -29,6 +29,11 @@ type (
 		TableRefs []*TableRef
 	}
 
+	ForUpdateClause struct {
+		node
+		Options Expr
+	}
+
 	Statement interface {
 		Node
 		statement()
@@ -36,9 +41,10 @@ type (
 
 	SelectStatement struct {
 		node
-		Fields *FieldList
-		From   *FromClause
-		Where  Expr
+		Fields    *FieldList
+		From      *FromClause
+		Where     Expr
+		ForUpdate *ForUpdateClause
 	}
 
 	CreateTypeStatement struct {

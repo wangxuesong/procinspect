@@ -998,6 +998,24 @@ func (v *exprVisitor) VisitSelect_list_elements(ctx *plsql.Select_list_elementsC
 	return v.VisitChildren(ctx)
 }
 
+func (v *exprVisitor) VisitFor_update_options(ctx *plsql.For_update_optionsContext) interface{} {
+	expr := &semantic.ForUpdateOptionsExpression{}
+
+	if ctx.SKIP_() != nil {
+		expr.SkipLocked = true
+	}
+
+	if ctx.NOWAIT() != nil {
+		expr.NoWait = true
+	}
+
+	if ctx.WAIT() != nil {
+		v.ReportError("unsupported expression", ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+	}
+
+	return expr
+}
+
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
 	parts := strings.Split(text, ".")
 	if len(parts) == 1 {
