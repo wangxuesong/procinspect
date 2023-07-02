@@ -1575,6 +1575,34 @@ END`,
 			}
 		},
 	})
+	tests = append(tests, testCase{
+		name: "execute_immediate",
+		root: getBlock,
+		text: `
+DECLARE
+	a NUMBER := 1;
+BEGIN
+	execute immediate 'select * from t';
+END`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.BlockStatement)
+			assert.Equal(t, len(node.Declarations), 1)
+			assert.IsType(t, &semantic.VariableDeclaration{}, node.Declarations[0])
+			decl := node.Declarations[0].(*semantic.VariableDeclaration)
+			assert.Equal(t, decl.Name, "a")
+			assert.Equal(t, decl.DataType, "NUMBER")
+			assert.NotNil(t, decl.Initialization)
+			assert.IsType(t, &semantic.NumericLiteral{}, decl.Initialization)
+			assert.NotNil(t, node.Body)
+			assert.Equal(t, len(node.Body.Statements), 1)
+			{ // execute immediate 'select * from t';
+				i := 0
+				assert.IsType(t, &semantic.ExecuteImmediateStatement{}, node.Body.Statements[i])
+				stmt := node.Body.Statements[i].(*semantic.ExecuteImmediateStatement)
+				assert.Equal(t, "'select * from t'", stmt.Sql)
+			}
+		},
+	})
 
 	runTestSuite(t, tests)
 }
