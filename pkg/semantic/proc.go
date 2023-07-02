@@ -79,6 +79,11 @@ type (
 		Arguments []Expr
 	}
 
+	ExecuteImmediateStatement struct {
+		node
+		Sql string
+	}
+
 	Declaration interface {
 		Node
 		declaration()
@@ -177,3 +182,5 @@ func (s *ProcedureCall) statement() {}
 func (s *ReturnStatement) statement() {}
 
 func (s *NullStatement) statement() {}
+
+func (s *ExecuteImmediateStatement) statement() {}

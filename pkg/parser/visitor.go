@@ -992,3 +992,25 @@ func (v *plsqlVisitor) VisitContinue_statement(ctx *plsql.Continue_statementCont
 	}
 	return stmt
 }
+
+func (v *plsqlVisitor) VisitExecute_immediate(ctx *plsql.Execute_immediateContext) interface{} {
+	stmt := &semantic.ExecuteImmediateStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	stmt.Sql = ctx.Expression().GetText()
+
+	if ctx.Into_clause() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Into_clause()),
+			ctx.Into_clause().GetStart().GetLine(),
+			ctx.Into_clause().GetStart().GetColumn())
+	} else if ctx.Using_clause() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Using_clause()),
+			ctx.Using_clause().GetStart().GetLine(),
+			ctx.Using_clause().GetStart().GetColumn())
+	} else if ctx.Dynamic_returning_clause() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Dynamic_returning_clause()),
+			ctx.Dynamic_returning_clause().GetStart().GetLine(),
+			ctx.Dynamic_returning_clause().GetStart().GetColumn())
+	}
+	return stmt
+}
