@@ -758,6 +758,20 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		}
 		return expr
 	}
+	if ctx.TRIM() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "TRIM"}}
+		{
+			node, ok := ctx.Concatenation().Accept(v).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					ctx.Concatenation().GetStart().GetLine(),
+					ctx.Concatenation().GetStart().GetColumn())
+				return expr
+			}
+			expr.Args = append(expr.Args, node)
+		}
+		return expr
+	}
 	_ = ok
 	return v.VisitChildren(ctx)
 }
@@ -766,6 +780,22 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 	var ok bool
 	if ctx.ROUND() != nil {
 		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "ROUND"}}
+		if arg := ctx.Expression(); arg != nil {
+			node := arg.(*plsql.ExpressionContext)
+			elems, ok := v.VisitExpression(node).(semantic.Expr)
+			if !ok {
+				v.ReportError("unsupported expression",
+					node.GetStart().GetLine(),
+					node.GetStart().GetColumn())
+				return expr
+			}
+
+			expr.Args = append(expr.Args, elems)
+		}
+		return expr
+	}
+	if ctx.AVG() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "AVG"}}
 		if arg := ctx.Expression(); arg != nil {
 			node := arg.(*plsql.ExpressionContext)
 			elems, ok := v.VisitExpression(node).(semantic.Expr)

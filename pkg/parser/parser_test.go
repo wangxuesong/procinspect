@@ -627,6 +627,51 @@ from t;`,
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "trim",
+		text: `select trim(id), avg(t.id)
+from t;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, 2, len(stmt.Fields.Fields))
+			{ // trim(id)
+				i := 0
+				assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
+				expr := stmt.Fields.Fields[i].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "TRIM", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Args[0])
+				name = expr.Args[0].(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
+			}
+			{ // avg(t.id)
+				i := 1
+				assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+				assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
+				expr := stmt.Fields.Fields[i].Expr.(*semantic.FunctionCallExpression)
+				assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+				name := expr.Name.(*semantic.NameExpression)
+				assert.Equal(t, "AVG", name.Name)
+				assert.Equal(t, len(expr.Args), 1)
+				assert.IsType(t, &semantic.DotExpression{}, expr.Args[0])
+				dot := expr.Args[0].(*semantic.DotExpression)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "id", name.Name)
+			}
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
