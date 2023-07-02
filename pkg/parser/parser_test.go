@@ -375,6 +375,50 @@ func TestParseSimple(t *testing.T) {
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "commit & rollback",
+		text: `commit;
+rollback;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			assert.IsType(t, &semantic.CommitStatement{}, node.Statements[0])
+			assert.IsType(t, &semantic.RollbackStatement{}, node.Statements[1])
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "delete",
+		text: `delete from t1 where t1.id =1;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.DeleteStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.DeleteStatement)
+			assert.NotNil(t, stmt.Table)
+			assert.NotNil(t, stmt.Where)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "update",
+		text: `update t1 set id = 2 where t1.id =1;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.UpdateStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.UpdateStatement)
+			assert.NotNil(t, stmt.Table)
+			assert.NotNil(t, stmt.Where)
+			assert.NotNil(t, stmt.SetExprs)
+			assert.Equal(t, 1, len(stmt.SetExprs))
+			assert.IsType(t, &semantic.BinaryExpression{}, stmt.SetExprs[0])
+			expr := stmt.SetExprs[0].(*semantic.BinaryExpression)
+			assert.Equal(t, "id", expr.Left.(*semantic.NameExpression).Name)
+			assert.Equal(t, int64(2), expr.Right.(*semantic.NumericLiteral).Value)
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
@@ -1528,6 +1572,34 @@ END`,
 				assert.IsType(t, &semantic.NameExpression{}, bindExp.Name)
 				nameExp := bindExp.Name.(*semantic.NameExpression)
 				assert.Equal(t, nameExp.Name, ":Old")
+			}
+		},
+	})
+	tests = append(tests, testCase{
+		name: "execute_immediate",
+		root: getBlock,
+		text: `
+DECLARE
+	a NUMBER := 1;
+BEGIN
+	execute immediate 'select * from t';
+END`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.BlockStatement)
+			assert.Equal(t, len(node.Declarations), 1)
+			assert.IsType(t, &semantic.VariableDeclaration{}, node.Declarations[0])
+			decl := node.Declarations[0].(*semantic.VariableDeclaration)
+			assert.Equal(t, decl.Name, "a")
+			assert.Equal(t, decl.DataType, "NUMBER")
+			assert.NotNil(t, decl.Initialization)
+			assert.IsType(t, &semantic.NumericLiteral{}, decl.Initialization)
+			assert.NotNil(t, node.Body)
+			assert.Equal(t, len(node.Body.Statements), 1)
+			{ // execute immediate 'select * from t';
+				i := 0
+				assert.IsType(t, &semantic.ExecuteImmediateStatement{}, node.Body.Statements[i])
+				stmt := node.Body.Statements[i].(*semantic.ExecuteImmediateStatement)
+				assert.Equal(t, "'select * from t'", stmt.Sql)
 			}
 		},
 	})

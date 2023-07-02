@@ -70,6 +70,32 @@ type (
 		Expr      Expr
 		Stmts     []Statement
 	}
+
+	CommitStatement struct {
+		node
+	}
+
+	RollbackStatement struct {
+		node
+	}
+
+	ContinueStatement struct {
+		node
+	}
+
+	DeleteStatement struct {
+		node
+		Table Expr
+		Where Expr
+	}
+
+	UpdateStatement struct {
+		node
+		Table    Expr
+		Where    Expr
+		SetExprs []Expr
+		SetValue Expr
+	}
 )
 
 func (s *SelectStatement) Type() NodeType {
@@ -83,3 +109,13 @@ func (s *CreateTypeStatement) statement() {}
 func (s *CreateNestTableStatement) statement() {}
 
 func (s *CaseWhenStatement) statement() {}
+
+func (s *CommitStatement) statement() {}
+
+func (s *RollbackStatement) statement() {}
+
+func (s *ContinueStatement) statement() {}
+
+func (s *DeleteStatement) statement() {}
+
+func (s *UpdateStatement) statement() {}

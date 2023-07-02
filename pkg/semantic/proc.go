@@ -79,6 +79,11 @@ type (
 		Arguments []Expr
 	}
 
+	ExecuteImmediateStatement struct {
+		node
+		Sql string
+	}
+
 	Declaration interface {
 		Node
 		declaration()
@@ -126,6 +131,10 @@ type (
 		node
 		Name string
 	}
+
+	AutonomousTransactionDeclaration struct {
+		node
+	}
 )
 
 func (i *blockDepth) Get() int64 {
@@ -154,6 +163,8 @@ func (d *NestTableTypeDeclaration) declaration() {}
 
 func (d *FunctionDeclaration) declaration() {}
 
+func (d *AutonomousTransactionDeclaration) declaration() {}
+
 func (i *IfStatement) statement() {}
 
 func (l *LoopStatement) statement() {}
@@ -171,3 +182,5 @@ func (s *ProcedureCall) statement() {}
 func (s *ReturnStatement) statement() {}
 
 func (s *NullStatement) statement() {}
+
+func (s *ExecuteImmediateStatement) statement() {}
