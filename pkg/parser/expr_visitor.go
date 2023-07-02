@@ -1077,6 +1077,38 @@ func (v *exprVisitor) VisitDml_table_expression_clause(ctx *plsql.Dml_table_expr
 	return v.VisitChildren(ctx)
 }
 
+func (v *exprVisitor) VisitColumn_based_update_set_clause(ctx *plsql.Column_based_update_set_clauseContext) interface{} {
+	if ctx.Paren_column_list() != nil {
+		v.ReportError(
+			"unsupported expression",
+			ctx.Paren_column_list().GetStart().GetLine(),
+			ctx.Paren_column_list().GetStart().GetColumn(),
+		)
+		return nil
+	} else {
+		var ok bool
+		expr := &semantic.BinaryExpression{Operator: "="}
+		object := v.parseDotExpr(ctx.Column_name().GetText())
+		expr.Left, ok = object.(semantic.Expr)
+		if !ok {
+			v.ReportError(
+				"unsupported expression",
+				ctx.Column_name().GetStart().GetLine(),
+				ctx.Column_name().GetStart().GetColumn(),
+			)
+		}
+		expr.Right, ok = ctx.Expression().Accept(v).(semantic.Expr)
+		if !ok {
+			v.ReportError(
+				"unsupported expression",
+				ctx.Expression().GetStart().GetLine(),
+				ctx.Expression().GetStart().GetColumn(),
+			)
+		}
+		return expr
+	}
+}
+
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
 	parts := strings.Split(text, ".")
 	if len(parts) == 1 {
