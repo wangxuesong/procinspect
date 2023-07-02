@@ -400,6 +400,25 @@ rollback;`,
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "update",
+		text: `update t1 set id = 2 where t1.id =1;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.UpdateStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.UpdateStatement)
+			assert.NotNil(t, stmt.Table)
+			assert.NotNil(t, stmt.Where)
+			assert.NotNil(t, stmt.SetExprs)
+			assert.Equal(t, 1, len(stmt.SetExprs))
+			assert.IsType(t, &semantic.BinaryExpression{}, stmt.SetExprs[0])
+			expr := stmt.SetExprs[0].(*semantic.BinaryExpression)
+			assert.Equal(t, "id", expr.Left.(*semantic.NameExpression).Name)
+			assert.Equal(t, int64(2), expr.Right.(*semantic.NumericLiteral).Value)
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 

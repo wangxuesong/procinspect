@@ -905,3 +905,62 @@ func (v *plsqlVisitor) VisitDelete_statement(ctx *plsql.Delete_statementContext)
 	}
 	return stmt
 }
+
+func (v *plsqlVisitor) VisitUpdate_statement(ctx *plsql.Update_statementContext) interface{} {
+	stmt := &semantic.UpdateStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.General_table_ref() != nil {
+		visitor := newExprVisitor(v)
+		object := ctx.General_table_ref().Accept(visitor)
+		expr, ok := object.(semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.General_table_ref().GetChild(0)),
+				ctx.General_table_ref().GetStart().GetLine(),
+				ctx.General_table_ref().GetStart().GetColumn())
+		}
+		stmt.Table = expr
+	}
+
+	if ctx.Update_set_clause() != nil {
+		if ctx.Update_set_clause().VALUE() != nil {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Update_set_clause().VALUE()),
+				ctx.Update_set_clause().VALUE().GetSymbol().GetLine(),
+				ctx.Update_set_clause().VALUE().GetSymbol().GetColumn())
+		} else {
+			exprs := make([]semantic.Expr, 0)
+			for _, item := range ctx.Update_set_clause().AllColumn_based_update_set_clause() {
+				visitor := newExprVisitor(v)
+				object := item.Accept(visitor)
+				expr, ok := object.(semantic.Expr)
+				if !ok {
+					v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Update_set_clause().GetChild(1)),
+						ctx.Update_set_clause().GetStart().GetLine(),
+						ctx.Update_set_clause().GetStart().GetColumn())
+				}
+				exprs = append(exprs, expr)
+			}
+			stmt.SetExprs = exprs
+		}
+	}
+
+	if ctx.Where_clause() != nil {
+		if ctx.Where_clause().Expression() != nil {
+			visitor := newExprVisitor(v)
+			stmt.Where = visitor.VisitExpression(ctx.Where_clause().Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+		}
+	}
+
+	if ctx.Static_returning_clause() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Static_returning_clause()),
+			ctx.Static_returning_clause().GetStart().GetLine(),
+			ctx.Static_returning_clause().GetStart().GetColumn())
+	}
+
+	if ctx.Error_logging_clause() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Error_logging_clause()),
+			ctx.Error_logging_clause().GetStart().GetLine(),
+			ctx.Error_logging_clause().GetStart().GetColumn())
+	}
+	return stmt
+}
