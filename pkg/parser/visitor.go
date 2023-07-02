@@ -964,3 +964,20 @@ func (v *plsqlVisitor) VisitUpdate_statement(ctx *plsql.Update_statementContext)
 	}
 	return stmt
 }
+
+func (v *plsqlVisitor) VisitContinue_statement(ctx *plsql.Continue_statementContext) interface{} {
+	stmt := &semantic.ContinueStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.Label_name() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Label_name()),
+			ctx.Label_name().GetStart().GetLine(),
+			ctx.Label_name().GetStart().GetColumn())
+	}
+	if ctx.Condition() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Condition()),
+			ctx.Condition().GetStart().GetLine(),
+			ctx.Condition().GetStart().GetColumn())
+	}
+	return stmt
+}

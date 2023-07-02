@@ -79,6 +79,10 @@ type (
 		node
 	}
 
+	ContinueStatement struct {
+		node
+	}
+
 	DeleteStatement struct {
 		node
 		Table Expr
@@ -109,6 +113,8 @@ func (s *CaseWhenStatement) statement() {}
 func (s *CommitStatement) statement() {}
 
 func (s *RollbackStatement) statement() {}
+
+func (s *ContinueStatement) statement() {}
 
 func (s *DeleteStatement) statement() {}
 
