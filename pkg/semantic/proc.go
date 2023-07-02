@@ -126,6 +126,10 @@ type (
 		node
 		Name string
 	}
+
+	AutonomousTransactionDeclaration struct {
+		node
+	}
 )
 
 func (i *blockDepth) Get() int64 {
@@ -153,6 +157,8 @@ func (d *CursorDeclaration) declaration() {}
 func (d *NestTableTypeDeclaration) declaration() {}
 
 func (d *FunctionDeclaration) declaration() {}
+
+func (d *AutonomousTransactionDeclaration) declaration() {}
 
 func (i *IfStatement) statement() {}
 
