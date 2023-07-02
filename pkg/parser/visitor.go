@@ -708,6 +708,17 @@ func (v *plsqlVisitor) VisitFunction_spec(ctx *plsql.Function_specContext) inter
 	return decl
 }
 
+func (v *plsqlVisitor) VisitPragma_declaration(ctx *plsql.Pragma_declarationContext) interface{} {
+	if ctx.AUTONOMOUS_TRANSACTION() != nil {
+		decl := &semantic.AutonomousTransactionDeclaration{}
+		decl.SetLine(ctx.GetStart().GetLine())
+		decl.SetColumn(ctx.GetStart().GetColumn())
+		return decl
+	}
+
+	return nil
+}
+
 func (v *plsqlVisitor) VisitFunction_body(ctx *plsql.Function_bodyContext) interface{} {
 	stmt := &semantic.CreateFunctionStatement{}
 	stmt.SetLine(ctx.GetStart().GetLine())
