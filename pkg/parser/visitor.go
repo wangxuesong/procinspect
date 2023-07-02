@@ -880,3 +880,28 @@ func (v *plsqlVisitor) VisitRollback_statement(ctx *plsql.Rollback_statementCont
 	}
 	return stmt
 }
+
+func (v *plsqlVisitor) VisitDelete_statement(ctx *plsql.Delete_statementContext) interface{} {
+	stmt := &semantic.DeleteStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+	if ctx.General_table_ref() != nil {
+		visitor := newExprVisitor(v)
+		object := ctx.General_table_ref().Accept(visitor)
+		expr, ok := object.(semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.General_table_ref().GetChild(0)),
+				ctx.General_table_ref().GetStart().GetLine(),
+				ctx.General_table_ref().GetStart().GetColumn())
+		}
+		stmt.Table = expr
+	}
+
+	if ctx.Where_clause() != nil {
+		if ctx.Where_clause().Expression() != nil {
+			visitor := newExprVisitor(v)
+			stmt.Where = visitor.VisitExpression(ctx.Where_clause().Expression().(*plsql.ExpressionContext)).(semantic.Expr)
+		}
+	}
+	return stmt
+}

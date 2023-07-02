@@ -1016,6 +1016,67 @@ func (v *exprVisitor) VisitFor_update_options(ctx *plsql.For_update_optionsConte
 	return expr
 }
 
+func (v *exprVisitor) VisitGeneral_table_ref(ctx *plsql.General_table_refContext) interface{} {
+	var expr semantic.Expr
+	if ctx.ONLY() != nil {
+		v.ReportError(
+			"unsupported expression",
+			ctx.ONLY().GetSymbol().GetLine(),
+			ctx.ONLY().GetSymbol().GetColumn(),
+		)
+		return expr
+	}
+
+	if ctx.Dml_table_expression_clause() != nil {
+		object := ctx.Dml_table_expression_clause().Accept(v)
+		expr = object.(semantic.Expr)
+	}
+
+	if ctx.Table_alias() != nil {
+		expr = &semantic.AliasExpression{
+			Expr:  expr,
+			Alias: ctx.Table_alias().GetText(),
+		}
+	}
+	return expr
+}
+
+func (v *exprVisitor) VisitDml_table_expression_clause(ctx *plsql.Dml_table_expression_clauseContext) interface{} {
+	if ctx.Table_collection_expression() != nil {
+		v.ReportError(
+			"unsupported expression",
+			ctx.Table_collection_expression().GetStart().GetLine(),
+			ctx.Table_collection_expression().GetStart().GetColumn(),
+		)
+		return nil
+	} else if ctx.Json_table_clause() != nil {
+		v.ReportError(
+			"unsupported expression",
+			ctx.Json_table_clause().GetStart().GetLine(),
+			ctx.Json_table_clause().GetStart().GetColumn(),
+		)
+		return nil
+	} else if ctx.Select_statement() != nil {
+		v.ReportError(
+			"unsupported expression",
+			ctx.Select_statement().GetStart().GetLine(),
+			ctx.Select_statement().GetStart().GetColumn(),
+		)
+		return nil
+	} else {
+		expr := &semantic.NameExpression{Name: ctx.Tableview_name().GetText()}
+		if ctx.Sample_clause() != nil {
+			v.ReportError(
+				"unsupported expression",
+				ctx.Sample_clause().GetStart().GetLine(),
+				ctx.Sample_clause().GetStart().GetColumn(),
+			)
+		}
+		return expr
+	}
+	return v.VisitChildren(ctx)
+}
+
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
 	parts := strings.Split(text, ".")
 	if len(parts) == 1 {

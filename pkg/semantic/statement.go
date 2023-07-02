@@ -78,6 +78,12 @@ type (
 	RollbackStatement struct {
 		node
 	}
+
+	DeleteStatement struct {
+		node
+		Table Expr
+		Where Expr
+	}
 )
 
 func (s *SelectStatement) Type() NodeType {
@@ -95,3 +101,5 @@ func (s *CaseWhenStatement) statement() {}
 func (s *CommitStatement) statement() {}
 
 func (s *RollbackStatement) statement() {}
+
+func (s *DeleteStatement) statement() {}

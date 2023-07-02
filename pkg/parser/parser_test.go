@@ -387,6 +387,19 @@ rollback;`,
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "delete",
+		text: `delete from t1 where t1.id =1;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.DeleteStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.DeleteStatement)
+			assert.NotNil(t, stmt.Table)
+			assert.NotNil(t, stmt.Where)
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
