@@ -145,9 +145,9 @@ func (v *exprVisitor) VisitExpressions(ctx *plsql.ExpressionsContext) interface{
 
 		exprs = append(exprs, expr)
 	}
-	if len(exprs) == 1 {
-		return exprs[0]
-	}
+	//if len(exprs) == 1 {
+	//	return exprs[0]
+	//}
 	return exprs
 }
 
@@ -590,7 +590,18 @@ func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
 		return expr
 	}
 	if ctx.Expressions() != nil {
-		return v.VisitExpressions(ctx.Expressions().(*plsql.ExpressionsContext))
+		expressions, ok := v.VisitExpressions(ctx.Expressions().(*plsql.ExpressionsContext)).([]semantic.Expr)
+		if !ok {
+			v.ReportError("unsupported expression",
+				ctx.Expressions().GetStart().GetLine(),
+				ctx.Expressions().GetStart().GetColumn())
+			return nil
+		}
+		// TODO: wrap multiple expressions with Expressions struct
+		if len(expressions) == 1 {
+			return expressions[0]
+		}
+		return expressions
 	}
 	if ctx.Subquery() != nil {
 		expr := &semantic.StatementExpression{}
@@ -1145,6 +1156,26 @@ func (v *exprVisitor) VisitSynonym_name(ctx *plsql.Synonym_nameContext) interfac
 
 func (v *exprVisitor) VisitSchema_object_name(ctx *plsql.Schema_object_nameContext) interface{} {
 	return v.parseDotExpr(ctx.GetText())
+}
+
+func (v *exprVisitor) VisitParen_column_list(ctx *plsql.Paren_column_listContext) interface{} {
+	return ctx.Column_list().Accept(v)
+}
+
+func (v *exprVisitor) VisitColumn_list(ctx *plsql.Column_listContext) interface{} {
+	exprs := make([]semantic.Expr, 0)
+	for _, col := range ctx.AllColumn_name() {
+		name := col.GetText()
+		expr, ok := v.parseDotExpr(name).(semantic.Expr)
+		if !ok {
+			v.ReportError("unsupported expression",
+				col.GetStart().GetLine(),
+				col.GetStart().GetColumn())
+			continue
+		}
+		exprs = append(exprs, expr)
+	}
+	return exprs
 }
 
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {

@@ -102,6 +102,19 @@ type (
 		SetExprs []Expr
 		SetValue Expr
 	}
+
+	InsertStatement struct {
+		node
+		AllInto []*IntoClause
+		Select  *SelectStatement
+	}
+
+	IntoClause struct {
+		node
+		Table   *TableRef
+		Columns []Expr
+		Values  []Expr
+	}
 )
 
 func (s *SelectStatement) Type() NodeType {
@@ -127,3 +140,5 @@ func (s *ContinueStatement) statement() {}
 func (s *DeleteStatement) statement() {}
 
 func (s *UpdateStatement) statement() {}
+
+func (s *InsertStatement) statement() {}

@@ -416,7 +416,14 @@ func (v *plsqlVisitor) VisitBlock(ctx *plsql.BlockContext) interface{} {
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	for _, p := range ctx.AllDeclare_spec() {
-		stmt.Declarations = append(stmt.Declarations, p.Accept(v).(semantic.Declaration))
+		decl, ok := p.Accept(v).(semantic.Declaration)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T",
+				p.GetChild(0)),
+				p.GetStart().GetLine(), p.GetStart().GetColumn())
+			continue
+		}
+		stmt.Declarations = append(stmt.Declarations, decl)
 	}
 	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
 	return stmt
@@ -1038,4 +1045,97 @@ func (v *plsqlVisitor) VisitCreate_synonym(ctx *plsql.Create_synonymContext) int
 	}
 	stmt.Original = expr
 	return stmt
+}
+
+func (v *plsqlVisitor) VisitInsert_statement(ctx *plsql.Insert_statementContext) interface{} {
+	if ctx.Multi_table_insert() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Multi_table_insert()),
+			ctx.Multi_table_insert().GetStart().GetLine(),
+			ctx.Multi_table_insert().GetStart().GetColumn())
+		return nil
+	} else { // single table insert
+		stmt, ok := ctx.Single_table_insert().Accept(v).(*semantic.InsertStatement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Single_table_insert().GetChild(0)),
+				ctx.Single_table_insert().GetStart().GetLine(),
+				ctx.Single_table_insert().GetStart().GetColumn())
+		}
+		return stmt
+	}
+}
+
+func (v *plsqlVisitor) VisitSingle_table_insert(ctx *plsql.Single_table_insertContext) interface{} {
+	stmt := &semantic.InsertStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	clause, ok := ctx.Insert_into_clause().Accept(v).(*semantic.IntoClause)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Insert_into_clause().GetChild(0)),
+			ctx.Insert_into_clause().GetStart().GetLine(),
+			ctx.Insert_into_clause().GetStart().GetColumn())
+	} else {
+		stmt.AllInto = append(stmt.AllInto, clause)
+	}
+
+	if ctx.Values_clause() != nil {
+		values, ok := ctx.Values_clause().Accept(v).([]semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Values_clause().GetChild(0)),
+				ctx.Values_clause().GetStart().GetLine(),
+				ctx.Values_clause().GetStart().GetColumn())
+		} else {
+			clause.Values = values
+		}
+	} else if ctx.Select_statement() != nil {
+		var ok bool
+		stmt.Select, ok = ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Select_statement()),
+				ctx.Select_statement().GetStart().GetLine(),
+				ctx.Select_statement().GetStart().GetColumn())
+		}
+	}
+
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitInsert_into_clause(ctx *plsql.Insert_into_clauseContext) interface{} {
+	stmt := &semantic.IntoClause{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	stmt.Table = &semantic.TableRef{
+		Table: ctx.General_table_ref().GetText(),
+	}
+	if ctx.Paren_column_list() != nil {
+		visitor := newExprVisitor(v)
+		objects, ok := ctx.Paren_column_list().Accept(visitor).([]semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Paren_column_list().GetChild(0)),
+				ctx.Paren_column_list().GetStart().GetLine(),
+				ctx.Paren_column_list().GetStart().GetColumn())
+		}
+		stmt.Columns = objects
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitValues_clause(ctx *plsql.Values_clauseContext) interface{} {
+	if ctx.REGULAR_ID() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.REGULAR_ID()),
+			ctx.REGULAR_ID().GetSymbol().GetLine(),
+			ctx.REGULAR_ID().GetSymbol().GetColumn())
+		return nil
+	} else if ctx.Expressions() != nil {
+		visitor := newExprVisitor(v)
+		exprs, ok := ctx.Expressions().Accept(visitor).([]semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Expressions().GetChild(0)),
+				ctx.Expressions().GetStart().GetLine(),
+				ctx.Expressions().GetStart().GetColumn())
+		}
+		return exprs
+	}
+	return nil
 }
