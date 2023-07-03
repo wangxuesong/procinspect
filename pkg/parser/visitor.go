@@ -1014,3 +1014,28 @@ func (v *plsqlVisitor) VisitExecute_immediate(ctx *plsql.Execute_immediateContex
 	}
 	return stmt
 }
+
+func (v *plsqlVisitor) VisitCreate_synonym(ctx *plsql.Create_synonymContext) interface{} {
+	stmt := &semantic.CreateSynonymStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	visitor := newExprVisitor(v)
+	object := ctx.Synonym_name().Accept(visitor)
+	expr, ok := object.(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Synonym_name().GetChild(0)),
+			ctx.Synonym_name().GetStart().GetLine(),
+			ctx.Synonym_name().GetStart().GetColumn())
+	}
+	stmt.Synonym = expr
+	object = ctx.Schema_object_name().Accept(visitor)
+	expr, ok = object.(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Schema_object_name().GetChild(0)),
+			ctx.Schema_object_name().GetStart().GetLine(),
+			ctx.Schema_object_name().GetStart().GetColumn())
+	}
+	stmt.Original = expr
+	return stmt
+}
