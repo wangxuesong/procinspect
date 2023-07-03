@@ -1139,6 +1139,14 @@ func (v *exprVisitor) VisitColumn_based_update_set_clause(ctx *plsql.Column_base
 	}
 }
 
+func (v *exprVisitor) VisitSynonym_name(ctx *plsql.Synonym_nameContext) interface{} {
+	return v.parseDotExpr(ctx.GetText())
+}
+
+func (v *exprVisitor) VisitSchema_object_name(ctx *plsql.Schema_object_nameContext) interface{} {
+	return v.parseDotExpr(ctx.GetText())
+}
+
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
 	parts := strings.Split(text, ".")
 	if len(parts) == 1 {

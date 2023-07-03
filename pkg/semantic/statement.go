@@ -57,6 +57,12 @@ type (
 		CreateTypeStatement
 	}
 
+	CreateSynonymStatement struct {
+		node
+		Synonym  Expr
+		Original Expr
+	}
+
 	CaseWhenStatement struct {
 		node
 		Expr        Expr
@@ -107,6 +113,8 @@ func (s *SelectStatement) statement() {}
 func (s *CreateTypeStatement) statement() {}
 
 func (s *CreateNestTableStatement) statement() {}
+
+func (s *CreateSynonymStatement) statement() {}
 
 func (s *CaseWhenStatement) statement() {}
 
