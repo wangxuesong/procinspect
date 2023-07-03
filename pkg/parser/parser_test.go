@@ -793,7 +793,7 @@ func TestCreateFunction(t *testing.T) {
 		text: `create or replace function test return number is
 	begin
 		select 1 from dual;
-		return 1;
+		return(a);
 	end;`,
 		Func: func(t *testing.T, root any) {
 			node := root.(*semantic.Script)
@@ -820,6 +820,9 @@ func TestCreateFunction(t *testing.T) {
 
 			assert.IsType(t, &semantic.ReturnStatement{}, stmt.Body.Statements[1])
 			r := stmt.Body.Statements[1].(*semantic.ReturnStatement)
+			assert.IsType(t, &semantic.NameExpression{}, r.Name)
+			name := r.Name.(*semantic.NameExpression)
+			assert.Equal(t, "a", name.Name)
 			// assert line & column
 			assert.Equal(t, 4, r.Line())
 			assert.Equal(t, 3, r.Column())
@@ -1706,6 +1709,86 @@ func TestParseSelectStatement(t *testing.T) {
 			assert.Equal(t, stmt.From.TableRefs[0].Table, "test")
 			assert.NotNil(t, stmt.ForUpdate)
 			assert.NotNil(t, stmt.ForUpdate.Options)
+		},
+	})
+
+	runTestSuite(t, tests)
+}
+
+func TestParseInsertStatement(t *testing.T) {
+	tests := testSuite{}
+
+	tests = append(tests, testCase{
+		name: "simple insert",
+		text: `insert into t1 values (1);`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.InsertStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.InsertStatement)
+			assert.NotNil(t, stmt.AllInto)
+			assert.Equal(t, 1, len(stmt.AllInto))
+			into := stmt.AllInto[0]
+			assert.NotNil(t, into.Table)
+			assert.Equal(t, "t1", into.Table.Table)
+			assert.NotNil(t, into.Values)
+			assert.Equal(t, 1, len(into.Values))
+			assert.IsType(t, &semantic.NumericLiteral{}, into.Values[0])
+			num := into.Values[0].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(1), num.Value)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: " insert table with columns",
+		text: `insert into t1 (a,b,c) values (1,2,3);`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.InsertStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.InsertStatement)
+			assert.NotNil(t, stmt.AllInto)
+			assert.Equal(t, 1, len(stmt.AllInto))
+			into := stmt.AllInto[0]
+			assert.NotNil(t, into.Table)
+			assert.Equal(t, "t1", into.Table.Table)
+			assert.Equal(t, 3, len(into.Columns))
+			assert.IsType(t, &semantic.NameExpression{}, into.Columns[0])
+			name := into.Columns[0].(*semantic.NameExpression)
+			assert.Equal(t, name.Name, "a")
+			assert.IsType(t, &semantic.NameExpression{}, into.Columns[1])
+			name = into.Columns[1].(*semantic.NameExpression)
+			assert.Equal(t, name.Name, "b")
+			assert.IsType(t, &semantic.NameExpression{}, into.Columns[2])
+			name = into.Columns[2].(*semantic.NameExpression)
+			assert.Equal(t, name.Name, "c")
+			assert.NotNil(t, into.Values)
+			assert.Equal(t, 3, len(into.Values))
+			assert.IsType(t, &semantic.NumericLiteral{}, into.Values[0])
+			num := into.Values[0].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(1), num.Value)
+			assert.IsType(t, &semantic.NumericLiteral{}, into.Values[1])
+			num = into.Values[1].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(2), num.Value)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: " insert table with select",
+		text: `insert into t1 (a,b,c) select a,b,c from t;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.InsertStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.InsertStatement)
+			assert.NotNil(t, stmt.AllInto)
+			assert.Equal(t, 1, len(stmt.AllInto))
+			into := stmt.AllInto[0]
+			assert.NotNil(t, into.Table)
+			assert.Equal(t, "t1", into.Table.Table)
+			assert.Nil(t, into.Values)
+			assert.NotNil(t, stmt.Select)
+			assert.Equal(t, 3, len(stmt.Select.Fields.Fields))
 		},
 	})
 
