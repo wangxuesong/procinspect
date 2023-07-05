@@ -2,8 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"reflect"
-
 	"github.com/antlr4-go/antlr/v4"
 
 	"procinspect/pkg/log"
@@ -14,18 +12,22 @@ import (
 type (
 	plsqlVisitor struct {
 		plsql.BasePlSqlParserVisitor
+		StartLine int
 	}
 )
 
-func newPlSqlVisitor() *plsqlVisitor {
+func newPlSqlVisitor(startLineNo ...int) *plsqlVisitor {
 	v := &plsqlVisitor{}
 	v.BasePlSqlParserVisitor.ParseTreeVisitor = v
+	if len(startLineNo) == 1 {
+		v.StartLine = startLineNo[0]
+	}
 	return v
 }
 
 func (v *plsqlVisitor) ReportError(msg string, line, column int) {
 	defer log.Sync()
-	log.Warn(msg, log.Int("line", line), log.Int("column", column))
+	log.Warn(msg, log.Int("line", line+v.StartLine), log.Int("column", column))
 }
 
 func (v *plsqlVisitor) Visit(tree antlr.ParseTree) interface{} {
@@ -178,8 +180,8 @@ func (v *plsqlVisitor) VisitSql_script(ctx *plsql.Sql_scriptContext) interface{}
 		case semantic.Statement:
 			break
 		default:
-			v.ReportError(fmt.Sprintf("unprocessed syntax %s",
-				reflect.TypeOf(stmt.GetChild(0)).Elem().Name()),
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T",
+				stmt.GetChild(0)),
 				stmt.GetStart().GetLine(), stmt.GetStart().GetColumn())
 			continue
 		}
@@ -273,7 +275,7 @@ func (v *plsqlVisitor) VisitSelected_list(ctx *plsql.Selected_listContext) inter
 				filed = &semantic.SelectField{Expr: expr}
 				fields.Fields = append(fields.Fields, filed)
 			default:
-				v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(elem).Elem().Name()),
+				v.ReportError(fmt.Sprintf("unprocessed syntax %T", elem),
 					elem.GetStart().GetLine(), elem.GetStart().GetColumn())
 			}
 		}
@@ -345,8 +347,8 @@ func (v *plsqlVisitor) VisitSeq_of_declare_specs(ctx *plsql.Seq_of_declare_specs
 		node := d.Accept(v)
 		decl, ok := node.(semantic.Declaration)
 		if !ok {
-			v.ReportError(fmt.Sprintf("unprocessed syntax %s",
-				reflect.TypeOf(d.GetChild(0)).Elem().Name()),
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T",
+				d.GetChild(0)),
 				d.GetStart().GetLine(), d.GetStart().GetColumn())
 			continue
 		}
@@ -387,8 +389,8 @@ func (v *plsqlVisitor) VisitCursor_declaration(ctx *plsql.Cursor_declarationCont
 	var ok bool
 	cursor.Stmt, ok = ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
 	if !ok {
-		v.ReportError(fmt.Sprintf("unprocessed syntax %s",
-			reflect.TypeOf(ctx.Select_statement().GetChild(0)).Elem().Name()),
+		v.ReportError(fmt.Sprintf("unprocessed syntax %T",
+			ctx.Select_statement().GetChild(0)),
 			ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
 	}
 	return cursor
@@ -449,7 +451,7 @@ func (v *plsqlVisitor) VisitSeq_of_statements(ctx *plsql.Seq_of_statementsContex
 	for _, stmt := range ctx.AllStatement() {
 		s, ok := stmt.Accept(v).(semantic.Statement)
 		if !ok {
-			v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(stmt.GetChild(0)).Elem().Name()),
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T", stmt.GetChild(0)),
 				stmt.GetStart().GetLine(),
 				stmt.GetStart().GetColumn())
 			return stmts
@@ -587,7 +589,7 @@ func (v *plsqlVisitor) VisitCreate_package(ctx *plsql.Create_packageContext) int
 		case *semantic.VariableDeclaration:
 			stmt.Variables = append(stmt.Variables, spec.(semantic.Declaration))
 		default:
-			v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(p.GetChild(0)).Elem().Name()),
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T", p.GetChild(0)),
 				p.GetStart().GetLine(),
 				p.GetStart().GetColumn())
 		}
