@@ -15,18 +15,19 @@ type (
 	exprVisitor struct {
 		plsql.BasePlSqlParserVisitor
 		stmtVisitor *plsqlVisitor
+		StartLine   int
 	}
 )
 
 func newExprVisitor(visitor *plsqlVisitor) *exprVisitor {
-	v := &exprVisitor{stmtVisitor: visitor}
+	v := &exprVisitor{stmtVisitor: visitor, StartLine: visitor.StartLine}
 	v.BasePlSqlParserVisitor.ParseTreeVisitor = v
 	return v
 }
 
 func (v *exprVisitor) ReportError(msg string, line, column int) {
 	defer log.Sync()
-	log.Warn(msg, log.Int("line", line), log.Int("column", column))
+	log.Warn(msg, log.Int("line", line+v.StartLine), log.Int("column", column))
 }
 
 func (v *exprVisitor) Visit(tree antlr.ParseTree) interface{} {
