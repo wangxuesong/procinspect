@@ -57,6 +57,12 @@ type (
 		CreateTypeStatement
 	}
 
+	CreateSynonymStatement struct {
+		node
+		Synonym  Expr
+		Original Expr
+	}
+
 	CaseWhenStatement struct {
 		node
 		Expr        Expr
@@ -96,6 +102,19 @@ type (
 		SetExprs []Expr
 		SetValue Expr
 	}
+
+	InsertStatement struct {
+		node
+		AllInto []*IntoClause
+		Select  *SelectStatement
+	}
+
+	IntoClause struct {
+		node
+		Table   *TableRef
+		Columns []Expr
+		Values  []Expr
+	}
 )
 
 func (s *SelectStatement) Type() NodeType {
@@ -108,6 +127,8 @@ func (s *CreateTypeStatement) statement() {}
 
 func (s *CreateNestTableStatement) statement() {}
 
+func (s *CreateSynonymStatement) statement() {}
+
 func (s *CaseWhenStatement) statement() {}
 
 func (s *CommitStatement) statement() {}
@@ -119,3 +140,5 @@ func (s *ContinueStatement) statement() {}
 func (s *DeleteStatement) statement() {}
 
 func (s *UpdateStatement) statement() {}
+
+func (s *InsertStatement) statement() {}

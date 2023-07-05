@@ -2,8 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"reflect"
-
 	"github.com/antlr4-go/antlr/v4"
 
 	"procinspect/pkg/log"
@@ -14,18 +12,22 @@ import (
 type (
 	plsqlVisitor struct {
 		plsql.BasePlSqlParserVisitor
+		StartLine int
 	}
 )
 
-func newPlSqlVisitor() *plsqlVisitor {
+func newPlSqlVisitor(startLineNo ...int) *plsqlVisitor {
 	v := &plsqlVisitor{}
 	v.BasePlSqlParserVisitor.ParseTreeVisitor = v
+	if len(startLineNo) == 1 {
+		v.StartLine = startLineNo[0]
+	}
 	return v
 }
 
 func (v *plsqlVisitor) ReportError(msg string, line, column int) {
 	defer log.Sync()
-	log.Warn(msg, log.Int("line", line), log.Int("column", column))
+	log.Warn(msg, log.Int("line", line+v.StartLine), log.Int("column", column))
 }
 
 func (v *plsqlVisitor) Visit(tree antlr.ParseTree) interface{} {
@@ -178,8 +180,8 @@ func (v *plsqlVisitor) VisitSql_script(ctx *plsql.Sql_scriptContext) interface{}
 		case semantic.Statement:
 			break
 		default:
-			v.ReportError(fmt.Sprintf("unprocessed syntax %s",
-				reflect.TypeOf(stmt.GetChild(0)).Elem().Name()),
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T",
+				stmt.GetChild(0)),
 				stmt.GetStart().GetLine(), stmt.GetStart().GetColumn())
 			continue
 		}
@@ -273,7 +275,7 @@ func (v *plsqlVisitor) VisitSelected_list(ctx *plsql.Selected_listContext) inter
 				filed = &semantic.SelectField{Expr: expr}
 				fields.Fields = append(fields.Fields, filed)
 			default:
-				v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(elem).Elem().Name()),
+				v.ReportError(fmt.Sprintf("unprocessed syntax %T", elem),
 					elem.GetStart().GetLine(), elem.GetStart().GetColumn())
 			}
 		}
@@ -345,8 +347,8 @@ func (v *plsqlVisitor) VisitSeq_of_declare_specs(ctx *plsql.Seq_of_declare_specs
 		node := d.Accept(v)
 		decl, ok := node.(semantic.Declaration)
 		if !ok {
-			v.ReportError(fmt.Sprintf("unprocessed syntax %s",
-				reflect.TypeOf(d.GetChild(0)).Elem().Name()),
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T",
+				d.GetChild(0)),
 				d.GetStart().GetLine(), d.GetStart().GetColumn())
 			continue
 		}
@@ -387,8 +389,8 @@ func (v *plsqlVisitor) VisitCursor_declaration(ctx *plsql.Cursor_declarationCont
 	var ok bool
 	cursor.Stmt, ok = ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
 	if !ok {
-		v.ReportError(fmt.Sprintf("unprocessed syntax %s",
-			reflect.TypeOf(ctx.Select_statement().GetChild(0)).Elem().Name()),
+		v.ReportError(fmt.Sprintf("unprocessed syntax %T",
+			ctx.Select_statement().GetChild(0)),
 			ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
 	}
 	return cursor
@@ -416,7 +418,14 @@ func (v *plsqlVisitor) VisitBlock(ctx *plsql.BlockContext) interface{} {
 	stmt.SetLine(ctx.GetStart().GetLine())
 	stmt.SetColumn(ctx.GetStart().GetColumn())
 	for _, p := range ctx.AllDeclare_spec() {
-		stmt.Declarations = append(stmt.Declarations, p.Accept(v).(semantic.Declaration))
+		decl, ok := p.Accept(v).(semantic.Declaration)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T",
+				p.GetChild(0)),
+				p.GetStart().GetLine(), p.GetStart().GetColumn())
+			continue
+		}
+		stmt.Declarations = append(stmt.Declarations, decl)
 	}
 	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
 	return stmt
@@ -442,7 +451,7 @@ func (v *plsqlVisitor) VisitSeq_of_statements(ctx *plsql.Seq_of_statementsContex
 	for _, stmt := range ctx.AllStatement() {
 		s, ok := stmt.Accept(v).(semantic.Statement)
 		if !ok {
-			v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(stmt.GetChild(0)).Elem().Name()),
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T", stmt.GetChild(0)),
 				stmt.GetStart().GetLine(),
 				stmt.GetStart().GetColumn())
 			return stmts
@@ -580,7 +589,7 @@ func (v *plsqlVisitor) VisitCreate_package(ctx *plsql.Create_packageContext) int
 		case *semantic.VariableDeclaration:
 			stmt.Variables = append(stmt.Variables, spec.(semantic.Declaration))
 		default:
-			v.ReportError(fmt.Sprintf("unprocessed syntax %s", reflect.TypeOf(p.GetChild(0)).Elem().Name()),
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T", p.GetChild(0)),
 				p.GetStart().GetLine(),
 				p.GetStart().GetColumn())
 		}
@@ -636,7 +645,11 @@ func (v *plsqlVisitor) VisitProcedure_body(ctx *plsql.Procedure_bodyContext) int
 }
 
 func (v *plsqlVisitor) VisitCreate_type(ctx *plsql.Create_typeContext) interface{} {
-	return v.VisitType_definition(ctx.Type_definition().(*plsql.Type_definitionContext))
+	if ctx.Type_definition() != nil {
+		return v.VisitType_definition(ctx.Type_definition().(*plsql.Type_definitionContext))
+	}
+
+	return v.VisitChildren(ctx)
 }
 
 func (v *plsqlVisitor) VisitType_definition(ctx *plsql.Type_definitionContext) interface{} {
@@ -1013,4 +1026,144 @@ func (v *plsqlVisitor) VisitExecute_immediate(ctx *plsql.Execute_immediateContex
 			ctx.Dynamic_returning_clause().GetStart().GetColumn())
 	}
 	return stmt
+}
+
+func (v *plsqlVisitor) VisitCreate_synonym(ctx *plsql.Create_synonymContext) interface{} {
+	stmt := &semantic.CreateSynonymStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	visitor := newExprVisitor(v)
+	object := ctx.Synonym_name().Accept(visitor)
+	expr, ok := object.(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Synonym_name().GetChild(0)),
+			ctx.Synonym_name().GetStart().GetLine(),
+			ctx.Synonym_name().GetStart().GetColumn())
+	}
+	stmt.Synonym = expr
+	object = ctx.Schema_object_name().Accept(visitor)
+	expr, ok = object.(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Schema_object_name().GetChild(0)),
+			ctx.Schema_object_name().GetStart().GetLine(),
+			ctx.Schema_object_name().GetStart().GetColumn())
+	}
+	stmt.Original = expr
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitInsert_statement(ctx *plsql.Insert_statementContext) interface{} {
+	if ctx.Multi_table_insert() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Multi_table_insert()),
+			ctx.Multi_table_insert().GetStart().GetLine(),
+			ctx.Multi_table_insert().GetStart().GetColumn())
+		return nil
+	} else { // single table insert
+		stmt, ok := ctx.Single_table_insert().Accept(v).(*semantic.InsertStatement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Single_table_insert().GetChild(0)),
+				ctx.Single_table_insert().GetStart().GetLine(),
+				ctx.Single_table_insert().GetStart().GetColumn())
+		}
+		return stmt
+	}
+}
+
+func (v *plsqlVisitor) VisitSingle_table_insert(ctx *plsql.Single_table_insertContext) interface{} {
+	stmt := &semantic.InsertStatement{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	clause, ok := ctx.Insert_into_clause().Accept(v).(*semantic.IntoClause)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Insert_into_clause().GetChild(0)),
+			ctx.Insert_into_clause().GetStart().GetLine(),
+			ctx.Insert_into_clause().GetStart().GetColumn())
+	} else {
+		stmt.AllInto = append(stmt.AllInto, clause)
+	}
+
+	if ctx.Values_clause() != nil {
+		values, ok := ctx.Values_clause().Accept(v).([]semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Values_clause().GetChild(0)),
+				ctx.Values_clause().GetStart().GetLine(),
+				ctx.Values_clause().GetStart().GetColumn())
+		} else {
+			clause.Values = values
+		}
+	} else if ctx.Select_statement() != nil {
+		var ok bool
+		stmt.Select, ok = ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Select_statement()),
+				ctx.Select_statement().GetStart().GetLine(),
+				ctx.Select_statement().GetStart().GetColumn())
+		}
+	}
+
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitInsert_into_clause(ctx *plsql.Insert_into_clauseContext) interface{} {
+	stmt := &semantic.IntoClause{}
+	stmt.SetLine(ctx.GetStart().GetLine())
+	stmt.SetColumn(ctx.GetStart().GetColumn())
+
+	stmt.Table = &semantic.TableRef{
+		Table: ctx.General_table_ref().GetText(),
+	}
+	if ctx.Paren_column_list() != nil {
+		visitor := newExprVisitor(v)
+		objects, ok := ctx.Paren_column_list().Accept(visitor).([]semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Paren_column_list().GetChild(0)),
+				ctx.Paren_column_list().GetStart().GetLine(),
+				ctx.Paren_column_list().GetStart().GetColumn())
+		}
+		stmt.Columns = objects
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitValues_clause(ctx *plsql.Values_clauseContext) interface{} {
+	if ctx.REGULAR_ID() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.REGULAR_ID()),
+			ctx.REGULAR_ID().GetSymbol().GetLine(),
+			ctx.REGULAR_ID().GetSymbol().GetColumn())
+		return nil
+	} else if ctx.Expressions() != nil {
+		visitor := newExprVisitor(v)
+		exprs, ok := ctx.Expressions().Accept(visitor).([]semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Expressions().GetChild(0)),
+				ctx.Expressions().GetStart().GetLine(),
+				ctx.Expressions().GetStart().GetColumn())
+		}
+		return exprs
+	}
+	return nil
+}
+
+func (v *plsqlVisitor) VisitSubquery_operation_part(ctx *plsql.Subquery_operation_partContext) interface{} {
+	if ctx.UNION() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.UNION()),
+			ctx.UNION().GetSymbol().GetLine(),
+			ctx.UNION().GetSymbol().GetColumn())
+		return nil
+	}
+	if ctx.INTERSECT() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.INTERSECT()),
+			ctx.INTERSECT().GetSymbol().GetLine(),
+			ctx.INTERSECT().GetSymbol().GetColumn())
+		return nil
+	}
+	if ctx.MINUS() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.MINUS()),
+			ctx.MINUS().GetSymbol().GetLine(),
+			ctx.MINUS().GetSymbol().GetColumn())
+		return nil
+	}
+	return ctx.Subquery_basic_elements().Accept(v)
 }
