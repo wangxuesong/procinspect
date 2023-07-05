@@ -1145,3 +1145,25 @@ func (v *plsqlVisitor) VisitValues_clause(ctx *plsql.Values_clauseContext) inter
 	}
 	return nil
 }
+
+func (v *plsqlVisitor) VisitSubquery_operation_part(ctx *plsql.Subquery_operation_partContext) interface{} {
+	if ctx.UNION() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.UNION()),
+			ctx.UNION().GetSymbol().GetLine(),
+			ctx.UNION().GetSymbol().GetColumn())
+		return nil
+	}
+	if ctx.INTERSECT() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.INTERSECT()),
+			ctx.INTERSECT().GetSymbol().GetLine(),
+			ctx.INTERSECT().GetSymbol().GetColumn())
+		return nil
+	}
+	if ctx.MINUS() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.MINUS()),
+			ctx.MINUS().GetSymbol().GetLine(),
+			ctx.MINUS().GetSymbol().GetColumn())
+		return nil
+	}
+	return ctx.Subquery_basic_elements().Accept(v)
+}
