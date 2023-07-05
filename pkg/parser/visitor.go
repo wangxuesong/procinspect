@@ -645,7 +645,11 @@ func (v *plsqlVisitor) VisitProcedure_body(ctx *plsql.Procedure_bodyContext) int
 }
 
 func (v *plsqlVisitor) VisitCreate_type(ctx *plsql.Create_typeContext) interface{} {
-	return v.VisitType_definition(ctx.Type_definition().(*plsql.Type_definitionContext))
+	if ctx.Type_definition() != nil {
+		return v.VisitType_definition(ctx.Type_definition().(*plsql.Type_definitionContext))
+	}
+
+	return v.VisitChildren(ctx)
 }
 
 func (v *plsqlVisitor) VisitType_definition(ctx *plsql.Type_definitionContext) interface{} {
