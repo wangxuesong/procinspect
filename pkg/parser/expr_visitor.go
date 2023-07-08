@@ -155,9 +155,8 @@ func (v *exprVisitor) VisitExpressions(ctx *plsql.ExpressionsContext) interface{
 func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) interface{} {
 	if ctx.Cursor_name() != nil {
 		node := ctx.Cursor_name().(*plsql.Cursor_nameContext)
-		ca := &semantic.CursorAttribute{Cursor: node.GetText()}
-		ca.SetLine(node.GetStart().GetLine())
-		ca.SetColumn(node.GetStart().GetColumn())
+		ca := newAstNode[semantic.CursorAttribute](ctx)
+		ca.Cursor = node.GetText()
 		if ctx.PERCENT_NOTFOUND() != nil {
 			ca.Attr = "NOTFOUND"
 		} else if ctx.PERCENT_FOUND() != nil {
@@ -182,9 +181,7 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 	if ctx.CAST() != nil {
 		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "CAST"}}
 		if ctx.Concatenation(0) != nil {
-			cast := &semantic.CastExpression{}
-			cast.SetLine(ctx.Concatenation(0).GetStart().GetLine())
-			cast.SetColumn(ctx.Concatenation(0).GetStart().GetColumn())
+			cast := newAstNode[semantic.CastExpression](ctx.Concatenation(0))
 			arg, ok := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
 			if !ok {
 				v.ReportError("unsupported expression", ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
@@ -243,9 +240,7 @@ func (v *exprVisitor) VisitLogical_expression(ctx *plsql.Logical_expressionConte
 	if ctx.Unary_logical_expression() != nil {
 		return v.VisitUnary_logical_expression(ctx.Unary_logical_expression().(*plsql.Unary_logical_expressionContext))
 	} else {
-		expr := &semantic.BinaryExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.BinaryExpression](ctx)
 		if ctx.AND() != nil {
 			expr.Operator = "AND"
 		} else if ctx.OR() != nil {
@@ -275,9 +270,7 @@ func (v *exprVisitor) VisitLogical_expression(ctx *plsql.Logical_expressionConte
 }
 
 func (v *exprVisitor) VisitUnary_logical_expression(ctx *plsql.Unary_logical_expressionContext) interface{} {
-	result := &semantic.UnaryLogicalExpression{}
-	result.SetLine(ctx.GetStart().GetLine())
-	result.SetColumn(ctx.GetStart().GetColumn())
+	result := newAstNode[semantic.UnaryLogicalExpression](ctx)
 	expression := ctx.Multiset_expression().Accept(v)
 	if expression != nil {
 		var ok bool
@@ -289,11 +282,8 @@ func (v *exprVisitor) VisitUnary_logical_expression(ctx *plsql.Unary_logical_exp
 			return result
 		}
 	} else {
-		name := &semantic.NameExpression{
-			Name: ctx.Multiset_expression().GetText(),
-		}
-		name.SetLine(ctx.GetStart().GetLine())
-		name.SetColumn(ctx.GetStart().GetColumn())
+		name := newAstNode[semantic.NameExpression](ctx)
+		name.Name = ctx.Multiset_expression().GetText()
 		result.Expr = name
 	}
 
@@ -312,9 +302,7 @@ func (v *exprVisitor) VisitUnary_logical_expression(ctx *plsql.Unary_logical_exp
 }
 
 func (v *exprVisitor) VisitRelational_expression(ctx *plsql.Relational_expressionContext) interface{} {
-	result := &semantic.RelationalExpression{}
-	result.SetLine(ctx.GetStart().GetLine())
-	result.SetColumn(ctx.GetStart().GetColumn())
+	result := newAstNode[semantic.RelationalExpression](ctx)
 	if len(ctx.AllRelational_expression()) > 0 {
 		var ok bool
 		var node antlr.ParserRuleContext
@@ -346,9 +334,7 @@ func (v *exprVisitor) VisitRelational_expression(ctx *plsql.Relational_expressio
 func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionContext) interface{} {
 	var ok bool
 	if ctx.IN() != nil {
-		expr := &semantic.InExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.InExpression](ctx)
 		node := ctx.Concatenation(0)
 		expr.Expr, ok = v.VisitConcatenation(node.(*plsql.ConcatenationContext)).(semantic.Expr)
 		if !ok {
@@ -370,9 +356,7 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 	}
 
 	if ctx.BETWEEN() != nil {
-		expr := &semantic.BetweenExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.BetweenExpression](ctx)
 		node := ctx.Concatenation(0).(*plsql.ConcatenationContext)
 		expr.Expr, ok = v.VisitConcatenation(node).(semantic.Expr)
 		if !ok {
@@ -394,9 +378,7 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 	}
 
 	if ctx.GetLike_type() != nil {
-		expr := &semantic.LikeExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.LikeExpression](ctx)
 		node := ctx.Concatenation(0).(*plsql.ConcatenationContext)
 		expr.Expr, ok = v.VisitConcatenation(node).(semantic.Expr)
 		if !ok {
@@ -466,9 +448,7 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 		return ctx.Model_expression().Accept(v)
 	} else {
 		if ctx.BAR(0) != nil {
-			expr := &semantic.BinaryExpression{}
-			expr.SetLine(ctx.GetStart().GetLine())
-			expr.SetColumn(ctx.GetStart().GetColumn())
+			expr := newAstNode[semantic.BinaryExpression](ctx)
 
 			var ok bool
 			var node antlr.ParserRuleContext
@@ -495,9 +475,7 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 			expr.Operator = "||"
 			return expr
 		} else if ctx.GetOp() != nil {
-			expr := &semantic.BinaryExpression{}
-			expr.SetLine(ctx.GetStart().GetLine())
-			expr.SetColumn(ctx.GetStart().GetColumn())
+			expr := newAstNode[semantic.BinaryExpression](ctx)
 			var ok bool
 			var node antlr.ParserRuleContext
 
@@ -529,9 +507,7 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 
 func (v *exprVisitor) VisitUnary_expression(ctx *plsql.Unary_expressionContext) interface{} {
 	if ctx.MINUS_SIGN() != nil || ctx.PLUS_SIGN() != nil {
-		expr := &semantic.SignExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.SignExpression](ctx)
 		var ok bool
 		expr.Expr, ok = v.VisitUnary_expression(ctx.Unary_expression().(*plsql.Unary_expressionContext)).(semantic.Expr)
 		if !ok {
@@ -550,9 +526,7 @@ func (v *exprVisitor) VisitUnary_expression(ctx *plsql.Unary_expressionContext) 
 		return expr
 	}
 	if ctx.Case_statement() != nil {
-		expr := &semantic.StatementExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.StatementExpression](ctx)
 		stmt := v.stmtVisitor.VisitCase_statement(ctx.Case_statement().(*plsql.Case_statementContext)).(*semantic.CaseWhenStatement)
 		expr.Stmt = stmt
 		return expr
@@ -562,9 +536,7 @@ func (v *exprVisitor) VisitUnary_expression(ctx *plsql.Unary_expressionContext) 
 
 func (v *exprVisitor) VisitQuantified_expression(ctx *plsql.Quantified_expressionContext) interface{} {
 	if ctx.EXISTS() != nil {
-		expr := &semantic.ExistsExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.ExistsExpression](ctx)
 		if ctx.Select_only_statement() != nil {
 			stmt := v.stmtVisitor.VisitSelect_only_statement(ctx.Select_only_statement().(*plsql.Select_only_statementContext)).(*semantic.SelectStatement)
 			query := &semantic.QueryExpression{Query: stmt}
@@ -577,9 +549,7 @@ func (v *exprVisitor) VisitQuantified_expression(ctx *plsql.Quantified_expressio
 
 func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
 	if ctx.Outer_join_sign() != nil {
-		expr := &semantic.OuterJoinExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.OuterJoinExpression](ctx)
 		var ok bool
 		expr.Expr, ok = v.VisitTable_element(ctx.Table_element().(*plsql.Table_elementContext)).(semantic.Expr)
 		if !ok {
@@ -605,9 +575,7 @@ func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
 		return expressions
 	}
 	if ctx.Subquery() != nil {
-		expr := &semantic.StatementExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.StatementExpression](ctx)
 		stmt, ok := v.stmtVisitor.VisitSubquery(ctx.Subquery().(*plsql.SubqueryContext)).(semantic.Statement)
 		if !ok {
 			v.ReportError("unsupported statement",
@@ -879,11 +847,8 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 func (v *exprVisitor) VisitBind_variable(ctx *plsql.Bind_variableContext) interface{} {
 	var expr semantic.Expr
 	if ctx.BINDVAR(0) == ctx.GetChild(0) {
-		bindExpr := &semantic.BindNameExpression{
-			Name: &semantic.NameExpression{
-				Name: ctx.BINDVAR(0).GetText()}}
-		bindExpr.SetLine(ctx.BINDVAR(0).GetSymbol().GetLine())
-		bindExpr.SetColumn(ctx.BINDVAR(0).GetSymbol().GetColumn())
+		bindExpr := newAstNode[semantic.BindNameExpression](ctx)
+		bindExpr.Name = &semantic.NameExpression{Name: ctx.BINDVAR(0).GetText()}
 		expr = bindExpr
 	}
 	if len(ctx.AllGeneral_element_part()) > 0 {
@@ -942,9 +907,7 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 	}
 	if ctx.Function_argument() != nil {
 		args := v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]interface{})
-		expr := &semantic.FunctionCallExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.FunctionCallExpression](ctx)
 		for _, arg := range args {
 			var ok bool
 			elems, ok := arg.(semantic.Expr)
@@ -984,7 +947,7 @@ func (v *exprVisitor) VisitQuoted_string(ctx *plsql.Quoted_stringContext) interf
 
 func (v *exprVisitor) VisitConstant(ctx *plsql.ConstantContext) interface{} {
 	if ctx.NULL_() != nil {
-		return &semantic.NullExpression{}
+		return newAstNode[semantic.NullExpression](ctx)
 	}
 	return v.VisitChildren(ctx)
 }
@@ -992,11 +955,8 @@ func (v *exprVisitor) VisitConstant(ctx *plsql.ConstantContext) interface{} {
 func (v *exprVisitor) VisitVariable_name(ctx *plsql.Variable_nameContext) interface{} {
 	parts := strings.Split(ctx.GetText(), ".")
 	if len(parts) == 1 {
-		name := &semantic.NameExpression{
-			Name: ctx.GetText(),
-		}
-		name.SetLine(ctx.GetStart().GetLine())
-		name.SetColumn(ctx.GetStart().GetColumn())
+		name := &semantic.NameExpression{}
+		name.Name = ctx.GetText()
 		return name
 	}
 
@@ -1004,9 +964,7 @@ func (v *exprVisitor) VisitVariable_name(ctx *plsql.Variable_nameContext) interf
 }
 
 func (v *exprVisitor) VisitNumeric(ctx *plsql.NumericContext) interface{} {
-	number := &semantic.NumericLiteral{}
-	number.SetLine(ctx.GetStart().GetLine())
-	number.SetColumn(ctx.GetStart().GetColumn())
+	number := newAstNode[semantic.NumericLiteral](ctx)
 	if ctx.UNSIGNED_INTEGER() != nil {
 		if v, err := strconv.ParseInt(ctx.GetText(), 10, 64); err == nil {
 			number.Value = v
@@ -1021,9 +979,7 @@ func (v *exprVisitor) VisitRoutine_name(ctx *plsql.Routine_nameContext) interfac
 
 func (v *exprVisitor) VisitSelect_list_elements(ctx *plsql.Select_list_elementsContext) interface{} {
 	if ctx.Column_alias() != nil {
-		expr := &semantic.AliasExpression{}
-		expr.SetLine(ctx.GetStart().GetLine())
-		expr.SetColumn(ctx.GetStart().GetColumn())
+		expr := newAstNode[semantic.AliasExpression](ctx)
 		expr.Expr = ctx.Expression().Accept(v).(semantic.Expr)
 		if ctx.Column_alias().Quoted_string() != nil {
 			expr.Alias = ctx.Column_alias().Quoted_string().GetText()
@@ -1041,7 +997,7 @@ func (v *exprVisitor) VisitSelect_list_elements(ctx *plsql.Select_list_elementsC
 }
 
 func (v *exprVisitor) VisitFor_update_options(ctx *plsql.For_update_optionsContext) interface{} {
-	expr := &semantic.ForUpdateOptionsExpression{}
+	expr := newAstNode[semantic.ForUpdateOptionsExpression](ctx)
 
 	if ctx.SKIP_() != nil {
 		expr.SkipLocked = true

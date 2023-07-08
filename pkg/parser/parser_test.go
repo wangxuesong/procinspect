@@ -188,6 +188,7 @@ func TestParseSimple(t *testing.T) {
 			assert.NotNil(t, stmt)
 			assert.Equal(t, 1, stmt.Line())
 			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, semantic.Span{Start: 0, End: 23}, stmt.Span())
 			assert.Equal(t, len(stmt.Fields.Fields), 1)
 			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
 			assert.Equal(t, len(stmt.From.TableRefs), 2)
@@ -1082,6 +1083,7 @@ End;
 			stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
 			assert.Equal(t, 1, stmt.Line())
 			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, semantic.Span{Start: 0, End: 1711}, stmt.Span())
 			assert.True(t, stmt.IsReplace)
 			assert.Equal(t, stmt.Name, "Abb_GenAnchorJob_P")
 
