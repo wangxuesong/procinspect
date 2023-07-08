@@ -1,9 +1,11 @@
 package checker
 
 import (
-	"github.com/stretchr/testify/assert"
-	"procinspect/pkg/semantic"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"procinspect/pkg/semantic"
 )
 
 type (

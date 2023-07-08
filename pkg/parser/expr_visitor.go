@@ -1,14 +1,14 @@
 package parser
 
 import (
-	"procinspect/pkg/log"
 	"strconv"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+
+	"procinspect/pkg/log"
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
-
-	"github.com/antlr4-go/antlr/v4"
 )
 
 type (

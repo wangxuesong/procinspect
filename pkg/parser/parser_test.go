@@ -3,11 +3,11 @@ package parser
 import (
 	"testing"
 
-	plsql "procinspect/pkg/parser/internal/plsql/parser"
-	"procinspect/pkg/semantic"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	plsql "procinspect/pkg/parser/internal/plsql/parser"
+	"procinspect/pkg/semantic"
 )
 
 type (

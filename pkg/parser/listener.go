@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
-
-	"github.com/antlr4-go/antlr/v4"
 )
 
 type (
