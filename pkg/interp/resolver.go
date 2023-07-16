@@ -5,6 +5,7 @@ import "procinspect/pkg/semantic"
 type (
 	resolver struct {
 		semantic.StubExprVisitor
+		semantic.StubStmtVisitor
 		interp *Interpreter
 	}
 )
@@ -37,7 +38,7 @@ func (v *resolver) VisitBlockStatement(s *semantic.BlockStatement) (err error) {
 	v.interp.program.Statements = append(v.interp.program.Statements, s)
 	for _, decl := range s.Declarations {
 		stmt := decl.(semantic.Stmt)
-		err = stmt.Accept(v)
+		err = stmt.StmtAccept(v)
 		if err != nil {
 			return
 		}

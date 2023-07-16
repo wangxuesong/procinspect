@@ -15,6 +15,7 @@ type (
 		global      *Environment
 		program     *Program
 
+		semantic.StubStmtVisitor
 		semantic.StubExprVisitor
 	}
 )
@@ -44,7 +45,7 @@ func (i *Interpreter) CompileAst(script *semantic.Script) (*Program, error) {
 	for _, stmt := range script.Statements {
 		s := stmt.(semantic.Stmt)
 		visitor := &resolver{interp: i}
-		err := s.Accept(visitor)
+		err := s.StmtAccept(visitor)
 		if err != nil {
 			return nil, err
 		}
@@ -82,17 +83,17 @@ func (i *Interpreter) endScope(env *Environment) {
 }
 
 func (i *Interpreter) execute(stmt semantic.Stmt) (err error) {
-	return stmt.Accept(i)
+	return stmt.StmtAccept(i)
 }
 
 func (i *Interpreter) evaluate(expr semantic.Expression) (any, error) {
-	return expr.Accept(i)
+	return expr.ExprAccept(i)
 }
 
 func (i *Interpreter) VisitVariableDeclaration(s *semantic.VariableDeclaration) (err error) {
 	var value any
 	if s.Initialization != nil {
-		value, err = s.Initialization.(semantic.Expression).Accept(i)
+		value, err = s.Initialization.(semantic.Expression).ExprAccept(i)
 		if err != nil {
 			return
 		}
@@ -108,19 +109,19 @@ func (i *Interpreter) VisitVariableDeclaration(s *semantic.VariableDeclaration) 
 func (i *Interpreter) VisitBlockStatement(s *semantic.BlockStatement) (err error) {
 	for _, decl := range s.Declarations {
 		stmt := decl.(semantic.Stmt)
-		err = stmt.Accept(i)
+		err = stmt.StmtAccept(i)
 		if err != nil {
 			return
 		}
 	}
 
-	return s.Body.Accept(i)
+	return s.Body.StmtAccept(i)
 }
 
 func (i *Interpreter) VisitBody(s *semantic.Body) (err error) {
 	for _, s := range s.Statements {
 		stmt := s.(semantic.Stmt)
-		err = stmt.Accept(i)
+		err = stmt.StmtAccept(i)
 		if err != nil {
 			return
 		}
@@ -130,7 +131,7 @@ func (i *Interpreter) VisitBody(s *semantic.Body) (err error) {
 
 func (i *Interpreter) VisitAssignmentStatement(s *semantic.AssignmentStatement) (err error) {
 	right := s.Right.(semantic.Expression)
-	value, err := right.Accept(i)
+	value, err := right.ExprAccept(i)
 	if err != nil {
 		return err
 	}
@@ -147,7 +148,7 @@ func (i *Interpreter) VisitProcedureCall(s *semantic.ProcedureCall) (err error) 
 	// process arguments
 	var arguments []any
 	for _, arg := range s.Arguments {
-		value, err := arg.(semantic.Expression).Accept(i)
+		value, err := arg.(semantic.Expression).ExprAccept(i)
 		if err != nil {
 			return err
 		}

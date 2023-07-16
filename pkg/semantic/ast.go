@@ -1,10 +1,14 @@
-//go:generate go run internal/gen-ast-types.go -o types.generated.go
+//go:generate go run procinspect/pkg/semantic/internal -o types.generated.go
 package semantic
 
 type Expression interface {
-	Accept(visitor ExprVisitor) (result interface{}, err error)
+	ExprAccept(visitor ExprVisitor) (result interface{}, err error)
 }
 
 type Stmt interface {
-	Accept(visitor StmtVisitor) (err error)
+	StmtAccept(visitor StmtVisitor) (err error)
+}
+
+type AstNode interface {
+	Accept(visitor NodeVisitor) (err error)
 }
