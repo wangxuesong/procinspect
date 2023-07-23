@@ -7,10 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"runtime/pprof"
 	"strings"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 
 	"procinspect/pkg/log"
 	"procinspect/pkg/parser"
@@ -24,14 +27,70 @@ var (
 	parallel = flag.Bool("p", false, "parallel parse")
 	verbose  = flag.Bool("v", false, "verbose")
 	size     = flag.Int64("size", 500*1024, "size")
+	index    = flag.Int("index", 0, "start from index")
 )
 
+type WorkerPool struct {
+	workers    []*Worker
+	taskQueue  chan Task
+	numWorkers int
+	wg         sync.WaitGroup
+}
+
+type Task func()
+
+type Worker struct {
+	id      int
+	workers *WorkerPool
+}
+
+func NewWorkerPool(numWorkers int, taskQueueSize int) *WorkerPool {
+	pool := &WorkerPool{
+		workers:    make([]*Worker, numWorkers),
+		taskQueue:  make(chan Task, taskQueueSize),
+		numWorkers: numWorkers,
+	}
+
+	for i := 0; i < numWorkers; i++ {
+		worker := &Worker{
+			id:      i + 1,
+			workers: pool,
+		}
+		pool.workers[i] = worker
+		go worker.start()
+	}
+
+	return pool
+}
+
+func (p *WorkerPool) Submit(task Task) {
+	p.taskQueue <- task
+}
+
+func (w *Worker) start() {
+	for task := range w.workers.taskQueue {
+		w.workers.wg.Add(1)
+		func() {
+			defer func() {
+				w.workers.wg.Done()
+				//runtime.GC()
+			}()
+			task()
+		}()
+	}
+}
+
 type (
+	msg struct {
+		Msg    string
+		Fields []zap.Field
+	}
 	ParseRequest struct {
 		FileName string
 		Source   string
 		Index    int
 		Start    int
+		Msg      chan msg
 	}
 	ParseResult struct {
 		FileName string
@@ -55,6 +114,10 @@ func main() {
 		}
 		pprof.StartCPUProfile(pf)
 		defer pprof.StopCPUProfile()
+	}
+
+	if *verbose {
+		log.SetLevel(log.DebugLevel)
 	}
 
 	var sql string
@@ -113,29 +176,15 @@ func parseFile(path string) error {
 	requests, err := prepareRequest(absPath)
 
 	var results []*ParseResult = make([]*ParseResult, len(requests))
+	msgChan := make(chan msg)
+	defer close(msgChan)
 	start := time.Now()
 	if *parallel {
-		parseChan := make(chan *ParseResult)
-		wg := &sync.WaitGroup{}
-		// runtime.GOMAXPROCS(0)
-		for _, req := range requests {
-			wg.Add(1)
-			go func(req *ParseRequest) {
-				defer wg.Done()
-				parseChan <- parseBlock(req)
-			}(req)
-		}
-		for _, _ = range requests {
-			result := <-parseChan
-			results[result.Index] = result
-		}
-		close(parseChan)
-		wg.Wait()
+		parallelParse(requests, msgChan, results)
 	} else {
-		for _, req := range requests {
+		for _, req := range requests[*index:] {
 			result := parseBlock(req)
 			results[result.Index] = result
-			//results = append(results, result)
 		}
 	}
 	elapsed := time.Since(start)
@@ -172,6 +221,32 @@ func parseFile(path string) error {
 		}
 	}
 	return nil
+}
+
+func parallelParse(requests []*ParseRequest, msgChan chan msg, results []*ParseResult) {
+	numWorkers := runtime.GOMAXPROCS(0)
+	pool := NewWorkerPool(numWorkers, len(requests))
+	parseChan := make(chan *ParseResult)
+	for _, req := range requests[*index:] {
+		tmpReq := *req
+		tmpReq.Msg = msgChan
+		pool.Submit(func() {
+			parseChan <- parseBlock(&tmpReq)
+		})
+	}
+	for _, _ = range requests[*index:] {
+		result := <-parseChan
+		results[result.Index] = result
+		if result.Error != nil {
+			log.Error("Parse Error",
+				log.Int("index", result.Index),
+				log.Int("start", result.Start),
+				log.String("error", result.Error.Error()),
+			)
+		}
+		//	result.AstFunc(result.Start)
+	}
+	close(parseChan)
 }
 
 func prepareRequest(path string) ([]*ParseRequest, error) {
@@ -231,7 +306,11 @@ func parseBlock(r *ParseRequest) *ParseResult {
 	if *verbose {
 		result.Source = r.Source
 	}
+	log.Debug("start parse", log.String("foo", "sss"), log.Int("index", r.Index), log.Int("start", r.Start))
+	el := time.Now()
 	s, err := parser.ParseSql(r.Source)
+	du := time.Since(el)
+	log.Debug("stop parse", log.String("foo", "xxx"), log.Int("index", r.Index), log.String("duration", du.String()), log.Int("start", r.Start))
 	if err != nil {
 		result.Error = err
 	} else {
