@@ -229,6 +229,10 @@ func (v *BasePlSqlParserVisitor) VisitCreate_function_body(ctx *Create_function_
 	return v.VisitChildren(ctx)
 }
 
+func (v *BasePlSqlParserVisitor) VisitSql_macro_body(ctx *Sql_macro_bodyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BasePlSqlParserVisitor) VisitParallel_enable_clause(ctx *Parallel_enable_clauseContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -1554,6 +1558,10 @@ func (v *BasePlSqlParserVisitor) VisitRevoke_roles_from_programs(ctx *Revoke_rol
 }
 
 func (v *BasePlSqlParserVisitor) VisitProgram_unit(ctx *Program_unitContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BasePlSqlParserVisitor) VisitCreate_dimension(ctx *Create_dimensionContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -3133,6 +3141,10 @@ func (v *BasePlSqlParserVisitor) VisitModify_col_properties(ctx *Modify_col_prop
 	return v.VisitChildren(ctx)
 }
 
+func (v *BasePlSqlParserVisitor) VisitModify_col_visibility(ctx *Modify_col_visibilityContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BasePlSqlParserVisitor) VisitModify_col_substitutable(ctx *Modify_col_substitutableContext) interface{} {
 	return v.VisitChildren(ctx)
 }
@@ -3206,6 +3218,10 @@ func (v *BasePlSqlParserVisitor) VisitVarray_item(ctx *Varray_itemContext) inter
 }
 
 func (v *BasePlSqlParserVisitor) VisitColumn_properties(ctx *Column_propertiesContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BasePlSqlParserVisitor) VisitLob_partition_storage(ctx *Lob_partition_storageContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 
@@ -3529,11 +3545,7 @@ func (v *BasePlSqlParserVisitor) VisitReturn_statement(ctx *Return_statementCont
 	return v.VisitChildren(ctx)
 }
 
-func (v *BasePlSqlParserVisitor) VisitFunction_call(ctx *Function_callContext) interface{} {
-	return v.VisitChildren(ctx)
-}
-
-func (v *BasePlSqlParserVisitor) VisitProcedure_call(ctx *Procedure_callContext) interface{} {
+func (v *BasePlSqlParserVisitor) VisitCall_statement(ctx *Call_statementContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

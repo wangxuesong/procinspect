@@ -905,8 +905,8 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 			}
 		}
 	}
-	if ctx.Function_argument() != nil {
-		args := v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]interface{})
+	if ctx.Function_argument(0) != nil {
+		args := v.VisitFunction_argument(ctx.Function_argument(0).(*plsql.Function_argumentContext)).([]interface{})
 		expr := newAstNode[semantic.FunctionCallExpression](ctx)
 		for _, arg := range args {
 			var ok bool
@@ -921,6 +921,11 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 			expr.Args = append(expr.Args, elems)
 		}
 		expr.Name = dotExpr
+		if len(ctx.AllFunction_argument()) > 1 {
+			v.ReportError("unsupported expression",
+				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn())
+		}
 		return expr
 	} else {
 		return dotExpr
@@ -1016,6 +1021,7 @@ func (v *exprVisitor) VisitFor_update_options(ctx *plsql.For_update_optionsConte
 
 func (v *exprVisitor) VisitGeneral_table_ref(ctx *plsql.General_table_refContext) interface{} {
 	var expr semantic.Expr
+	var ok bool
 	if ctx.ONLY() != nil {
 		v.ReportError(
 			"unsupported expression",
@@ -1027,7 +1033,14 @@ func (v *exprVisitor) VisitGeneral_table_ref(ctx *plsql.General_table_refContext
 
 	if ctx.Dml_table_expression_clause() != nil {
 		object := ctx.Dml_table_expression_clause().Accept(v)
-		expr = object.(semantic.Expr)
+		expr, ok = object.(semantic.Expr)
+		if !ok {
+			v.ReportError(
+				"unsupported expression",
+				ctx.Dml_table_expression_clause().GetStart().GetLine(),
+				ctx.Dml_table_expression_clause().GetStart().GetColumn(),
+			)
+		}
 	}
 
 	if ctx.Table_alias() != nil {

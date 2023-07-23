@@ -173,6 +173,9 @@ type PlSqlParserListener interface {
 	// EnterCreate_function_body is called when entering the create_function_body production.
 	EnterCreate_function_body(c *Create_function_bodyContext)
 
+	// EnterSql_macro_body is called when entering the sql_macro_body production.
+	EnterSql_macro_body(c *Sql_macro_bodyContext)
+
 	// EnterParallel_enable_clause is called when entering the parallel_enable_clause production.
 	EnterParallel_enable_clause(c *Parallel_enable_clauseContext)
 
@@ -1168,6 +1171,9 @@ type PlSqlParserListener interface {
 
 	// EnterProgram_unit is called when entering the program_unit production.
 	EnterProgram_unit(c *Program_unitContext)
+
+	// EnterCreate_dimension is called when entering the create_dimension production.
+	EnterCreate_dimension(c *Create_dimensionContext)
 
 	// EnterCreate_directory is called when entering the create_directory production.
 	EnterCreate_directory(c *Create_directoryContext)
@@ -2351,6 +2357,9 @@ type PlSqlParserListener interface {
 	// EnterModify_col_properties is called when entering the modify_col_properties production.
 	EnterModify_col_properties(c *Modify_col_propertiesContext)
 
+	// EnterModify_col_visibility is called when entering the modify_col_visibility production.
+	EnterModify_col_visibility(c *Modify_col_visibilityContext)
+
 	// EnterModify_col_substitutable is called when entering the modify_col_substitutable production.
 	EnterModify_col_substitutable(c *Modify_col_substitutableContext)
 
@@ -2407,6 +2416,9 @@ type PlSqlParserListener interface {
 
 	// EnterColumn_properties is called when entering the column_properties production.
 	EnterColumn_properties(c *Column_propertiesContext)
+
+	// EnterLob_partition_storage is called when entering the lob_partition_storage production.
+	EnterLob_partition_storage(c *Lob_partition_storageContext)
 
 	// EnterPeriod_definition is called when entering the period_definition production.
 	EnterPeriod_definition(c *Period_definitionContext)
@@ -2648,11 +2660,8 @@ type PlSqlParserListener interface {
 	// EnterReturn_statement is called when entering the return_statement production.
 	EnterReturn_statement(c *Return_statementContext)
 
-	// EnterFunction_call is called when entering the function_call production.
-	EnterFunction_call(c *Function_callContext)
-
-	// EnterProcedure_call is called when entering the procedure_call production.
-	EnterProcedure_call(c *Procedure_callContext)
+	// EnterCall_statement is called when entering the call_statement production.
+	EnterCall_statement(c *Call_statementContext)
 
 	// EnterPipe_row_statement is called when entering the pipe_row_statement production.
 	EnterPipe_row_statement(c *Pipe_row_statementContext)
@@ -3650,6 +3659,9 @@ type PlSqlParserListener interface {
 	// ExitCreate_function_body is called when exiting the create_function_body production.
 	ExitCreate_function_body(c *Create_function_bodyContext)
 
+	// ExitSql_macro_body is called when exiting the sql_macro_body production.
+	ExitSql_macro_body(c *Sql_macro_bodyContext)
+
 	// ExitParallel_enable_clause is called when exiting the parallel_enable_clause production.
 	ExitParallel_enable_clause(c *Parallel_enable_clauseContext)
 
@@ -4645,6 +4657,9 @@ type PlSqlParserListener interface {
 
 	// ExitProgram_unit is called when exiting the program_unit production.
 	ExitProgram_unit(c *Program_unitContext)
+
+	// ExitCreate_dimension is called when exiting the create_dimension production.
+	ExitCreate_dimension(c *Create_dimensionContext)
 
 	// ExitCreate_directory is called when exiting the create_directory production.
 	ExitCreate_directory(c *Create_directoryContext)
@@ -5828,6 +5843,9 @@ type PlSqlParserListener interface {
 	// ExitModify_col_properties is called when exiting the modify_col_properties production.
 	ExitModify_col_properties(c *Modify_col_propertiesContext)
 
+	// ExitModify_col_visibility is called when exiting the modify_col_visibility production.
+	ExitModify_col_visibility(c *Modify_col_visibilityContext)
+
 	// ExitModify_col_substitutable is called when exiting the modify_col_substitutable production.
 	ExitModify_col_substitutable(c *Modify_col_substitutableContext)
 
@@ -5884,6 +5902,9 @@ type PlSqlParserListener interface {
 
 	// ExitColumn_properties is called when exiting the column_properties production.
 	ExitColumn_properties(c *Column_propertiesContext)
+
+	// ExitLob_partition_storage is called when exiting the lob_partition_storage production.
+	ExitLob_partition_storage(c *Lob_partition_storageContext)
 
 	// ExitPeriod_definition is called when exiting the period_definition production.
 	ExitPeriod_definition(c *Period_definitionContext)
@@ -6125,11 +6146,8 @@ type PlSqlParserListener interface {
 	// ExitReturn_statement is called when exiting the return_statement production.
 	ExitReturn_statement(c *Return_statementContext)
 
-	// ExitFunction_call is called when exiting the function_call production.
-	ExitFunction_call(c *Function_callContext)
-
-	// ExitProcedure_call is called when exiting the procedure_call production.
-	ExitProcedure_call(c *Procedure_callContext)
+	// ExitCall_statement is called when exiting the call_statement production.
+	ExitCall_statement(c *Call_statementContext)
 
 	// ExitPipe_row_statement is called when exiting the pipe_row_statement production.
 	ExitPipe_row_statement(c *Pipe_row_statementContext)

@@ -162,9 +162,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Null_statementContext:
 			c := child.(*plsql.Null_statementContext)
 			nodes = append(nodes, v.VisitNull_statement(c))
-		case *plsql.Function_callContext:
-			c := child.(*plsql.Function_callContext)
-			nodes = append(nodes, v.VisitFunction_call(c))
+		case *plsql.Call_statementContext:
+			c := child.(*plsql.Call_statementContext)
+			nodes = append(nodes, v.VisitCall_statement(c))
 		case *plsql.Simple_case_statementContext:
 			c := child.(*plsql.Simple_case_statementContext)
 			nodes = append(nodes, v.VisitSimple_case_statement(c))
@@ -332,7 +332,9 @@ func (v *plsqlVisitor) VisitCreate_function_body(ctx *plsql.Create_function_body
 	if ctx.RETURN() != nil {
 		stmt.Return = ctx.Type_spec().GetText()
 	}
-	stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
+	if ctx.Body() != nil {
+		stmt.Body = v.VisitBody(ctx.Body().(*plsql.BodyContext)).(*semantic.Body)
+	}
 	return stmt
 }
 
@@ -488,7 +490,7 @@ func (v *plsqlVisitor) VisitClose_statement(ctx *plsql.Close_statementContext) i
 func (v *plsqlVisitor) VisitFetch_statement(ctx *plsql.Fetch_statementContext) interface{} {
 	stmt := newAstNode[semantic.FetchStatement](ctx)
 	stmt.Cursor = ctx.Cursor_name().GetText()
-	stmt.Into = ctx.Variable_name(0).GetText()
+	stmt.Into = ctx.General_element(0).GetText()
 	return stmt
 }
 
@@ -521,7 +523,7 @@ func (v *plsqlVisitor) VisitNull_statement(ctx *plsql.Null_statementContext) int
 	return stmt
 }
 
-func (v *plsqlVisitor) VisitFunction_call(ctx *plsql.Function_callContext) interface{} {
+func (v *plsqlVisitor) VisitCall_statement(ctx *plsql.Call_statementContext) interface{} {
 	stmt := newAstNode[semantic.ProcedureCall](ctx)
 	visitor := newExprVisitor(v)
 	stmt.Name = visitor.VisitRoutine_name(ctx.Routine_name().(*plsql.Routine_nameContext)).(semantic.Expr)

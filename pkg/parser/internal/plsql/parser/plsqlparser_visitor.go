@@ -173,6 +173,9 @@ type PlSqlParserVisitor interface {
 	// Visit a parse tree produced by PlSqlParser#create_function_body.
 	VisitCreate_function_body(ctx *Create_function_bodyContext) interface{}
 
+	// Visit a parse tree produced by PlSqlParser#sql_macro_body.
+	VisitSql_macro_body(ctx *Sql_macro_bodyContext) interface{}
+
 	// Visit a parse tree produced by PlSqlParser#parallel_enable_clause.
 	VisitParallel_enable_clause(ctx *Parallel_enable_clauseContext) interface{}
 
@@ -1168,6 +1171,9 @@ type PlSqlParserVisitor interface {
 
 	// Visit a parse tree produced by PlSqlParser#program_unit.
 	VisitProgram_unit(ctx *Program_unitContext) interface{}
+
+	// Visit a parse tree produced by PlSqlParser#create_dimension.
+	VisitCreate_dimension(ctx *Create_dimensionContext) interface{}
 
 	// Visit a parse tree produced by PlSqlParser#create_directory.
 	VisitCreate_directory(ctx *Create_directoryContext) interface{}
@@ -2351,6 +2357,9 @@ type PlSqlParserVisitor interface {
 	// Visit a parse tree produced by PlSqlParser#modify_col_properties.
 	VisitModify_col_properties(ctx *Modify_col_propertiesContext) interface{}
 
+	// Visit a parse tree produced by PlSqlParser#modify_col_visibility.
+	VisitModify_col_visibility(ctx *Modify_col_visibilityContext) interface{}
+
 	// Visit a parse tree produced by PlSqlParser#modify_col_substitutable.
 	VisitModify_col_substitutable(ctx *Modify_col_substitutableContext) interface{}
 
@@ -2407,6 +2416,9 @@ type PlSqlParserVisitor interface {
 
 	// Visit a parse tree produced by PlSqlParser#column_properties.
 	VisitColumn_properties(ctx *Column_propertiesContext) interface{}
+
+	// Visit a parse tree produced by PlSqlParser#lob_partition_storage.
+	VisitLob_partition_storage(ctx *Lob_partition_storageContext) interface{}
 
 	// Visit a parse tree produced by PlSqlParser#period_definition.
 	VisitPeriod_definition(ctx *Period_definitionContext) interface{}
@@ -2648,11 +2660,8 @@ type PlSqlParserVisitor interface {
 	// Visit a parse tree produced by PlSqlParser#return_statement.
 	VisitReturn_statement(ctx *Return_statementContext) interface{}
 
-	// Visit a parse tree produced by PlSqlParser#function_call.
-	VisitFunction_call(ctx *Function_callContext) interface{}
-
-	// Visit a parse tree produced by PlSqlParser#procedure_call.
-	VisitProcedure_call(ctx *Procedure_callContext) interface{}
+	// Visit a parse tree produced by PlSqlParser#call_statement.
+	VisitCall_statement(ctx *Call_statementContext) interface{}
 
 	// Visit a parse tree produced by PlSqlParser#pipe_row_statement.
 	VisitPipe_row_statement(ctx *Pipe_row_statementContext) interface{}
