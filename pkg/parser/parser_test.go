@@ -420,6 +420,18 @@ rollback;`,
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "drop function",
+		text: `drop function test;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.DropFunctionStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.DropFunctionStatement)
+			assert.Equal(t, "test", stmt.Name)
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 

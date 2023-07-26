@@ -1082,3 +1082,9 @@ func (v *plsqlVisitor) VisitSubquery_operation_part(ctx *plsql.Subquery_operatio
 	}
 	return ctx.Subquery_basic_elements().Accept(v)
 }
+
+func (v *plsqlVisitor) VisitDrop_function(ctx *plsql.Drop_functionContext) interface{} {
+	stmt := newAstNode[semantic.DropFunctionStatement](ctx)
+	stmt.Name = ctx.Function_name().GetText()
+	return stmt
+}
