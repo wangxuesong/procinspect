@@ -437,8 +437,12 @@ func (v *plsqlVisitor) VisitAnonymous_block(ctx *plsql.Anonymous_blockContext) i
 }
 
 func (v *plsqlVisitor) VisitSeq_of_statements(ctx *plsql.Seq_of_statementsContext) interface{} {
-	stmts := make([]semantic.Statement, 0, len(ctx.AllStatement()))
-	for _, stmt := range ctx.AllStatement() {
+	stmts := make([]semantic.Statement, 0)
+	for _, node := range ctx.GetChildren() {
+		stmt, ok := node.(antlr.ParserRuleContext)
+		if !ok {
+			continue
+		}
 		s, ok := stmt.Accept(v).(semantic.Statement)
 		if !ok {
 			v.ReportError(fmt.Sprintf("unprocessed syntax %T", stmt.GetChild(0)),
@@ -1092,5 +1096,17 @@ func (v *plsqlVisitor) VisitDrop_function(ctx *plsql.Drop_functionContext) inter
 func (v *plsqlVisitor) VisitRaise_statement(ctx *plsql.Raise_statementContext) interface{} {
 	stmt := newAstNode[semantic.RaiseStatement](ctx)
 	stmt.Name = ctx.Exception_name().GetText()
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitGoto_statement(ctx *plsql.Goto_statementContext) interface{} {
+	stmt := newAstNode[semantic.GotoStatement](ctx)
+	stmt.Label = ctx.Label_name().GetText()
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitLabel_declaration(ctx *plsql.Label_declarationContext) interface{} {
+	stmt := newAstNode[semantic.LabelDeclaration](ctx)
+	stmt.Label = ctx.Label_name().GetText()
 	return stmt
 }

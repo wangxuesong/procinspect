@@ -140,6 +140,16 @@ type (
 		node
 		Name string
 	}
+
+	GotoStatement struct {
+		node
+		Label string
+	}
+
+	LabelDeclaration struct {
+		node
+		Label string
+	}
 )
 
 func (i *blockDepth) Get() int64 {
@@ -191,3 +201,7 @@ func (s *NullStatement) statement() {}
 func (s *ExecuteImmediateStatement) statement() {}
 
 func (s *RaiseStatement) statement() {}
+
+func (s *GotoStatement) statement() {}
+
+func (s *LabelDeclaration) statement() {}

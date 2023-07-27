@@ -1676,11 +1676,33 @@ END`,
 			node := root.(*semantic.BlockStatement)
 			assert.NotNil(t, node.Body)
 			assert.Equal(t, len(node.Body.Statements), 1)
-			{ // execute immediate 'select * from t';
+			{
 				i := 0
 				assert.IsType(t, &semantic.RaiseStatement{}, node.Body.Statements[i])
 				stmt := node.Body.Statements[i].(*semantic.RaiseStatement)
 				assert.Equal(t, "test", stmt.Name)
+			}
+		},
+	})
+	tests = append(tests, testCase{
+		name: "goto & label",
+		root: getBlock,
+		text: `
+BEGIN
+	<<test>>
+    goto test;
+END`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.BlockStatement)
+			assert.NotNil(t, node.Body)
+			assert.Equal(t, len(node.Body.Statements), 2)
+			{
+				i := 0
+				assert.IsType(t, &semantic.LabelDeclaration{}, node.Body.Statements[i])
+				i++
+				assert.IsType(t, &semantic.GotoStatement{}, node.Body.Statements[i])
+				stmt := node.Body.Statements[i].(*semantic.GotoStatement)
+				assert.Equal(t, "test", stmt.Label)
 			}
 		},
 	})
