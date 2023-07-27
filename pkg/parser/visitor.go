@@ -1111,6 +1111,12 @@ func (v *plsqlVisitor) VisitDrop_package(ctx *plsql.Drop_packageContext) interfa
 	return stmt
 }
 
+func (v *plsqlVisitor) VisitDrop_trigger(ctx *plsql.Drop_triggerContext) interface{} {
+	stmt := newAstNode[semantic.DropTriggerStatement](ctx)
+	stmt.Name = ctx.Trigger_name().GetText()
+	return stmt
+}
+
 func (v *plsqlVisitor) VisitRaise_statement(ctx *plsql.Raise_statementContext) interface{} {
 	stmt := newAstNode[semantic.RaiseStatement](ctx)
 	stmt.Name = ctx.Exception_name().GetText()
