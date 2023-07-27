@@ -1088,3 +1088,9 @@ func (v *plsqlVisitor) VisitDrop_function(ctx *plsql.Drop_functionContext) inter
 	stmt.Name = ctx.Function_name().GetText()
 	return stmt
 }
+
+func (v *plsqlVisitor) VisitRaise_statement(ctx *plsql.Raise_statementContext) interface{} {
+	stmt := newAstNode[semantic.RaiseStatement](ctx)
+	stmt.Name = ctx.Exception_name().GetText()
+	return stmt
+}

@@ -1665,6 +1665,25 @@ END`,
 			}
 		},
 	})
+	tests = append(tests, testCase{
+		name: "raise exception",
+		root: getBlock,
+		text: `
+BEGIN
+	raise test;
+END`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.BlockStatement)
+			assert.NotNil(t, node.Body)
+			assert.Equal(t, len(node.Body.Statements), 1)
+			{ // execute immediate 'select * from t';
+				i := 0
+				assert.IsType(t, &semantic.RaiseStatement{}, node.Body.Statements[i])
+				stmt := node.Body.Statements[i].(*semantic.RaiseStatement)
+				assert.Equal(t, "test", stmt.Name)
+			}
+		},
+	})
 
 	runTestSuite(t, tests)
 }

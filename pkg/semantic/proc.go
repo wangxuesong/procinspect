@@ -135,6 +135,11 @@ type (
 	AutonomousTransactionDeclaration struct {
 		node
 	}
+
+	RaiseStatement struct {
+		node
+		Name string
+	}
 )
 
 func (i *blockDepth) Get() int64 {
@@ -184,3 +189,5 @@ func (s *ReturnStatement) statement() {}
 func (s *NullStatement) statement() {}
 
 func (s *ExecuteImmediateStatement) statement() {}
+
+func (s *RaiseStatement) statement() {}
