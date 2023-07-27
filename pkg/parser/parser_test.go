@@ -432,6 +432,43 @@ rollback;`,
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "drop procedure",
+		text: `drop procedure test;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.DropProcedureStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.DropProcedureStatement)
+			assert.Equal(t, "test", stmt.Name)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "drop package",
+		text: `drop package body a.test;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.DropPackageStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.DropPackageStatement)
+			assert.Equal(t, "test", stmt.Name)
+			assert.Equal(t, "a", stmt.Schema)
+			assert.True(t, stmt.IsBody)
+		},
+	})
+	tests = append(tests, testCase{
+		name: "drop trigger",
+		text: `drop trigger test;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.DropTriggerStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.DropTriggerStatement)
+			assert.Equal(t, "test", stmt.Name)
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 
