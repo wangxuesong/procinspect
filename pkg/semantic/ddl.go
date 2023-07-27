@@ -44,6 +44,11 @@ type (
 		node
 		Name string
 	}
+
+	DropProcedureStatement struct {
+		node
+		Name string
+	}
 )
 
 func (s *CreateProcedureStatement) Type() NodeType {
@@ -61,3 +66,5 @@ func (s *CreateFunctionStatement) statement() {}
 func (s *Body) statement() {}
 
 func (s *DropFunctionStatement) statement() {}
+
+func (s *DropProcedureStatement) statement() {}
