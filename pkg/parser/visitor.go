@@ -1099,6 +1099,18 @@ func (v *plsqlVisitor) VisitDrop_procedure(ctx *plsql.Drop_procedureContext) int
 	return stmt
 }
 
+func (v *plsqlVisitor) VisitDrop_package(ctx *plsql.Drop_packageContext) interface{} {
+	stmt := newAstNode[semantic.DropPackageStatement](ctx)
+	stmt.Name = ctx.Package_name().GetText()
+	if ctx.BODY() != nil {
+		stmt.IsBody = true
+	}
+	if ctx.Schema_object_name() != nil {
+		stmt.Schema = ctx.Schema_object_name().GetText()
+	}
+	return stmt
+}
+
 func (v *plsqlVisitor) VisitRaise_statement(ctx *plsql.Raise_statementContext) interface{} {
 	stmt := newAstNode[semantic.RaiseStatement](ctx)
 	stmt.Name = ctx.Exception_name().GetText()

@@ -49,6 +49,13 @@ type (
 		node
 		Name string
 	}
+
+	DropPackageStatement struct {
+		node
+		Name   string
+		Schema string
+		IsBody bool
+	}
 )
 
 func (s *CreateProcedureStatement) Type() NodeType {
@@ -68,3 +75,5 @@ func (s *Body) statement() {}
 func (s *DropFunctionStatement) statement() {}
 
 func (s *DropProcedureStatement) statement() {}
+
+func (s *DropPackageStatement) statement() {}
