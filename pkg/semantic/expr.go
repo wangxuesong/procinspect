@@ -135,6 +135,12 @@ type (
 		NoWait     bool
 		Wait       Expr
 	}
+
+	NamedArgumentExpression struct {
+		expression
+		Name  Expr
+		Value Expr
+	}
 )
 
 func (n *expression) expr() {}

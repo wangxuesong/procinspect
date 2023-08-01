@@ -1743,6 +1743,81 @@ END`,
 			}
 		},
 	})
+	tests = append(tests, testCase{
+		name: "named argument",
+		root: getBlock,
+		text: `
+BEGIN
+	func1(a=>1);
+	func2(a=>a,b=>2);
+	func3(a=>t.id);
+END`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.BlockStatement)
+			assert.NotNil(t, node.Body)
+			assert.Equal(t, 3, len(node.Body.Statements))
+			{
+				i := 0
+				assert.IsType(t, &semantic.ProcedureCall{}, node.Body.Statements[i])
+				stmt := node.Body.Statements[i].(*semantic.ProcedureCall)
+				assert.IsType(t, &semantic.NameExpression{}, stmt.Name)
+				nameExp := stmt.Name.(*semantic.NameExpression)
+				assert.Equal(t, "func1", nameExp.Name)
+				assert.Equal(t, 1, len(stmt.Arguments))
+				assert.IsType(t, &semantic.NamedArgumentExpression{}, stmt.Arguments[0])
+				arg := stmt.Arguments[0].(*semantic.NamedArgumentExpression)
+				assert.IsType(t, &semantic.NameExpression{}, arg.Name)
+				nameExp = arg.Name.(*semantic.NameExpression)
+				assert.Equal(t, "a", nameExp.Name)
+				assert.IsType(t, &semantic.NumericLiteral{}, arg.Value)
+				assert.Equal(t, int64(1), arg.Value.(*semantic.NumericLiteral).Value)
+				i++
+				assert.IsType(t, &semantic.ProcedureCall{}, node.Body.Statements[i])
+				stmt = node.Body.Statements[i].(*semantic.ProcedureCall)
+				assert.IsType(t, &semantic.NameExpression{}, stmt.Name)
+				nameExp = stmt.Name.(*semantic.NameExpression)
+				assert.Equal(t, "func2", nameExp.Name)
+				assert.Equal(t, 2, len(stmt.Arguments))
+				assert.IsType(t, &semantic.NamedArgumentExpression{}, stmt.Arguments[0])
+				arg = stmt.Arguments[0].(*semantic.NamedArgumentExpression)
+				assert.IsType(t, &semantic.NameExpression{}, arg.Name)
+				nameExp = arg.Name.(*semantic.NameExpression)
+				assert.Equal(t, "a", nameExp.Name)
+				assert.IsType(t, &semantic.NameExpression{}, arg.Value)
+				nameExp = arg.Value.(*semantic.NameExpression)
+				assert.Equal(t, "a", nameExp.Name)
+				assert.IsType(t, &semantic.NamedArgumentExpression{}, stmt.Arguments[1])
+				arg = stmt.Arguments[1].(*semantic.NamedArgumentExpression)
+				assert.IsType(t, &semantic.NameExpression{}, arg.Name)
+				nameExp = arg.Name.(*semantic.NameExpression)
+				assert.Equal(t, "b", nameExp.Name)
+				assert.IsType(t, &semantic.NumericLiteral{}, arg.Value)
+				assert.Equal(t, int64(2), arg.Value.(*semantic.NumericLiteral).Value)
+				i++
+				assert.IsType(t, &semantic.ProcedureCall{}, node.Body.Statements[i])
+				stmt = node.Body.Statements[i].(*semantic.ProcedureCall)
+				assert.IsType(t, &semantic.NameExpression{}, stmt.Name)
+				nameExp = stmt.Name.(*semantic.NameExpression)
+				assert.Equal(t, "func3", nameExp.Name)
+				assert.Equal(t, 1, len(stmt.Arguments))
+				assert.IsType(t, &semantic.NamedArgumentExpression{}, stmt.Arguments[0])
+				arg = stmt.Arguments[0].(*semantic.NamedArgumentExpression)
+				assert.IsType(t, &semantic.NameExpression{}, arg.Name)
+				nameExp = arg.Name.(*semantic.NameExpression)
+				assert.Equal(t, "a", nameExp.Name)
+				assert.IsType(t, &semantic.DotExpression{}, arg.Value)
+				dotExp := arg.Value.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+				nameExp = dotExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, "id", nameExp.Name)
+				assert.IsType(t, &semantic.DotExpression{}, dotExp.Parent)
+				dotExp = dotExp.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dotExp.Name)
+				nameExp = dotExp.Name.(*semantic.NameExpression)
+				assert.Equal(t, "t", nameExp.Name)
+			}
+		},
+	})
 
 	runTestSuite(t, tests)
 }

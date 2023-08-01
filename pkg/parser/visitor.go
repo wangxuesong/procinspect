@@ -532,7 +532,8 @@ func (v *plsqlVisitor) VisitCall_statement(ctx *plsql.Call_statementContext) int
 	visitor := newExprVisitor(v)
 	stmt.Name = visitor.VisitRoutine_name(ctx.Routine_name().(*plsql.Routine_nameContext)).(semantic.Expr)
 	if ctx.Function_argument() != nil {
-		stmt.Arguments = v.VisitFunction_argument(ctx.Function_argument().(*plsql.Function_argumentContext)).([]semantic.Expr)
+		visitor := newExprVisitor(v)
+		stmt.Arguments = ctx.Function_argument().Accept(visitor).([]semantic.Expr)
 	}
 	return stmt
 }

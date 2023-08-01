@@ -907,7 +907,7 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 		}
 	}
 	if ctx.Function_argument(0) != nil {
-		args := v.VisitFunction_argument(ctx.Function_argument(0).(*plsql.Function_argumentContext)).([]interface{})
+		args := ctx.Function_argument(0).Accept(v).([]semantic.Expr) //v.VisitFunction_argument(ctx.Function_argument(0).(*plsql.Function_argumentContext)).([]interface{})
 		expr := newAstNode[semantic.FunctionCallExpression](ctx)
 		for _, arg := range args {
 			var ok bool
@@ -935,13 +935,36 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 }
 
 func (v *exprVisitor) VisitFunction_argument(ctx *plsql.Function_argumentContext) interface{} {
-	args := make([]interface{}, 0)
+	args := make([]semantic.Expr, 0)
 	if len(ctx.AllArgument()) > 0 {
 		for _, arg := range ctx.AllArgument() {
-			args = append(args, arg.Accept(v))
+			args = append(args, arg.Accept(v).(semantic.Expr))
 		}
 	}
+	if ctx.Keep_clause() != nil {
+		v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Keep_clause()),
+			ctx.Keep_clause().GetStart().GetLine(),
+			ctx.Keep_clause().GetStart().GetColumn())
+	}
 	return args
+}
+
+func (v *exprVisitor) VisitArgument(ctx *plsql.ArgumentContext) interface{} {
+	ok := false
+	expr, ok := ctx.Expression().Accept(v).(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Expression()),
+			ctx.GetStart().GetLine(),
+			ctx.GetStart().GetColumn())
+		return expr
+	}
+	if ctx.Identifier() != nil {
+		arg := newAstNode[semantic.NamedArgumentExpression](ctx)
+		arg.Value = expr
+		arg.Name = &semantic.NameExpression{Name: ctx.Identifier().GetText()}
+		expr = arg
+	}
+	return expr
 }
 
 func (v *exprVisitor) VisitQuoted_string(ctx *plsql.Quoted_stringContext) interface{} {
