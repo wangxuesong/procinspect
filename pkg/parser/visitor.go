@@ -1134,3 +1134,78 @@ func (v *plsqlVisitor) VisitLabel_declaration(ctx *plsql.Label_declarationContex
 	stmt.Label = ctx.Label_name().GetText()
 	return stmt
 }
+
+func (v *plsqlVisitor) VisitMerge_statement(ctx *plsql.Merge_statementContext) interface{} {
+	stmt := newAstNode[semantic.MergeStatement](ctx)
+	stmt.Table = &semantic.TableRef{Table: ctx.Tableview_name().GetText()}
+
+	// Using
+	visitor := newExprVisitor(v)
+	expr, ok := ctx.Selected_tableview().Accept(visitor).(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Selected_tableview().GetChild(0)),
+			ctx.Selected_tableview().GetStart().GetLine(),
+			ctx.Selected_tableview().GetStart().GetColumn())
+	}
+	stmt.Using = expr
+
+	// On condition
+	expr, ok = ctx.Condition().Accept(visitor).(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Condition().GetChild(0)),
+			ctx.Condition().GetStart().GetLine(),
+			ctx.Condition().GetStart().GetColumn())
+	}
+	stmt.OnCondition = expr
+
+	// Merge matched
+	if ctx.Merge_update_clause() != nil {
+		ok := false
+		stmt.MergeUpdate, ok = ctx.Merge_update_clause().Accept(v).(*semantic.MergeUpdateStatement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Merge_update_clause()),
+				ctx.Merge_update_clause().GetStart().GetLine(),
+				ctx.Merge_update_clause().GetStart().GetColumn())
+		}
+	}
+
+	// Merge not matched
+	if ctx.Merge_insert_clause() != nil {
+		ok := false
+		stmt.MergeInsert, ok = ctx.Merge_insert_clause().Accept(v).(*semantic.MergeInsertStatement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Merge_insert_clause()),
+				ctx.Merge_insert_clause().GetStart().GetLine(),
+				ctx.Merge_insert_clause().GetStart().GetColumn())
+		}
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitMerge_update_clause(ctx *plsql.Merge_update_clauseContext) interface{} {
+	stmt := newAstNode[semantic.MergeUpdateStatement](ctx)
+	for _, ele := range ctx.AllMerge_element() {
+		visitor := newExprVisitor(v)
+		expr, ok := ele.Accept(visitor).(semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ele),
+				ele.GetStart().GetLine(),
+				ele.GetStart().GetColumn())
+		} else {
+			stmt.SetElems = append(stmt.SetElems, expr)
+		}
+	}
+	// merge_update_delete_part
+	if ctx.Merge_update_delete_part() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Merge_update_delete_part()),
+			ctx.Merge_update_delete_part().GetStart().GetLine(),
+			ctx.Merge_update_delete_part().GetStart().GetColumn())
+		return stmt
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitMerge_insert_clause(ctx *plsql.Merge_insert_clauseContext) interface{} {
+	stmt := newAstNode[semantic.MergeInsertStatement](ctx)
+	return stmt
+}

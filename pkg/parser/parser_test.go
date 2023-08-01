@@ -1886,3 +1886,136 @@ func TestParseInsertStatement(t *testing.T) {
 
 	runTestSuite(t, tests)
 }
+
+func TestParseMergeStatement(t *testing.T) {
+	//tests := testSuite{}
+
+	tests := []testCase{
+		{
+			name: "simple merge",
+			text: `
+merge into t1
+using t2
+on (t1.a=t2.a)
+when matched then
+	update set t1.b=t2.b;`,
+			Func: func(t *testing.T, root any) {
+				node := root.(*semantic.Script)
+				assert.Equal(t, len(node.Statements), 1)
+				assert.IsType(t, &semantic.MergeStatement{}, node.Statements[0])
+				stmt := node.Statements[0].(*semantic.MergeStatement)
+				assert.Equal(t, "t1", stmt.Table.Table)
+				assert.IsType(t, &semantic.NameExpression{}, stmt.Using)
+				name := stmt.Using.(*semantic.NameExpression)
+				assert.Equal(t, name.Name, "t2")
+				assert.IsType(t, &semantic.RelationalExpression{}, stmt.OnCondition)
+				rel := stmt.OnCondition.(*semantic.RelationalExpression)
+				assert.Equal(t, "=", rel.Operator)
+				assert.IsType(t, &semantic.DotExpression{}, rel.Left)
+				dot := rel.Left.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "a", name.Name)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				dot = dot.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "t1", name.Name)
+				assert.IsType(t, &semantic.DotExpression{}, rel.Right)
+				dot = rel.Right.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "a", name.Name)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				dot = dot.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "t2", name.Name)
+				assert.Nil(t, stmt.MergeInsert)
+				assert.NotNil(t, stmt.MergeUpdate)
+			},
+		},
+		{
+			name: "merge using select",
+			text: `
+merge into t1
+using (select * from t2)
+on (t1.a=t2.a)
+when matched then
+	update set t1.b=t2.b;`,
+			Func: func(t *testing.T, root any) {
+				node := root.(*semantic.Script)
+				assert.Equal(t, len(node.Statements), 1)
+				assert.IsType(t, &semantic.MergeStatement{}, node.Statements[0])
+				stmt := node.Statements[0].(*semantic.MergeStatement)
+				assert.Equal(t, "t1", stmt.Table.Table)
+				assert.IsType(t, &semantic.StatementExpression{}, stmt.Using)
+				exprStmt := stmt.Using.(*semantic.StatementExpression)
+				assert.IsType(t, &semantic.SelectStatement{}, exprStmt.Stmt)
+				assert.IsType(t, &semantic.RelationalExpression{}, stmt.OnCondition)
+				rel := stmt.OnCondition.(*semantic.RelationalExpression)
+				assert.Equal(t, "=", rel.Operator)
+				assert.IsType(t, &semantic.DotExpression{}, rel.Left)
+				dot := rel.Left.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				expr := dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "a", expr.Name)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				dot = dot.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				expr = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "t1", expr.Name)
+				assert.IsType(t, &semantic.DotExpression{}, rel.Right)
+				dot = rel.Right.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				expr = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "a", expr.Name)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				dot = dot.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				expr = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "t2", expr.Name)
+				assert.Nil(t, stmt.MergeInsert)
+				assert.NotNil(t, stmt.MergeUpdate)
+				update := stmt.MergeUpdate
+				assert.NotNil(t, update)
+				assert.Equal(t, 1, len(update.SetElems))
+				assert.IsType(t, &semantic.BinaryExpression{}, update.SetElems[0])
+				binary := update.SetElems[0].(*semantic.BinaryExpression)
+				assert.Equal(t, "=", binary.Operator)
+				assert.IsType(t, &semantic.DotExpression{}, binary.Left)
+				dot = binary.Left.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				expr = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "b", expr.Name)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				dot = dot.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				expr = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "t1", expr.Name)
+				assert.IsType(t, &semantic.DotExpression{}, binary.Right)
+				dot = binary.Right.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				expr = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "b", expr.Name)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				dot = dot.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				expr = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "t2", expr.Name)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.root != nil {
+				runTest(t, test.text, test.Func, test.root)
+			} else {
+				runTest(t, test.text, test.Func)
+			}
+		})
+	}
+
+	//runTestSuite(t, tests)
+}

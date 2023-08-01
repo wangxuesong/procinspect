@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -1146,6 +1147,49 @@ func (v *exprVisitor) VisitColumn_list(ctx *plsql.Column_listContext) interface{
 		exprs = append(exprs, expr)
 	}
 	return exprs
+}
+
+func (v *exprVisitor) VisitSelected_tableview(ctx *plsql.Selected_tableviewContext) interface{} {
+	var expr semantic.Expr
+	if ctx.Tableview_name() != nil {
+		name := newAstNode[semantic.NameExpression](ctx)
+		name.Name = ctx.Tableview_name().GetText()
+		expr = name
+	} else if ctx.Select_statement() != nil {
+		exprStatement := newAstNode[semantic.StatementExpression](ctx)
+		stmt, ok := ctx.Select_statement().Accept(v.stmtVisitor).(semantic.Statement)
+		if !ok {
+			v.ReportError(
+				"unsupported expression",
+				ctx.Select_statement().GetStart().GetLine(),
+				ctx.Select_statement().GetStart().GetColumn(),
+			)
+		}
+		exprStatement.Stmt = stmt
+		expr = exprStatement
+	}
+	return expr
+}
+
+func (v *exprVisitor) VisitMerge_element(ctx *plsql.Merge_elementContext) interface{} {
+	expr := newAstNode[semantic.BinaryExpression](ctx)
+	ok := false
+	expr.Left, ok = v.parseDotExpr(ctx.Column_name().GetText()).(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Column_name()),
+			ctx.Column_name().GetStart().GetLine(),
+			ctx.Column_name().GetStart().GetColumn(),
+		)
+	}
+	expr.Operator = "="
+	expr.Right, ok = ctx.Expression().Accept(v).(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Expression()),
+			ctx.Expression().GetStart().GetLine(),
+			ctx.Expression().GetStart().GetColumn(),
+		)
+	}
+	return expr
 }
 
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {

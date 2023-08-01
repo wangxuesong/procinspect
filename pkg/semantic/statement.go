@@ -115,6 +115,26 @@ type (
 		Columns []Expr
 		Values  []Expr
 	}
+
+	MergeStatement struct {
+		node
+		Table       *TableRef
+		Using       Expr
+		OnCondition Expr
+		MergeUpdate *MergeUpdateStatement
+		MergeInsert *MergeInsertStatement
+	}
+
+	MergeUpdateStatement struct {
+		node
+		SetElems []Expr
+		Where    Expr
+		Delete   Expr
+	}
+
+	MergeInsertStatement struct {
+		node
+	}
 )
 
 func (s *SelectStatement) Type() NodeType {
@@ -142,3 +162,9 @@ func (s *DeleteStatement) statement() {}
 func (s *UpdateStatement) statement() {}
 
 func (s *InsertStatement) statement() {}
+
+func (s *MergeStatement) statement() {}
+
+func (s *MergeUpdateStatement) statement() {}
+
+func (s *MergeInsertStatement) statement() {}
