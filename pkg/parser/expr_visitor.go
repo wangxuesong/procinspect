@@ -139,7 +139,7 @@ func (v *exprVisitor) VisitExpressions(ctx *plsql.ExpressionsContext) interface{
 		var ok bool
 		expr, ok := v.VisitExpression(e.(*plsql.ExpressionContext)).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", e),
 				e.GetStart().GetLine(),
 				e.GetStart().GetColumn())
 			return expr
@@ -174,7 +174,11 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "TO_NUMBER"}}
 		arg, ok := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression", ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+			v.ReportError(
+				fmt.Sprintf("unsupported expression %T", ctx),
+				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn(),
+			)
 		}
 		expr.Args = append(expr.Args, arg)
 		return expr
@@ -185,7 +189,7 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 			cast := newAstNode[semantic.CastExpression](ctx.Concatenation(0))
 			arg, ok := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression", ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Concatenation(0)), ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
 				return expr
 			}
 			cast.Expr = arg
@@ -218,16 +222,16 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 				context := child.(*plsql.ArgumentContext)
 				arg, ok = v.VisitArgument(context).(semantic.Expr)
 				if !ok {
-					v.ReportError("unsupported expression",
+					v.ReportError(fmt.Sprintf("unsupported expression %T", context),
 						context.GetStart().GetLine(), context.GetStart().GetColumn())
 				}
 			case *plsql.Respect_or_ignore_nullsContext:
 				context := child.(*plsql.Respect_or_ignore_nullsContext)
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", context),
 					context.GetStart().GetLine(), context.GetStart().GetColumn())
 			case *plsql.Keep_clauseContext:
 				context := child.(*plsql.Keep_clauseContext)
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", context),
 					context.GetStart().GetLine(), context.GetStart().GetColumn())
 			}
 		}
@@ -251,7 +255,7 @@ func (v *exprVisitor) VisitLogical_expression(ctx *plsql.Logical_expressionConte
 		node := ctx.Logical_expression(0).(*plsql.Logical_expressionContext)
 		expr.Left, ok = v.VisitLogical_expression(node).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 				node.GetStart().GetLine(),
 				node.GetStart().GetColumn())
 			return expr
@@ -260,7 +264,7 @@ func (v *exprVisitor) VisitLogical_expression(ctx *plsql.Logical_expressionConte
 		node = ctx.Logical_expression(1).(*plsql.Logical_expressionContext)
 		expr.Right, ok = v.VisitLogical_expression(node).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 				node.GetStart().GetLine(),
 				node.GetStart().GetColumn())
 			return expr
@@ -277,7 +281,7 @@ func (v *exprVisitor) VisitUnary_logical_expression(ctx *plsql.Unary_logical_exp
 		var ok bool
 		result.Expr, ok = expression.(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", ctx),
 				ctx.Multiset_expression().GetStart().GetLine(),
 				ctx.Multiset_expression().GetStart().GetColumn())
 			return result
@@ -311,7 +315,7 @@ func (v *exprVisitor) VisitRelational_expression(ctx *plsql.Relational_expressio
 		left := node.Accept(v)
 		result.Left, ok = left.(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 				node.GetStart().GetLine(),
 				node.GetStart().GetColumn())
 			return result
@@ -320,7 +324,7 @@ func (v *exprVisitor) VisitRelational_expression(ctx *plsql.Relational_expressio
 		right := node.Accept(v)
 		result.Right, ok = right.(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 				node.GetStart().GetLine(),
 				node.GetStart().GetColumn())
 			return result
@@ -339,7 +343,7 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 		node := ctx.Concatenation(0)
 		expr.Expr, ok = v.VisitConcatenation(node.(*plsql.ConcatenationContext)).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 				node.GetStart().GetLine(),
 				node.GetStart().GetColumn())
 			return expr
@@ -347,7 +351,7 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 		right := ctx.In_elements().(*plsql.In_elementsContext)
 		elems, ok := v.VisitIn_elements(right).([]semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", right),
 				right.GetStart().GetLine(),
 				right.GetStart().GetColumn())
 			return expr
@@ -361,7 +365,7 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 		node := ctx.Concatenation(0).(*plsql.ConcatenationContext)
 		expr.Expr, ok = v.VisitConcatenation(node).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 				node.GetStart().GetLine(),
 				node.GetStart().GetColumn())
 			return expr
@@ -370,7 +374,7 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 		right := ctx.Between_elements().(*plsql.Between_elementsContext)
 		expr.Elems, ok = v.VisitBetween_elements(right).([]semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", right),
 				right.GetStart().GetLine(),
 				right.GetStart().GetColumn())
 			return expr
@@ -383,7 +387,7 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 		node := ctx.Concatenation(0).(*plsql.ConcatenationContext)
 		expr.Expr, ok = v.VisitConcatenation(node).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 				node.GetStart().GetLine(),
 				node.GetStart().GetColumn())
 			return expr
@@ -392,7 +396,7 @@ func (v *exprVisitor) VisitCompound_expression(ctx *plsql.Compound_expressionCon
 		node = ctx.Concatenation(1).(*plsql.ConcatenationContext)
 		expr.LikeExpr, ok = v.VisitConcatenation(node).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 				node.GetStart().GetLine(),
 				node.GetStart().GetColumn())
 			return expr
@@ -409,7 +413,7 @@ func (v *exprVisitor) VisitIn_elements(ctx *plsql.In_elementsContext) interface{
 		for _, c := range ctx.AllConcatenation() {
 			elem, ok := v.VisitConcatenation(c.(*plsql.ConcatenationContext)).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", c),
 					c.GetStart().GetLine(),
 					c.GetStart().GetColumn())
 				continue
@@ -430,7 +434,7 @@ func (v *exprVisitor) VisitBetween_elements(ctx *plsql.Between_elementsContext) 
 			var ok bool
 			expr, ok := v.VisitConcatenation(node).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 					node.GetStart().GetLine(),
 					node.GetStart().GetColumn())
 				continue
@@ -457,7 +461,7 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 			left := v.VisitConcatenation(node.(*plsql.ConcatenationContext))
 			expr.Left, ok = left.(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 					node.GetStart().GetLine(),
 					node.GetStart().GetColumn())
 				return expr
@@ -467,7 +471,7 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 			right := node.Accept(v)
 			expr.Right, ok = right.(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 					node.GetStart().GetLine(),
 					node.GetStart().GetColumn())
 				return expr
@@ -484,7 +488,7 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 			left := v.VisitConcatenation(node.(*plsql.ConcatenationContext))
 			expr.Left, ok = left.(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 					node.GetStart().GetLine(),
 					node.GetStart().GetColumn())
 				return expr
@@ -494,7 +498,7 @@ func (v *exprVisitor) VisitConcatenation(ctx *plsql.ConcatenationContext) interf
 			right := v.VisitConcatenation(node.(*plsql.ConcatenationContext))
 			expr.Right, ok = right.(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 					node.GetStart().GetLine(),
 					node.GetStart().GetColumn())
 				return expr
@@ -512,7 +516,7 @@ func (v *exprVisitor) VisitUnary_expression(ctx *plsql.Unary_expressionContext) 
 		var ok bool
 		expr.Expr, ok = v.VisitUnary_expression(ctx.Unary_expression().(*plsql.Unary_expressionContext)).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Unary_expression()),
 				ctx.Unary_expression().GetStart().GetLine(),
 				ctx.Unary_expression().GetStart().GetColumn())
 			return expr
@@ -554,7 +558,7 @@ func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
 		var ok bool
 		expr.Expr, ok = v.VisitTable_element(ctx.Table_element().(*plsql.Table_elementContext)).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Table_element()),
 				ctx.Table_element().GetStart().GetLine(),
 				ctx.Table_element().GetStart().GetColumn())
 			return expr
@@ -564,7 +568,7 @@ func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
 	if ctx.Expressions() != nil {
 		expressions, ok := v.VisitExpressions(ctx.Expressions().(*plsql.ExpressionsContext)).([]semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Expressions()),
 				ctx.Expressions().GetStart().GetLine(),
 				ctx.Expressions().GetStart().GetColumn())
 			return nil
@@ -592,7 +596,7 @@ func (v *exprVisitor) VisitAtom(ctx *plsql.AtomContext) interface{} {
 		var ok bool = false
 		expr, ok = v.VisitBind_variable(ctx.Bind_variable().(*plsql.Bind_variableContext)).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Bind_variable()),
 				ctx.Bind_variable().GetStart().GetLine(),
 				ctx.Bind_variable().GetStart().GetColumn())
 			return nil
@@ -614,7 +618,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		for _, arg := range ctx.AllExpression() {
 			node, ok := arg.Accept(v).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", arg),
 					arg.GetStart().GetLine(),
 					arg.GetStart().GetColumn())
 				return expr
@@ -630,7 +634,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		if ctx.Table_element() != nil {
 			arg, ok = v.VisitTable_element(ctx.Table_element().(*plsql.Table_elementContext)).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Table_element()),
 					ctx.Table_element().GetStart().GetLine(),
 					ctx.Table_element().GetStart().GetColumn())
 				return expr
@@ -639,7 +643,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		} else if ctx.Standard_function() != nil {
 			arg, ok = v.Visit(ctx.Standard_function().(*plsql.Standard_functionContext)).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Standard_function()),
 					ctx.Standard_function().GetStart().GetLine(),
 					ctx.Standard_function().GetStart().GetColumn())
 				return expr
@@ -648,7 +652,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		} else if ctx.Expression(0) != nil {
 			arg, ok = v.VisitExpression(ctx.Expression(0).(*plsql.ExpressionContext)).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Expression(0)),
 					ctx.Expression(0).GetStart().GetLine(),
 					ctx.Expression(0).GetStart().GetColumn())
 				return expr
@@ -658,7 +662,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		for _, arg := range ctx.AllQuoted_string() {
 			node, ok := v.VisitQuoted_string(arg.(*plsql.Quoted_stringContext)).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", arg),
 					arg.GetStart().GetLine(),
 					arg.GetStart().GetColumn())
 				continue
@@ -673,7 +677,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		if ctx.Table_element() != nil {
 			arg, ok = v.VisitTable_element(ctx.Table_element().(*plsql.Table_elementContext)).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Table_element()),
 					ctx.Table_element().GetStart().GetLine(),
 					ctx.Table_element().GetStart().GetColumn())
 				return expr
@@ -682,7 +686,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		} else if ctx.Standard_function() != nil {
 			arg, ok = v.Visit(ctx.Standard_function().(*plsql.Standard_functionContext)).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Standard_function()),
 					ctx.Standard_function().GetStart().GetLine(),
 					ctx.Standard_function().GetStart().GetColumn())
 				return expr
@@ -691,7 +695,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		} else if ctx.Expression(0) != nil {
 			arg, ok = v.VisitExpression(ctx.Expression(0).(*plsql.ExpressionContext)).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Expression(0)),
 					ctx.Expression(0).GetStart().GetLine(),
 					ctx.Expression(0).GetStart().GetColumn())
 				return expr
@@ -701,7 +705,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		for _, arg := range ctx.AllQuoted_string() {
 			node, ok := v.VisitQuoted_string(arg.(*plsql.Quoted_stringContext)).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", arg),
 					arg.GetStart().GetLine(),
 					arg.GetStart().GetColumn())
 				continue
@@ -715,7 +719,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		for _, arg := range ctx.AllExpression() {
 			node, ok := arg.Accept(v).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", arg),
 					arg.GetStart().GetLine(),
 					arg.GetStart().GetColumn())
 				return expr
@@ -730,7 +734,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		{
 			node, ok := ctx.Expressions().Accept(v).([]semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Expressions()),
 					ctx.Expressions().GetStart().GetLine(),
 					ctx.Expressions().GetStart().GetColumn())
 				return expr
@@ -744,7 +748,7 @@ func (v *exprVisitor) VisitString_function(ctx *plsql.String_functionContext) in
 		{
 			node, ok := ctx.Concatenation().Accept(v).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Concatenation()),
 					ctx.Concatenation().GetStart().GetLine(),
 					ctx.Concatenation().GetStart().GetColumn())
 				return expr
@@ -765,7 +769,7 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 			node := arg.(*plsql.ExpressionContext)
 			elems, ok := v.VisitExpression(node).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx),
 					node.GetStart().GetLine(),
 					node.GetStart().GetColumn())
 				return expr
@@ -781,7 +785,7 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 			node := arg.(*plsql.ExpressionContext)
 			elems, ok := v.VisitExpression(node).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Expression()),
 					node.GetStart().GetLine(),
 					node.GetStart().GetColumn())
 				return expr
@@ -797,7 +801,7 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 			node := arg.(*plsql.ExpressionContext)
 			arg, ok := v.VisitExpression(node).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", node),
 					node.GetStart().GetLine(),
 					node.GetStart().GetColumn())
 				return expr
@@ -813,7 +817,7 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 			node := arg.(*plsql.ExpressionContext)
 			arg, ok := v.VisitExpression(node).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Expression()),
 					node.GetStart().GetLine(),
 					node.GetStart().GetColumn())
 				return expr
@@ -829,7 +833,7 @@ func (v *exprVisitor) VisitNumeric_function(ctx *plsql.Numeric_functionContext) 
 			node := concatenation.(*plsql.ConcatenationContext)
 			arg, ok := v.VisitConcatenation(node).(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Concatenation()),
 					node.GetStart().GetLine(),
 					node.GetStart().GetColumn())
 				return expr
@@ -913,7 +917,7 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 			var ok bool
 			elems, ok := arg.(semantic.Expr)
 			if !ok {
-				v.ReportError("unsupported expression",
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Function_argument(0)),
 					ctx.GetStart().GetLine(),
 					ctx.GetStart().GetColumn())
 				continue
@@ -923,7 +927,7 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 		}
 		expr.Name = dotExpr
 		if len(ctx.AllFunction_argument()) > 1 {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Function_argument(0)),
 				ctx.GetStart().GetLine(),
 				ctx.GetStart().GetColumn())
 		}
@@ -931,7 +935,6 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 	} else {
 		return dotExpr
 	}
-	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitFunction_argument(ctx *plsql.Function_argumentContext) interface{} {
@@ -950,7 +953,6 @@ func (v *exprVisitor) VisitFunction_argument(ctx *plsql.Function_argumentContext
 }
 
 func (v *exprVisitor) VisitArgument(ctx *plsql.ArgumentContext) interface{} {
-	ok := false
 	expr, ok := ctx.Expression().Accept(v).(semantic.Expr)
 	if !ok {
 		v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Expression()),
@@ -1037,7 +1039,7 @@ func (v *exprVisitor) VisitFor_update_options(ctx *plsql.For_update_optionsConte
 	}
 
 	if ctx.WAIT() != nil {
-		v.ReportError("unsupported expression", ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+		v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.WAIT()), ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
 	}
 
 	return expr
@@ -1048,7 +1050,7 @@ func (v *exprVisitor) VisitGeneral_table_ref(ctx *plsql.General_table_refContext
 	var ok bool
 	if ctx.ONLY() != nil {
 		v.ReportError(
-			"unsupported expression",
+			fmt.Sprintf("unsupported expression %T", ctx.ONLY()),
 			ctx.ONLY().GetSymbol().GetLine(),
 			ctx.ONLY().GetSymbol().GetColumn(),
 		)
@@ -1060,7 +1062,7 @@ func (v *exprVisitor) VisitGeneral_table_ref(ctx *plsql.General_table_refContext
 		expr, ok = object.(semantic.Expr)
 		if !ok {
 			v.ReportError(
-				"unsupported expression",
+				fmt.Sprintf("unsupported expression %T", ctx.Dml_table_expression_clause()),
 				ctx.Dml_table_expression_clause().GetStart().GetLine(),
 				ctx.Dml_table_expression_clause().GetStart().GetColumn(),
 			)
@@ -1079,21 +1081,21 @@ func (v *exprVisitor) VisitGeneral_table_ref(ctx *plsql.General_table_refContext
 func (v *exprVisitor) VisitDml_table_expression_clause(ctx *plsql.Dml_table_expression_clauseContext) interface{} {
 	if ctx.Table_collection_expression() != nil {
 		v.ReportError(
-			"unsupported expression",
+			fmt.Sprintf("unsupported expression %T", ctx.Table_collection_expression()),
 			ctx.Table_collection_expression().GetStart().GetLine(),
 			ctx.Table_collection_expression().GetStart().GetColumn(),
 		)
 		return nil
 	} else if ctx.Json_table_clause() != nil {
 		v.ReportError(
-			"unsupported expression",
+			fmt.Sprintf("unsupported expression %T", ctx.Json_table_clause()),
 			ctx.Json_table_clause().GetStart().GetLine(),
 			ctx.Json_table_clause().GetStart().GetColumn(),
 		)
 		return nil
 	} else if ctx.Select_statement() != nil {
 		v.ReportError(
-			"unsupported expression",
+			fmt.Sprintf("unsupported expression %T", ctx.Select_statement()),
 			ctx.Select_statement().GetStart().GetLine(),
 			ctx.Select_statement().GetStart().GetColumn(),
 		)
@@ -1102,20 +1104,19 @@ func (v *exprVisitor) VisitDml_table_expression_clause(ctx *plsql.Dml_table_expr
 		expr := &semantic.NameExpression{Name: ctx.Tableview_name().GetText()}
 		if ctx.Sample_clause() != nil {
 			v.ReportError(
-				"unsupported expression",
+				fmt.Sprintf("unsupported expression %T", ctx.Sample_clause()),
 				ctx.Sample_clause().GetStart().GetLine(),
 				ctx.Sample_clause().GetStart().GetColumn(),
 			)
 		}
 		return expr
 	}
-	return v.VisitChildren(ctx)
 }
 
 func (v *exprVisitor) VisitColumn_based_update_set_clause(ctx *plsql.Column_based_update_set_clauseContext) interface{} {
 	if ctx.Paren_column_list() != nil {
 		v.ReportError(
-			"unsupported expression",
+			fmt.Sprintf("unsupported expression %T", ctx.Paren_column_list()),
 			ctx.Paren_column_list().GetStart().GetLine(),
 			ctx.Paren_column_list().GetStart().GetColumn(),
 		)
@@ -1127,7 +1128,7 @@ func (v *exprVisitor) VisitColumn_based_update_set_clause(ctx *plsql.Column_base
 		expr.Left, ok = object.(semantic.Expr)
 		if !ok {
 			v.ReportError(
-				"unsupported expression",
+				fmt.Sprintf("unsupported expression %T", ctx.Column_name()),
 				ctx.Column_name().GetStart().GetLine(),
 				ctx.Column_name().GetStart().GetColumn(),
 			)
@@ -1135,7 +1136,7 @@ func (v *exprVisitor) VisitColumn_based_update_set_clause(ctx *plsql.Column_base
 		expr.Right, ok = ctx.Expression().Accept(v).(semantic.Expr)
 		if !ok {
 			v.ReportError(
-				"unsupported expression",
+				fmt.Sprintf("unsupported expression %T", ctx.Expression()),
 				ctx.Expression().GetStart().GetLine(),
 				ctx.Expression().GetStart().GetColumn(),
 			)
@@ -1162,7 +1163,7 @@ func (v *exprVisitor) VisitColumn_list(ctx *plsql.Column_listContext) interface{
 		name := col.GetText()
 		expr, ok := v.parseDotExpr(name).(semantic.Expr)
 		if !ok {
-			v.ReportError("unsupported expression",
+			v.ReportError(fmt.Sprintf("unsupported expression %T", col),
 				col.GetStart().GetLine(),
 				col.GetStart().GetColumn())
 			continue
@@ -1183,7 +1184,7 @@ func (v *exprVisitor) VisitSelected_tableview(ctx *plsql.Selected_tableviewConte
 		stmt, ok := ctx.Select_statement().Accept(v.stmtVisitor).(semantic.Statement)
 		if !ok {
 			v.ReportError(
-				"unsupported expression",
+				fmt.Sprintf("unsupported expression %T", ctx.Select_statement()),
 				ctx.Select_statement().GetStart().GetLine(),
 				ctx.Select_statement().GetStart().GetColumn(),
 			)
