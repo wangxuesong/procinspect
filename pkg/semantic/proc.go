@@ -48,6 +48,13 @@ type (
 		Name string
 	}
 
+	OpenForStatement struct {
+		node
+		Name  Expr
+		For   Expr
+		Using Expr
+	}
+
 	CloseStatement struct {
 		node
 		Name string
@@ -185,6 +192,8 @@ func (i *IfStatement) statement() {}
 func (l *LoopStatement) statement() {}
 
 func (o *OpenStatement) statement() {}
+
+func (o *OpenForStatement) statement() {}
 
 func (c *CloseStatement) statement() {}
 

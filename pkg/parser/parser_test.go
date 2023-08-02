@@ -1565,6 +1565,99 @@ End;
 			}
 		},
 	})
+	tests = append(tests, testCase{
+		name: "Open For Cursor",
+		text: `CREATE OR REPLACE Procedure Open_For_Cursor Is
+Begin
+	Open test for select * from t;
+End;
+/`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			// assert that the statement is a CreateProcedureStatement
+			assert.IsType(t, &semantic.CreateProcedureStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.CreateProcedureStatement)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.True(t, stmt.IsReplace)
+			assert.Equal(t, stmt.Name, "Open_For_Cursor")
+
+			// assert declaration
+			//{
+			//	assert.Nil(t, stmt.Declarations)
+			//	assert.Equal(t, len(stmt.Declarations), 8)
+			//	// assert the declaration is a variableDeclaration
+			//	assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[0])
+			//	varDecl := stmt.Declarations[0].(*semantic.VariableDeclaration)
+			//	assert.Equal(t, varDecl.Name, "v_Asc_Ids")
+			//	assert.Equal(t, varDecl.DataType, "Varchar2(4000)")
+			//	// assert the declaration is a CursorDeclaration
+			//	assert.IsType(t, &semantic.CursorDeclaration{}, stmt.Declarations[1])
+			//	cursorDecl := stmt.Declarations[1].(*semantic.CursorDeclaration)
+			//	assert.Equal(t, cursorDecl.Name, "c_AllAws")
+			//	assert.IsType(t, &semantic.SelectStatement{}, cursorDecl.Stmt)
+			//	selectStmt := cursorDecl.Stmt.(*semantic.SelectStatement)
+			//	assert.Equal(t, len(selectStmt.Fields.Fields), 1)
+			//	assert.NotNil(t, selectStmt.From)
+			//	assert.Equal(t, len(selectStmt.From.TableRefs), 1)
+			//	assert.Equal(t, selectStmt.From.TableRefs[0].Table, "Asc_Work_Status")
+			//	assert.IsType(t, &semantic.RelationalExpression{}, selectStmt.Where)
+			//	expr := selectStmt.Where.(*semantic.RelationalExpression)
+			//	assert.Equal(t, expr.Operator, "=")
+			//	assert.IsType(t, &semantic.NameExpression{}, expr.Left)
+			//	nameExpr := expr.Left.(*semantic.NameExpression)
+			//	assert.Equal(t, nameExpr.Name, "Aws_Interfacer")
+			//	assert.IsType(t, &semantic.StringLiteral{}, expr.Right)
+			//	strLit := expr.Right.(*semantic.StringLiteral)
+			//	assert.Equal(t, strLit.Value, "'ABB'")
+			//	// assert the declaration is a VariableDeclaration
+			//	assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[2])
+			//	varDecl = stmt.Declarations[2].(*semantic.VariableDeclaration)
+			//	assert.Equal(t, varDecl.Name, "Rec_AllAws")
+			//	assert.Equal(t, varDecl.DataType, "c_AllAws%Rowtype")
+			//	// assert the declaration is a CursorDeclaration
+			//	assert.IsType(t, &semantic.CursorDeclaration{}, stmt.Declarations[3])
+			//	cursorDecl = stmt.Declarations[3].(*semantic.CursorDeclaration)
+			//	assert.Equal(t, cursorDecl.Name, "c_Aws")
+			//	// assert the declaration is a VariableDeclaration
+			//	assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[4])
+			//	varDecl = stmt.Declarations[4].(*semantic.VariableDeclaration)
+			//	assert.Equal(t, varDecl.Name, "Rec_Aws")
+			//	assert.Equal(t, varDecl.DataType, "c_Aws%Rowtype")
+			//	// assert the declaration is a VariableDeclaration
+			//	assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[5])
+			//	varDecl = stmt.Declarations[5].(*semantic.VariableDeclaration)
+			//	assert.Equal(t, varDecl.Name, "v_Areano")
+			//	assert.Equal(t, varDecl.DataType, "Varchar2(100)")
+			//	// assert the declaration is a VariableDeclaration
+			//	assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[6])
+			//	varDecl = stmt.Declarations[6].(*semantic.VariableDeclaration)
+			//	assert.Equal(t, varDecl.Name, "v_Areanos")
+			//	assert.Equal(t, varDecl.DataType, "Varchar2(4000)")
+			//	// assert the declaration is a VariableDeclaration
+			//	assert.IsType(t, &semantic.VariableDeclaration{}, stmt.Declarations[7])
+			//	varDecl = stmt.Declarations[7].(*semantic.VariableDeclaration)
+			//	assert.Equal(t, varDecl.Name, "v_Index")
+			//	assert.Equal(t, varDecl.DataType, "Integer")
+			//}
+
+			// assert body
+			{
+				assert.NotNil(t, stmt.Body)
+				assert.Equal(t, 1, len(stmt.Body.Statements))
+				assert.IsType(t, &semantic.OpenForStatement{}, stmt.Body.Statements[0])
+				openFor := stmt.Body.Statements[0].(*semantic.OpenForStatement)
+				assert.Nil(t, openFor.Using)
+				assert.NotNil(t, openFor.Name)
+				assert.IsType(t, &semantic.NameExpression{}, openFor.Name)
+				name := openFor.Name.(*semantic.NameExpression)
+				assert.Equal(t, "test", name.Name)
+				assert.IsType(t, &semantic.StatementExpression{}, openFor.For)
+				stmtExp := openFor.For.(*semantic.StatementExpression)
+				assert.IsType(t, &semantic.SelectStatement{}, stmtExp.Stmt)
+			}
+		},
+	})
 
 	runTestSuite(t, tests)
 }

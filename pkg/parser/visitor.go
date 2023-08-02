@@ -144,6 +144,9 @@ func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
 		case *plsql.Open_statementContext:
 			c := child.(*plsql.Open_statementContext)
 			nodes = append(nodes, v.VisitOpen_statement(c))
+		case *plsql.Open_for_statementContext:
+			c := child.(*plsql.Open_for_statementContext)
+			nodes = append(nodes, v.VisitOpen_for_statement(c))
 		case *plsql.Close_statementContext:
 			c := child.(*plsql.Close_statementContext)
 			nodes = append(nodes, v.VisitClose_statement(c))
@@ -483,6 +486,34 @@ func (v *plsqlVisitor) VisitIf_statement(ctx *plsql.If_statementContext) interfa
 
 func (v *plsqlVisitor) VisitOpen_statement(ctx *plsql.Open_statementContext) interface{} {
 	stmt := newAstNode[semantic.OpenStatement](ctx)
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitOpen_for_statement(ctx *plsql.Open_for_statementContext) interface{} {
+	stmt := newAstNode[semantic.OpenForStatement](ctx)
+	visitor := newExprVisitor(v)
+	expr, ok := ctx.Variable_name().Accept(visitor).(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unprocessed syntax %T", ctx.Variable_name()),
+			ctx.GetStart().GetLine(),
+			ctx.GetStart().GetColumn())
+		return stmt
+	}
+	stmt.Name = expr
+
+	if ctx.Select_statement() != nil {
+		s, ok := ctx.Select_statement().Accept(v).(semantic.Statement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T", ctx.Select_statement()),
+				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn())
+			return stmt
+		}
+		stmtExpr := newAstNode[semantic.StatementExpression](ctx.Select_statement())
+		stmtExpr.Stmt = s
+		stmt.For = stmtExpr
+	}
+
 	return stmt
 }
 
