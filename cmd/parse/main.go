@@ -5,14 +5,18 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"runtime/pprof"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
+	"atomicgo.dev/cursor"
+	"github.com/pterm/pterm"
 	"go.uber.org/zap"
 
 	"procinspect/pkg/log"
@@ -116,6 +120,8 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	processSignal()
+
 	if *verbose {
 		log.SetLevel(log.DebugLevel)
 	}
@@ -140,6 +146,17 @@ func main() {
 		_ = parseFile(sql)
 		return
 	}
+}
+
+func processSignal() {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-quit
+		cursor.Show()
+		fmt.Println("Exit")
+		os.Exit(-1)
+	}()
 }
 
 func walkDir(path string, info os.FileInfo, err error) error {
@@ -224,7 +241,13 @@ func parseFile(path string) error {
 }
 
 func parallelParse(requests []*ParseRequest, msgChan chan msg, results []*ParseResult) {
-	numWorkers := runtime.GOMAXPROCS(0)
+	p, _ := pterm.DefaultProgressbar.
+		WithTotal(len(requests)).
+		WithMaxWidth(-1).
+		WithTitle("Parse file").
+		Start()
+
+	numWorkers := runtime.GOMAXPROCS(0) - 1
 	pool := NewWorkerPool(numWorkers, len(requests))
 	parseChan := make(chan *ParseResult)
 	for _, req := range requests[*index:] {
@@ -244,6 +267,7 @@ func parallelParse(requests []*ParseRequest, msgChan chan msg, results []*ParseR
 				log.String("error", result.Error.Error()),
 			)
 		}
+		p.Increment()
 		//	result.AstFunc(result.Start)
 	}
 	close(parseChan)
