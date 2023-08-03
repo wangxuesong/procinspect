@@ -80,7 +80,7 @@ var AstTypes = map[string]reflect.Type{
 	"IfStatement":                      reflect.TypeOf((*semantic.IfStatement)(nil)).Elem(),
 	"InExpression":                     reflect.TypeOf((*semantic.InExpression)(nil)).Elem(),
 	"InsertStatement":                  reflect.TypeOf((*semantic.InsertStatement)(nil)).Elem(),
-	"IntoClause":                       reflect.TypeOf((*semantic.IntoClause)(nil)).Elem(),
+	"InsertIntoClause":                 reflect.TypeOf((*semantic.InsertIntoClause)(nil)).Elem(),
 	"LikeExpression":                   reflect.TypeOf((*semantic.LikeExpression)(nil)).Elem(),
 	"LoopStatement":                    reflect.TypeOf((*semantic.LoopStatement)(nil)).Elem(),
 	"NameExpression":                   reflect.TypeOf((*semantic.NameExpression)(nil)).Elem(),

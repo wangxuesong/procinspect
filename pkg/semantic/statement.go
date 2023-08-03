@@ -105,11 +105,11 @@ type (
 
 	InsertStatement struct {
 		node
-		AllInto []*IntoClause
+		AllInto []*InsertIntoClause
 		Select  *SelectStatement
 	}
 
-	IntoClause struct {
+	InsertIntoClause struct {
 		node
 		Table   *TableRef
 		Columns []Expr

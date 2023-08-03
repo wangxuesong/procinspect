@@ -764,7 +764,7 @@ func (s StubNodeVisitor) VisitInsertStatement(_ *InsertStatement) error {
 }
 
 func (s StubNodeVisitor) VisitIntoClause(_ *IntoClause) error {
-	return errors.New("visit func for IntoClause is not implemented")
+	return errors.New("visit func for InsertIntoClause is not implemented")
 }
 
 func (s StubNodeVisitor) VisitLikeExpression(_ *LikeExpression) error {

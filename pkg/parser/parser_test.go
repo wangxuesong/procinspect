@@ -1796,6 +1796,39 @@ END`,
 		},
 	})
 	tests = append(tests, testCase{
+		name: "execute_immediate_into",
+		root: getBlock,
+		text: `
+DECLARE
+	a NUMBER := 1;
+BEGIN
+	execute immediate 'select * from t' into a, t.id, :New;
+END`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.BlockStatement)
+			assert.Equal(t, len(node.Declarations), 1)
+			assert.IsType(t, &semantic.VariableDeclaration{}, node.Declarations[0])
+			decl := node.Declarations[0].(*semantic.VariableDeclaration)
+			assert.Equal(t, decl.Name, "a")
+			assert.Equal(t, decl.DataType, "NUMBER")
+			assert.NotNil(t, decl.Initialization)
+			assert.IsType(t, &semantic.NumericLiteral{}, decl.Initialization)
+			assert.NotNil(t, node.Body)
+			assert.Equal(t, len(node.Body.Statements), 1)
+			{ // execute immediate 'select * from t' into a, t.id, :New.id;
+				i := 0
+				assert.IsType(t, &semantic.ExecuteImmediateStatement{}, node.Body.Statements[i])
+				stmt := node.Body.Statements[i].(*semantic.ExecuteImmediateStatement)
+				assert.Equal(t, "'select * from t'", stmt.Sql)
+				assert.NotNil(t, stmt.Into)
+				assert.Equal(t, 3, len(stmt.Into.Vars))
+				assert.IsType(t, &semantic.NameExpression{}, stmt.Into.Vars[0])
+				assert.IsType(t, &semantic.DotExpression{}, stmt.Into.Vars[1])
+				assert.IsType(t, &semantic.BindNameExpression{}, stmt.Into.Vars[2])
+			}
+		},
+	})
+	tests = append(tests, testCase{
 		name: "raise exception",
 		root: getBlock,
 		text: `

@@ -970,9 +970,13 @@ func (v *plsqlVisitor) VisitExecute_immediate(ctx *plsql.Execute_immediateContex
 	stmt.Sql = ctx.Expression().GetText()
 
 	if ctx.Into_clause() != nil {
-		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Into_clause()),
-			ctx.Into_clause().GetStart().GetLine(),
-			ctx.Into_clause().GetStart().GetColumn())
+		into, ok := ctx.Into_clause().Accept(v).(*semantic.IntoClause)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Into_clause()),
+				ctx.Into_clause().GetStart().GetLine(),
+				ctx.Into_clause().GetStart().GetColumn())
+		}
+		stmt.Into = into
 	} else if ctx.Using_clause() != nil {
 		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Using_clause()),
 			ctx.Using_clause().GetStart().GetLine(),
@@ -981,6 +985,30 @@ func (v *plsqlVisitor) VisitExecute_immediate(ctx *plsql.Execute_immediateContex
 		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Dynamic_returning_clause()),
 			ctx.Dynamic_returning_clause().GetStart().GetLine(),
 			ctx.Dynamic_returning_clause().GetStart().GetColumn())
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitInto_clause(ctx *plsql.Into_clauseContext) interface{} {
+	stmt := newAstNode[semantic.IntoClause](ctx)
+	if ctx.BULK() != nil {
+		stmt.IsBulk = true
+	}
+
+	for _, child := range ctx.GetChildren() {
+		switch child.(type) {
+		case antlr.TerminalNode:
+			continue
+		default:
+			visitor := newExprVisitor(v)
+			object, ok := child.(antlr.ParseTree).Accept(visitor).(semantic.Expr)
+			if !ok {
+				v.ReportError(fmt.Sprintf("unsupported syntax %T", child),
+					child.(antlr.ParserRuleContext).GetStart().GetLine(),
+					child.(antlr.ParserRuleContext).GetStart().GetColumn())
+			}
+			stmt.Vars = append(stmt.Vars, object)
+		}
 	}
 	return stmt
 }
@@ -1028,7 +1056,7 @@ func (v *plsqlVisitor) VisitInsert_statement(ctx *plsql.Insert_statementContext)
 func (v *plsqlVisitor) VisitSingle_table_insert(ctx *plsql.Single_table_insertContext) interface{} {
 	stmt := newAstNode[semantic.InsertStatement](ctx)
 
-	clause, ok := ctx.Insert_into_clause().Accept(v).(*semantic.IntoClause)
+	clause, ok := ctx.Insert_into_clause().Accept(v).(*semantic.InsertIntoClause)
 	if !ok {
 		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Insert_into_clause().GetChild(0)),
 			ctx.Insert_into_clause().GetStart().GetLine(),
@@ -1060,7 +1088,7 @@ func (v *plsqlVisitor) VisitSingle_table_insert(ctx *plsql.Single_table_insertCo
 }
 
 func (v *plsqlVisitor) VisitInsert_into_clause(ctx *plsql.Insert_into_clauseContext) interface{} {
-	stmt := newAstNode[semantic.IntoClause](ctx)
+	stmt := newAstNode[semantic.InsertIntoClause](ctx)
 
 	stmt.Table = &semantic.TableRef{
 		Table: ctx.General_table_ref().GetText(),

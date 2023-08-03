@@ -88,7 +88,14 @@ type (
 
 	ExecuteImmediateStatement struct {
 		node
-		Sql string
+		Sql  string
+		Into *IntoClause
+	}
+
+	IntoClause struct {
+		node
+		IsBulk bool
+		Vars   []Expr
 	}
 
 	Declaration interface {
