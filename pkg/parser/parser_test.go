@@ -2005,6 +2005,42 @@ func TestParseSelectStatement(t *testing.T) {
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "select union",
+		text: `select * from t1 union select * from t2
+union all select * from t3
+intersect select * from t4
+minus select * from t5;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, 1, len(node.Statements))
+			assert.IsType(t, &semantic.SetOperationStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.SetOperationStatement)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, 5, len(stmt.SelectList))
+			assert.IsType(t, &semantic.SelectStatement{}, stmt.SelectList[0])
+			selStmt := stmt.SelectList[0].(*semantic.SelectStatement)
+			assert.Nil(t, selStmt.SetOperator)
+			assert.IsType(t, &semantic.SelectStatement{}, stmt.SelectList[1])
+			selStmt = stmt.SelectList[1].(*semantic.SelectStatement)
+			assert.NotNil(t, selStmt.SetOperator)
+			assert.Equal(t, semantic.Union, *selStmt.SetOperator)
+			assert.IsType(t, &semantic.SelectStatement{}, stmt.SelectList[2])
+			selStmt = stmt.SelectList[2].(*semantic.SelectStatement)
+			assert.NotNil(t, selStmt.SetOperator)
+			assert.Equal(t, semantic.UnionAll, *selStmt.SetOperator)
+			assert.IsType(t, &semantic.SelectStatement{}, stmt.SelectList[3])
+			selStmt = stmt.SelectList[3].(*semantic.SelectStatement)
+			assert.NotNil(t, selStmt.SetOperator)
+			assert.Equal(t, semantic.Intersect, *selStmt.SetOperator)
+			assert.IsType(t, &semantic.SelectStatement{}, stmt.SelectList[4])
+			selStmt = stmt.SelectList[4].(*semantic.SelectStatement)
+			assert.NotNil(t, selStmt.SetOperator)
+			assert.Equal(t, semantic.Minus, *selStmt.SetOperator)
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 

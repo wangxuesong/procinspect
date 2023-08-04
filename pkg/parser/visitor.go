@@ -212,23 +212,34 @@ func (v *plsqlVisitor) VisitSql_script(ctx *plsql.Sql_scriptContext) interface{}
 
 func (v *plsqlVisitor) VisitSelect_statement(ctx *plsql.Select_statementContext) interface{} {
 	object := ctx.Select_only_statement().Accept(v)
-	stmt, ok := object.(*semantic.SelectStatement)
-	if !ok {
+	switch object.(type) {
+	case *semantic.SelectStatement:
+		stmt, ok := object.(*semantic.SelectStatement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T", ctx.Select_only_statement()),
+				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn())
+		}
+		if ctx.For_update_clause(0) != nil {
+			expr, ok := ctx.For_update_clause(0).Accept(v).(*semantic.ForUpdateClause)
+			if !ok {
+				v.ReportError(fmt.Sprintf("unprocessed expression %T", ctx.For_update_clause(0)),
+					ctx.For_update_clause(0).GetStart().GetLine(),
+					ctx.For_update_clause(0).GetStart().GetColumn())
+				return stmt
+			}
+			stmt.ForUpdate = expr
+		}
+		return stmt
+	case *semantic.SetOperationStatement:
+		stmt := object.(*semantic.SetOperationStatement)
+		return stmt
+	default:
 		v.ReportError(fmt.Sprintf("unprocessed syntax %T", ctx.Select_only_statement()),
 			ctx.GetStart().GetLine(),
 			ctx.GetStart().GetColumn())
+		return nil
 	}
-	if ctx.For_update_clause(0) != nil {
-		expr, ok := ctx.For_update_clause(0).Accept(v).(*semantic.ForUpdateClause)
-		if !ok {
-			v.ReportError(fmt.Sprintf("unprocessed expression %T", ctx.For_update_clause(0)),
-				ctx.For_update_clause(0).GetStart().GetLine(),
-				ctx.For_update_clause(0).GetStart().GetColumn())
-			return stmt
-		}
-		stmt.ForUpdate = expr
-	}
-	return stmt
 }
 
 func (v *plsqlVisitor) VisitFor_update_clause(ctx *plsql.For_update_clauseContext) interface{} {
@@ -1125,26 +1136,54 @@ func (v *plsqlVisitor) VisitValues_clause(ctx *plsql.Values_clauseContext) inter
 	return nil
 }
 
-func (v *plsqlVisitor) VisitSubquery_operation_part(ctx *plsql.Subquery_operation_partContext) interface{} {
-	if ctx.UNION() != nil {
-		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.UNION()),
-			ctx.UNION().GetSymbol().GetLine(),
-			ctx.UNION().GetSymbol().GetColumn())
+func (v *plsqlVisitor) VisitSubquery(ctx *plsql.SubqueryContext) interface{} {
+	selStmt, ok := ctx.Subquery_basic_elements().Accept(v).(*semantic.SelectStatement)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Subquery_basic_elements().GetChild(0)),
+			ctx.Subquery_basic_elements().GetStart().GetLine(),
+			ctx.Subquery_basic_elements().GetStart().GetColumn())
 		return nil
+	}
+	if len(ctx.AllSubquery_operation_part()) == 0 {
+		return selStmt
+	}
+
+	stmt := newAstNode[semantic.SetOperationStatement](ctx)
+	stmt.SelectList = append(stmt.SelectList, selStmt)
+
+	for _, child := range ctx.AllSubquery_operation_part() {
+		selStmt, ok = child.Accept(v).(*semantic.SelectStatement)
+		stmt.SelectList = append(stmt.SelectList, selStmt)
+	}
+
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitSubquery_operation_part(ctx *plsql.Subquery_operation_partContext) interface{} {
+	stmt, ok := ctx.Subquery_basic_elements().Accept(v).(*semantic.SelectStatement)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Subquery_basic_elements().GetChild(0)),
+			ctx.Subquery_basic_elements().GetStart().GetLine(),
+			ctx.Subquery_basic_elements().GetStart().GetColumn())
+		return nil
+	}
+
+	if ctx.UNION() != nil {
+		var op semantic.SetOperator = semantic.Union
+		if ctx.ALL() != nil {
+			op = semantic.UnionAll
+		}
+		stmt.SetOperator = &op
 	}
 	if ctx.INTERSECT() != nil {
-		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.INTERSECT()),
-			ctx.INTERSECT().GetSymbol().GetLine(),
-			ctx.INTERSECT().GetSymbol().GetColumn())
-		return nil
+		var op semantic.SetOperator = semantic.Intersect
+		stmt.SetOperator = &op
 	}
 	if ctx.MINUS() != nil {
-		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.MINUS()),
-			ctx.MINUS().GetSymbol().GetLine(),
-			ctx.MINUS().GetSymbol().GetColumn())
-		return nil
+		var op semantic.SetOperator = semantic.Minus
+		stmt.SetOperator = &op
 	}
-	return ctx.Subquery_basic_elements().Accept(v)
+	return stmt
 }
 
 func (v *plsqlVisitor) VisitDrop_function(ctx *plsql.Drop_functionContext) interface{} {

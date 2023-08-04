@@ -1,5 +1,14 @@
 package semantic
 
+type SetOperator int
+
+const (
+	Union SetOperator = iota
+	UnionAll
+	Intersect
+	Minus
+)
+
 type (
 	WildCardField struct {
 		node
@@ -41,10 +50,16 @@ type (
 
 	SelectStatement struct {
 		node
-		Fields    *FieldList
-		From      *FromClause
-		Where     Expr
-		ForUpdate *ForUpdateClause
+		Fields      *FieldList
+		From        *FromClause
+		Where       Expr
+		ForUpdate   *ForUpdateClause
+		SetOperator *SetOperator
+	}
+
+	SetOperationStatement struct {
+		node
+		SelectList []Statement
 	}
 
 	CreateTypeStatement struct {
@@ -142,6 +157,8 @@ func (s *SelectStatement) Type() NodeType {
 }
 
 func (s *SelectStatement) statement() {}
+
+func (s *SetOperationStatement) statement() {}
 
 func (s *CreateTypeStatement) statement() {}
 
