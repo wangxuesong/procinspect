@@ -141,6 +141,25 @@ type (
 		Name  Expr
 		Value Expr
 	}
+
+	ListaggExpression struct {
+		expression
+		Args   []Expr
+		Within Expr
+		Over   Expr
+	}
+
+	OrderByClause struct {
+		expression
+		Siblings bool
+		Elements []Expr
+	}
+
+	OrderByElement struct {
+		expression
+		Desc bool
+		Item Expr
+	}
 )
 
 func (n *expression) expr() {}

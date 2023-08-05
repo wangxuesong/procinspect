@@ -722,6 +722,74 @@ from t;`,
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "listagg",
+		text: `select listagg(t.c1,',') within group (order by t.c2 desc, t.c3)
+from t;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, 1, len(stmt.Fields.Fields))
+			{ // listagg(t.c1,',') within group (order by t.c2, t.c3)
+				i := 0
+				assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+				assert.IsType(t, &semantic.ListaggExpression{}, stmt.Fields.Fields[i].Expr)
+				expr := stmt.Fields.Fields[i].Expr.(*semantic.ListaggExpression)
+				assert.Equal(t, 2, len(expr.Args))
+				assert.IsType(t, &semantic.DotExpression{}, expr.Args[0])
+				dot := expr.Args[0].(*semantic.DotExpression)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name := dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "c1", name.Name)
+				assert.IsType(t, &semantic.StringLiteral{}, expr.Args[1])
+				str := expr.Args[1].(*semantic.StringLiteral)
+				assert.Equal(t, "','", str.Value)
+				assert.NotNil(t, expr.Within)
+				assert.IsType(t, &semantic.OrderByClause{}, expr.Within)
+				with := expr.Within.(*semantic.OrderByClause)
+				assert.Equal(t, 2, len(with.Elements))
+				assert.IsType(t, &semantic.OrderByElement{}, with.Elements[0])
+				elem := with.Elements[0].(*semantic.OrderByElement)
+				assert.IsType(t, &semantic.DotExpression{}, elem.Item)
+				dot = elem.Item.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "c2", name.Name)
+				assert.IsType(t, &semantic.OrderByElement{}, with.Elements[1])
+				elem = with.Elements[1].(*semantic.OrderByElement)
+				assert.IsType(t, &semantic.DotExpression{}, elem.Item)
+				dot = elem.Item.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "c3", name.Name)
+			}
+			//{ // avg(t.id)
+			//	i := 1
+			//	assert.NotNil(t, stmt.Fields.Fields[i].Expr)
+			//	assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
+			//	expr := stmt.Fields.Fields[i].Expr.(*semantic.FunctionCallExpression)
+			//	assert.IsType(t, &semantic.NameExpression{}, expr.Name)
+			//	name := expr.Name.(*semantic.NameExpression)
+			//	assert.Equal(t, "AVG", name.Name)
+			//	assert.Equal(t, len(expr.Args), 1)
+			//	assert.IsType(t, &semantic.DotExpression{}, expr.Args[0])
+			//	dot := expr.Args[0].(*semantic.DotExpression)
+			//	assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+			//	assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+			//	name = dot.Name.(*semantic.NameExpression)
+			//	assert.Equal(t, "id", name.Name)
+			//}
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 

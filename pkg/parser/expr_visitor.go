@@ -154,51 +154,6 @@ func (v *exprVisitor) VisitExpressions(ctx *plsql.ExpressionsContext) interface{
 }
 
 func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) interface{} {
-	if ctx.Cursor_name() != nil {
-		node := ctx.Cursor_name().(*plsql.Cursor_nameContext)
-		ca := newAstNode[semantic.CursorAttribute](ctx)
-		ca.Cursor = node.GetText()
-		if ctx.PERCENT_NOTFOUND() != nil {
-			ca.Attr = "NOTFOUND"
-		} else if ctx.PERCENT_FOUND() != nil {
-			ca.Attr = "FOUND"
-		} else if ctx.PERCENT_ROWCOUNT() != nil {
-			ca.Attr = "ROWCOUNT"
-		} else if ctx.PERCENT_ISOPEN() != nil {
-			ca.Attr = "ISOPEN"
-		}
-		return ca
-	}
-
-	if ctx.TO_NUMBER() != nil {
-		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "TO_NUMBER"}}
-		arg, ok := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
-		if !ok {
-			v.ReportError(
-				fmt.Sprintf("unsupported expression %T", ctx),
-				ctx.GetStart().GetLine(),
-				ctx.GetStart().GetColumn(),
-			)
-		}
-		expr.Args = append(expr.Args, arg)
-		return expr
-	}
-	if ctx.CAST() != nil {
-		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "CAST"}}
-		if ctx.Concatenation(0) != nil {
-			cast := newAstNode[semantic.CastExpression](ctx.Concatenation(0))
-			arg, ok := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
-			if !ok {
-				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Concatenation(0)), ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
-				return expr
-			}
-			cast.Expr = arg
-			cast.DataType = ctx.Type_spec().GetText()
-			expr.Args = append(expr.Args, cast)
-		}
-		return expr
-	}
-
 	if ctx.Over_clause_keyword() != nil {
 		name := ctx.Over_clause_keyword().GetText()
 		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: name}}
@@ -238,7 +193,124 @@ func (v *exprVisitor) VisitOther_function(ctx *plsql.Other_functionContext) inte
 		return expr
 	}
 
+	if ctx.CAST() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "CAST"}}
+		if ctx.Concatenation(0) != nil {
+			cast := newAstNode[semantic.CastExpression](ctx.Concatenation(0))
+			arg, ok := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
+			if !ok {
+				v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Concatenation(0)), ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+				return expr
+			}
+			cast.Expr = arg
+			cast.DataType = ctx.Type_spec().GetText()
+			expr.Args = append(expr.Args, cast)
+		}
+		return expr
+	}
+
+	if ctx.LISTAGG() != nil {
+		expr := newAstNode[semantic.ListaggExpression](ctx)
+		arg, ok := ctx.Argument().Accept(v).(semantic.Expr)
+		if !ok {
+			v.ReportError(
+				fmt.Sprintf("unsupported expression %T", ctx.Argument()),
+				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn(),
+			)
+			return expr
+		}
+		expr.Args = append(expr.Args, arg)
+		if ctx.CHAR_STRING() != nil {
+			arg = &semantic.StringLiteral{Value: ctx.CHAR_STRING().GetText()}
+			expr.Args = append(expr.Args, arg)
+		}
+		if ctx.WITHIN() != nil {
+			order, ok := ctx.Order_by_clause().Accept(v).(semantic.Expr)
+			if !ok {
+				v.ReportError(
+					fmt.Sprintf("unsupported expression %T", ctx.Order_by_clause()),
+					ctx.GetStart().GetLine(),
+					ctx.GetStart().GetColumn(),
+				)
+				return expr
+			}
+			expr.Within = order
+		}
+		return expr
+	}
+
+	if ctx.Cursor_name() != nil {
+		node := ctx.Cursor_name().(*plsql.Cursor_nameContext)
+		ca := newAstNode[semantic.CursorAttribute](ctx)
+		ca.Cursor = node.GetText()
+		if ctx.PERCENT_NOTFOUND() != nil {
+			ca.Attr = "NOTFOUND"
+		} else if ctx.PERCENT_FOUND() != nil {
+			ca.Attr = "FOUND"
+		} else if ctx.PERCENT_ROWCOUNT() != nil {
+			ca.Attr = "ROWCOUNT"
+		} else if ctx.PERCENT_ISOPEN() != nil {
+			ca.Attr = "ISOPEN"
+		}
+		return ca
+	}
+
+	if ctx.TO_NUMBER() != nil {
+		expr := &semantic.FunctionCallExpression{Name: &semantic.NameExpression{Name: "TO_NUMBER"}}
+		arg, ok := v.VisitConcatenation(ctx.Concatenation(0).(*plsql.ConcatenationContext)).(semantic.Expr)
+		if !ok {
+			v.ReportError(
+				fmt.Sprintf("unsupported expression %T", ctx),
+				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn(),
+			)
+		}
+		expr.Args = append(expr.Args, arg)
+		return expr
+	}
+
 	return v.VisitChildren(ctx)
+}
+
+func (v *exprVisitor) VisitOrder_by_clause(ctx *plsql.Order_by_clauseContext) interface{} {
+	expr := newAstNode[semantic.OrderByClause](ctx)
+
+	if ctx.SIBLINGS() != nil {
+		expr.Siblings = true
+	}
+
+	for _, elem := range ctx.AllOrder_by_elements() {
+		orderElem, ok := elem.Accept(v).(semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported expression %T", elem),
+				elem.GetStart().GetLine(),
+				elem.GetStart().GetColumn())
+			continue
+		}
+		expr.Elements = append(expr.Elements, orderElem)
+	}
+
+	return expr
+}
+
+func (v *exprVisitor) VisitOrder_by_elements(ctx *plsql.Order_by_elementsContext) interface{} {
+	item := newAstNode[semantic.OrderByElement](ctx)
+
+	if ctx.DESC() != nil {
+		item.Desc = true
+	}
+
+	ok := false
+	item.Item, ok = ctx.Expression().Accept(v).(semantic.Expr)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported expression %T", ctx.Expression()),
+			ctx.GetStart().GetLine(),
+			ctx.GetStart().GetColumn())
+		return item
+	}
+
+	return item
 }
 
 func (v *exprVisitor) VisitLogical_expression(ctx *plsql.Logical_expressionContext) interface{} {
