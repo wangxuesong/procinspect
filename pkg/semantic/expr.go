@@ -160,6 +160,11 @@ type (
 		Desc bool
 		Item Expr
 	}
+
+	ExprListExpression struct {
+		expression
+		Exprs []Expr
+	}
 )
 
 func (n *expression) expr() {}

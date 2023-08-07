@@ -1187,12 +1187,32 @@ func (v *exprVisitor) VisitDml_table_expression_clause(ctx *plsql.Dml_table_expr
 
 func (v *exprVisitor) VisitColumn_based_update_set_clause(ctx *plsql.Column_based_update_set_clauseContext) interface{} {
 	if ctx.Paren_column_list() != nil {
-		v.ReportError(
-			fmt.Sprintf("unsupported expression %T", ctx.Paren_column_list()),
-			ctx.Paren_column_list().GetStart().GetLine(),
-			ctx.Paren_column_list().GetStart().GetColumn(),
-		)
-		return nil
+		exprs, ok := ctx.Paren_column_list().Accept(v).([]semantic.Expr)
+		if !ok {
+			v.ReportError(
+				fmt.Sprintf("unsupported expression %T", ctx.Paren_column_list()),
+				ctx.Paren_column_list().GetStart().GetLine(),
+				ctx.Paren_column_list().GetStart().GetColumn(),
+			)
+			return nil
+		}
+		left := newAstNode[semantic.ExprListExpression](ctx.Paren_column_list())
+		left.Exprs = exprs
+		stmt, ok := ctx.Subquery().Accept(v.stmtVisitor).(semantic.Statement)
+		if !ok {
+			v.ReportError(
+				fmt.Sprintf("unsupported syntax %T", ctx.Subquery()),
+				ctx.Subquery().GetStart().GetLine(),
+				ctx.Subquery().GetStart().GetColumn(),
+			)
+		}
+		right := newAstNode[semantic.StatementExpression](ctx.Subquery())
+		right.Stmt = stmt
+		expr := newAstNode[semantic.BinaryExpression](ctx)
+		expr.Left = left
+		expr.Right = right
+		expr.Operator = "="
+		return expr
 	} else {
 		var ok bool
 		expr := &semantic.BinaryExpression{Operator: "="}

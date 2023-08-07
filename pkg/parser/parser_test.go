@@ -402,25 +402,6 @@ rollback;`,
 	})
 
 	tests = append(tests, testCase{
-		name: "update",
-		text: `update t1 set id = 2 where t1.id =1;`,
-		Func: func(t *testing.T, root any) {
-			node := root.(*semantic.Script)
-			assert.Equal(t, len(node.Statements), 1)
-			assert.IsType(t, &semantic.UpdateStatement{}, node.Statements[0])
-			stmt := node.Statements[0].(*semantic.UpdateStatement)
-			assert.NotNil(t, stmt.Table)
-			assert.NotNil(t, stmt.Where)
-			assert.NotNil(t, stmt.SetExprs)
-			assert.Equal(t, 1, len(stmt.SetExprs))
-			assert.IsType(t, &semantic.BinaryExpression{}, stmt.SetExprs[0])
-			expr := stmt.SetExprs[0].(*semantic.BinaryExpression)
-			assert.Equal(t, "id", expr.Left.(*semantic.NameExpression).Name)
-			assert.Equal(t, int64(2), expr.Right.(*semantic.NumericLiteral).Value)
-		},
-	})
-
-	tests = append(tests, testCase{
 		name: "drop function",
 		text: `drop function test;`,
 		Func: func(t *testing.T, root any) {
@@ -2186,6 +2167,77 @@ func TestParseInsertStatement(t *testing.T) {
 			assert.Nil(t, into.Values)
 			assert.NotNil(t, stmt.Select)
 			assert.Equal(t, 3, len(stmt.Select.Fields.Fields))
+		},
+	})
+
+	runTestSuite(t, tests)
+}
+
+func TestParseUpdateStatement(t *testing.T) {
+	tests := testSuite{}
+
+	tests = append(tests, testCase{
+		name: "update",
+		text: `update t1 set id = 2 where t1.id =1;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.UpdateStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.UpdateStatement)
+			assert.NotNil(t, stmt.Table)
+			assert.NotNil(t, stmt.Where)
+			assert.NotNil(t, stmt.SetExprs)
+			assert.Equal(t, 1, len(stmt.SetExprs))
+			assert.IsType(t, &semantic.BinaryExpression{}, stmt.SetExprs[0])
+			expr := stmt.SetExprs[0].(*semantic.BinaryExpression)
+			assert.Equal(t, "id", expr.Left.(*semantic.NameExpression).Name)
+			assert.Equal(t, int64(2), expr.Right.(*semantic.NumericLiteral).Value)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "update multicolumn",
+		text: `update t1 set id = 2, c=3 where t1.id =1;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.UpdateStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.UpdateStatement)
+			assert.NotNil(t, stmt.Table)
+			assert.NotNil(t, stmt.Where)
+			assert.NotNil(t, stmt.SetExprs)
+			assert.Equal(t, 2, len(stmt.SetExprs))
+			assert.IsType(t, &semantic.BinaryExpression{}, stmt.SetExprs[0])
+			expr := stmt.SetExprs[0].(*semantic.BinaryExpression)
+			assert.Equal(t, "id", expr.Left.(*semantic.NameExpression).Name)
+			assert.Equal(t, int64(2), expr.Right.(*semantic.NumericLiteral).Value)
+			assert.IsType(t, &semantic.BinaryExpression{}, stmt.SetExprs[1])
+			expr = stmt.SetExprs[1].(*semantic.BinaryExpression)
+			assert.Equal(t, "c", expr.Left.(*semantic.NameExpression).Name)
+			assert.Equal(t, int64(3), expr.Right.(*semantic.NumericLiteral).Value)
+		},
+	})
+
+	tests = append(tests, testCase{
+		name: "update set select",
+		text: `update t1 set (a,b,c,d) = (select a,b,c,d from t);`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, len(node.Statements), 1)
+			assert.IsType(t, &semantic.UpdateStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.UpdateStatement)
+			assert.NotNil(t, stmt.Table)
+			assert.NotNil(t, stmt.SetExprs)
+			assert.Equal(t, 1, len(stmt.SetExprs))
+			assert.IsType(t, &semantic.BinaryExpression{}, stmt.SetExprs[0])
+			expr := stmt.SetExprs[0].(*semantic.BinaryExpression)
+			assert.IsType(t, &semantic.ExprListExpression{}, expr.Left)
+			list := expr.Left.(*semantic.ExprListExpression)
+			assert.Equal(t, 4, len(list.Exprs))
+			assert.IsType(t, &semantic.NameExpression{}, list.Exprs[0])
+			assert.IsType(t, &semantic.StatementExpression{}, expr.Right)
+			stmtExpr := expr.Right.(*semantic.StatementExpression)
+			assert.IsType(t, &semantic.SelectStatement{}, stmtExpr.Stmt)
 		},
 	})
 
