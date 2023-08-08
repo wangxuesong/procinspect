@@ -55,6 +55,13 @@ type (
 		Where       Expr
 		ForUpdate   *ForUpdateClause
 		SetOperator *SetOperator
+		With        *WithClause
+	}
+
+	WithClause struct {
+		node
+		IsRecursive bool
+		CTEs        []*CommonTableExpression
 	}
 
 	SetOperationStatement struct {

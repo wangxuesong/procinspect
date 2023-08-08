@@ -1329,6 +1329,26 @@ func (v *exprVisitor) VisitUsing_clause(ctx *plsql.Using_clauseContext) interfac
 	return expr
 }
 
+func (v *exprVisitor) VisitFactoring_element(ctx *plsql.Factoring_elementContext) interface{} {
+	expr := newAstNode[semantic.CommonTableExpression](ctx)
+	name := newAstNode[semantic.NameExpression](ctx.Query_name())
+	name.Name = ctx.Query_name().GetText()
+	expr.Name = name
+
+	stmt, ok := ctx.Subquery().Accept(v.stmtVisitor).(semantic.Statement)
+	if !ok {
+		v.ReportError(
+			fmt.Sprintf("unsupported expression %T", ctx.Subquery()),
+			ctx.Subquery().GetStart().GetLine(),
+			ctx.Subquery().GetStart().GetColumn(),
+		)
+		return expr
+	}
+	expr.Query = newAstNode[semantic.StatementExpression](ctx.Subquery())
+	expr.Query.Stmt = stmt
+	return expr
+}
+
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
 	parts := strings.Split(text, ".")
 	if len(parts) == 1 {

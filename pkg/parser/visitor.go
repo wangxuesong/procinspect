@@ -242,6 +242,43 @@ func (v *plsqlVisitor) VisitSelect_statement(ctx *plsql.Select_statementContext)
 	}
 }
 
+func (v *plsqlVisitor) VisitSelect_only_statement(ctx *plsql.Select_only_statementContext) interface{} {
+	var with *semantic.WithClause
+	if ctx.Subquery_factoring_clause() != nil {
+		var ok bool
+		with, ok = ctx.Subquery_factoring_clause().Accept(v).(*semantic.WithClause)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unprocessed syntax %T", ctx.Subquery_factoring_clause()),
+				ctx.Subquery_factoring_clause().GetStart().GetLine(),
+				ctx.Subquery_factoring_clause().GetStart().GetColumn())
+		}
+	}
+	object := ctx.Subquery().Accept(v)
+	switch object.(type) {
+	case *semantic.SelectStatement:
+		stmt := object.(*semantic.SelectStatement)
+		stmt.With = with
+		return object
+	case *semantic.SetOperationStatement:
+		return object
+	default:
+		v.ReportError(fmt.Sprintf("unprocessed syntax %T", ctx.Subquery()),
+			ctx.Subquery().GetStart().GetLine(),
+			ctx.Subquery().GetStart().GetColumn())
+		return nil
+	}
+}
+
+func (v *plsqlVisitor) VisitSubquery_factoring_clause(ctx *plsql.Subquery_factoring_clauseContext) interface{} {
+	clause := newAstNode[semantic.WithClause](ctx)
+	for _, item := range ctx.AllFactoring_element() {
+		visitor := newExprVisitor(v)
+		expr := item.Accept(visitor).(*semantic.CommonTableExpression)
+		clause.CTEs = append(clause.CTEs, expr)
+	}
+	return clause
+}
+
 func (v *plsqlVisitor) VisitFor_update_clause(ctx *plsql.For_update_clauseContext) interface{} {
 	clause := newAstNode[semantic.ForUpdateClause](ctx)
 

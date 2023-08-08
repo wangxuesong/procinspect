@@ -2131,6 +2131,40 @@ func TestParseSelectStatement(t *testing.T) {
 	})
 
 	tests = append(tests, testCase{
+		name: "with select",
+		text: `with cte as (select * from test), cte2 as (select * from test1) select * from cte;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, 1, len(node.Statements))
+			require.IsType(t, &semantic.SelectStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.SelectStatement)
+			require.NotNil(t, stmt.With)
+			clause := stmt.With
+			assert.Equal(t, 2, len(clause.CTEs))
+			cte := clause.CTEs[0]
+			assert.IsType(t, &semantic.NameExpression{}, cte.Name)
+			nameExp := cte.Name.(*semantic.NameExpression)
+			assert.Equal(t, "cte", nameExp.Name)
+			assert.Equal(t, 0, len(cte.ColNameList))
+			assert.IsType(t, &semantic.SelectStatement{}, cte.Query.Stmt)
+			stmt = cte.Query.Stmt.(*semantic.SelectStatement)
+			assert.Equal(t, 1, len(stmt.Fields.Fields))
+			assert.Equal(t, 1, len(stmt.From.TableRefs))
+			assert.Equal(t, "test", stmt.From.TableRefs[0].Table)
+			cte = clause.CTEs[1]
+			assert.IsType(t, &semantic.NameExpression{}, cte.Name)
+			nameExp = cte.Name.(*semantic.NameExpression)
+			assert.Equal(t, "cte2", nameExp.Name)
+			assert.Equal(t, 0, len(cte.ColNameList))
+			assert.IsType(t, &semantic.SelectStatement{}, cte.Query.Stmt)
+			stmt = cte.Query.Stmt.(*semantic.SelectStatement)
+			assert.Equal(t, 1, len(stmt.Fields.Fields))
+			assert.Equal(t, 1, len(stmt.From.TableRefs))
+			assert.Equal(t, "test1", stmt.From.TableRefs[0].Table)
+		},
+	})
+
+	tests = append(tests, testCase{
 		name: "select union",
 		text: `select * from t1 union select * from t2
 union all select * from t3

@@ -172,6 +172,14 @@ type (
 		IsOut bool
 		Elem  Expr
 	}
+
+	CommonTableExpression struct {
+		expression
+		Name        Expr
+		Query       *StatementExpression
+		ColNameList []Expr
+		IsRecursive bool
+	}
 )
 
 func (n *expression) expr() {}
