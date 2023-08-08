@@ -88,14 +88,21 @@ type (
 
 	ExecuteImmediateStatement struct {
 		node
-		Sql  string
-		Into *IntoClause
+		Sql   string
+		Into  *IntoClause
+		Using *UsingClause
 	}
 
 	IntoClause struct {
 		node
 		IsBulk bool
 		Vars   []Expr
+	}
+
+	UsingClause struct {
+		expression
+		WildCard *string
+		Elems    []Expr
 	}
 
 	Declaration interface {

@@ -165,6 +165,13 @@ type (
 		expression
 		Exprs []Expr
 	}
+
+	UsingElement struct {
+		expression
+		IsIn  bool
+		IsOut bool
+		Elem  Expr
+	}
 )
 
 func (n *expression) expr() {}

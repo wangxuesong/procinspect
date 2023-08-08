@@ -988,11 +988,18 @@ func (v *plsqlVisitor) VisitExecute_immediate(ctx *plsql.Execute_immediateContex
 				ctx.Into_clause().GetStart().GetColumn())
 		}
 		stmt.Into = into
-	} else if ctx.Using_clause() != nil {
-		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Using_clause()),
-			ctx.Using_clause().GetStart().GetLine(),
-			ctx.Using_clause().GetStart().GetColumn())
-	} else if ctx.Dynamic_returning_clause() != nil {
+	}
+	if ctx.Using_clause() != nil {
+		visitor := newExprVisitor(v)
+		using, ok := ctx.Using_clause().Accept(visitor).(*semantic.UsingClause)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Using_clause()),
+				ctx.Using_clause().GetStart().GetLine(),
+				ctx.Using_clause().GetStart().GetColumn())
+		}
+		stmt.Using = using
+	}
+	if ctx.Dynamic_returning_clause() != nil {
 		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Dynamic_returning_clause()),
 			ctx.Dynamic_returning_clause().GetStart().GetLine(),
 			ctx.Dynamic_returning_clause().GetStart().GetColumn())

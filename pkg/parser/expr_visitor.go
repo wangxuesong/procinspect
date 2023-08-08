@@ -1308,6 +1308,27 @@ func (v *exprVisitor) VisitMerge_element(ctx *plsql.Merge_elementContext) interf
 	return expr
 }
 
+func (v *exprVisitor) VisitUsing_clause(ctx *plsql.Using_clauseContext) interface{} {
+	expr := newAstNode[semantic.UsingClause](ctx)
+	if ctx.ASTERISK() != nil {
+		asterisk := "*"
+		expr.WildCard = &asterisk
+		return expr
+	}
+	for _, item := range ctx.AllUsing_element() {
+		elem, ok := item.Accept(v).(semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported expression %T", item),
+				item.GetStart().GetLine(),
+				item.GetStart().GetColumn(),
+			)
+			continue
+		}
+		expr.Elems = append(expr.Elems, elem)
+	}
+	return expr
+}
+
 func (v *exprVisitor) parseDotExpr(text string) semantic.Expr {
 	parts := strings.Split(text, ".")
 	if len(parts) == 1 {
