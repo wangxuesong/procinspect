@@ -2280,6 +2280,31 @@ func TestParseInsertStatement(t *testing.T) {
 		},
 	})
 
+	tests = append(tests, testCase{
+		name: "insert all",
+		text: `insert all
+into t1 values (1)
+into t1 values (1)
+select 1 from dual;`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Equal(t, 1, len(node.Statements))
+			assert.IsType(t, &semantic.InsertStatement{}, node.Statements[0])
+			stmt := node.Statements[0].(*semantic.InsertStatement)
+			assert.NotNil(t, stmt.AllInto)
+			assert.Equal(t, 2, len(stmt.AllInto))
+			into := stmt.AllInto[0]
+			assert.NotNil(t, into.Table)
+			assert.Equal(t, "t1", into.Table.Table)
+			assert.NotNil(t, into.Values)
+			assert.Equal(t, 1, len(into.Values))
+			assert.IsType(t, &semantic.NumericLiteral{}, into.Values[0])
+			num := into.Values[0].(*semantic.NumericLiteral)
+			assert.Equal(t, int64(1), num.Value)
+			assert.NotNil(t, stmt.Select)
+		},
+	})
+
 	runTestSuite(t, tests)
 }
 

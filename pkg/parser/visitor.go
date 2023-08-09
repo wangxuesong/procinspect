@@ -1093,10 +1093,13 @@ func (v *plsqlVisitor) VisitCreate_synonym(ctx *plsql.Create_synonymContext) int
 
 func (v *plsqlVisitor) VisitInsert_statement(ctx *plsql.Insert_statementContext) interface{} {
 	if ctx.Multi_table_insert() != nil {
-		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Multi_table_insert()),
-			ctx.Multi_table_insert().GetStart().GetLine(),
-			ctx.Multi_table_insert().GetStart().GetColumn())
-		return nil
+		stmt, ok := ctx.Multi_table_insert().Accept(v).(*semantic.InsertStatement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Multi_table_insert()),
+				ctx.Multi_table_insert().GetStart().GetLine(),
+				ctx.Multi_table_insert().GetStart().GetColumn())
+		}
+		return stmt
 	} else { // single table insert
 		stmt, ok := ctx.Single_table_insert().Accept(v).(*semantic.InsertStatement)
 		if !ok {
@@ -1178,6 +1181,56 @@ func (v *plsqlVisitor) VisitValues_clause(ctx *plsql.Values_clauseContext) inter
 		return exprs
 	}
 	return nil
+}
+
+func (v *plsqlVisitor) VisitMulti_table_insert(ctx *plsql.Multi_table_insertContext) interface{} {
+	stmt := newAstNode[semantic.InsertStatement](ctx)
+	if ctx.ALL() != nil {
+		for _, item := range ctx.AllMulti_table_element() {
+			into, ok := item.Accept(v).(*semantic.InsertIntoClause)
+			if !ok {
+				v.ReportError(fmt.Sprintf("unsupported syntax %T", item),
+					item.GetStart().GetLine(),
+					item.GetStart().GetColumn())
+			} else {
+				stmt.AllInto = append(stmt.AllInto, into)
+			}
+		}
+	}
+	if ctx.Conditional_insert_clause() != nil {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Conditional_insert_clause()),
+			ctx.Conditional_insert_clause().GetStart().GetLine(),
+			ctx.Conditional_insert_clause().GetStart().GetColumn())
+	}
+	selStmt, ok := ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Select_statement()),
+			ctx.Select_statement().GetStart().GetLine(),
+			ctx.Select_statement().GetStart().GetColumn())
+	} else {
+		stmt.Select = selStmt
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitMulti_table_element(ctx *plsql.Multi_table_elementContext) interface{} {
+	into, ok := ctx.Insert_into_clause().Accept(v).(*semantic.InsertIntoClause)
+	if !ok {
+		v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Insert_into_clause()),
+			ctx.Insert_into_clause().GetStart().GetLine(),
+			ctx.Insert_into_clause().GetStart().GetColumn())
+	}
+	if ctx.Values_clause() != nil {
+		values, ok := ctx.Values_clause().Accept(v).([]semantic.Expr)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Values_clause()),
+				ctx.Values_clause().GetStart().GetLine(),
+				ctx.Values_clause().GetStart().GetColumn())
+		} else {
+			into.Values = values
+		}
+	}
+	return into
 }
 
 func (v *plsqlVisitor) VisitSubquery(ctx *plsql.SubqueryContext) interface{} {
