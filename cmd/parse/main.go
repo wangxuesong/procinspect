@@ -77,7 +77,7 @@ func (w *Worker) start() {
 		func() {
 			defer func() {
 				w.workers.wg.Done()
-				//runtime.GC()
+				// runtime.GC()
 			}()
 			task()
 		}()
@@ -108,7 +108,7 @@ type (
 
 func main() {
 	flag.Parse()
-	//flag.PrintDefaults()
+	// flag.PrintDefaults()
 
 	if *prof {
 		pf, err := os.Create("./cpu.prof")
@@ -300,6 +300,9 @@ func prepareRequest(path string) ([]*ParseRequest, error) {
 		start := 0
 		offset := 0
 		for i, block := range blocks {
+			if strings.TrimSpace(block) == "" {
+				continue
+			}
 			requests = append(requests, &ParseRequest{
 				FileName: name,
 				Source:   block,
