@@ -752,7 +752,7 @@ from t;`,
 				name = dot.Name.(*semantic.NameExpression)
 				assert.Equal(t, "c3", name.Name)
 			}
-			//{ // avg(t.id)
+			// { // avg(t.id)
 			//	i := 1
 			//	assert.NotNil(t, stmt.Fields.Fields[i].Expr)
 			//	assert.IsType(t, &semantic.FunctionCallExpression{}, stmt.Fields.Fields[i].Expr)
@@ -767,7 +767,7 @@ from t;`,
 			//	assert.IsType(t, &semantic.NameExpression{}, dot.Name)
 			//	name = dot.Name.(*semantic.NameExpression)
 			//	assert.Equal(t, "id", name.Name)
-			//}
+			// }
 		},
 	})
 
@@ -1258,7 +1258,7 @@ End;
 				assert.IsType(t, &semantic.NameExpression{}, unaryExp.Expr)
 				nameExp := unaryExp.Expr.(*semantic.NameExpression)
 				assert.Equal(t, nameExp.Name, "i_Areanos")
-				//assert.Equal(t, ifStmt.Condition, "i_AreanosIsNull")
+				// assert.Equal(t, ifStmt.Condition, "i_AreanosIsNull")
 				// assert the then_block of the if statement
 				assert.NotNil(t, ifStmt.ThenBlock)
 				assert.Equal(t, len(ifStmt.ThenBlock), 3)
@@ -1271,7 +1271,7 @@ End;
 					cursorAttr := ifStmt.Condition.(*semantic.CursorAttribute)
 					assert.Equal(t, cursorAttr.Cursor, "c_AllAws")
 					assert.Equal(t, cursorAttr.Attr, "ISOPEN")
-					//assert.Equal(t, ifStmt.Condition, "c_AllAws%Isopen")
+					// assert.Equal(t, ifStmt.Condition, "c_AllAws%Isopen")
 					assert.NotNil(t, ifStmt.ThenBlock)
 					assert.IsType(t, &semantic.CloseStatement{}, ifStmt.ThenBlock[0])
 					assert.Nil(t, ifStmt.ElseBlock)
@@ -1632,7 +1632,7 @@ End;
 			assert.Equal(t, stmt.Name, "Open_For_Cursor")
 
 			// assert declaration
-			//{
+			// {
 			//	assert.Nil(t, stmt.Declarations)
 			//	assert.Equal(t, len(stmt.Declarations), 8)
 			//	// assert the declaration is a variableDeclaration
@@ -1688,7 +1688,7 @@ End;
 			//	varDecl = stmt.Declarations[7].(*semantic.VariableDeclaration)
 			//	assert.Equal(t, varDecl.Name, "v_Index")
 			//	assert.Equal(t, varDecl.DataType, "Integer")
-			//}
+			// }
 
 			// assert body
 			{
@@ -2380,7 +2380,7 @@ func TestParseUpdateStatement(t *testing.T) {
 }
 
 func TestParseMergeStatement(t *testing.T) {
-	//tests := testSuite{}
+	// tests := testSuite{}
 
 	tests := []testCase{
 		{
@@ -2509,5 +2509,5 @@ when matched then
 		})
 	}
 
-	//runTestSuite(t, tests)
+	// runTestSuite(t, tests)
 }

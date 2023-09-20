@@ -25,13 +25,15 @@ import (
 )
 
 var (
-	file     = flag.String("file", "", "")
-	dir      = flag.String("dir", "", "")
-	prof     = flag.Bool("prof", false, "")
-	parallel = flag.Bool("p", false, "parallel parse")
-	verbose  = flag.Bool("v", false, "verbose")
-	size     = flag.Int64("size", 500*1024, "size")
-	index    = flag.Int("index", 0, "start from index")
+	file       = flag.String("file", "", "")
+	dir        = flag.String("dir", "", "")
+	prof       = flag.Bool("prof", false, "")
+	parallel   = flag.Bool("p", false, "parallel parse")
+	verbose    = flag.Bool("v", false, "verbose")
+	size       = flag.Int64("size", 500*1024, "size")
+	index      = flag.Int("index", 0, "start from index")
+	lines      = flag.Bool("lines", false, "progress by line")
+	totalLines int
 )
 
 type WorkerPool struct {
@@ -77,7 +79,7 @@ func (w *Worker) start() {
 		func() {
 			defer func() {
 				w.workers.wg.Done()
-				//runtime.GC()
+				// runtime.GC()
 			}()
 			task()
 		}()
@@ -108,7 +110,7 @@ type (
 
 func main() {
 	flag.Parse()
-	//flag.PrintDefaults()
+	// flag.PrintDefaults()
 
 	if *prof {
 		pf, err := os.Create("./cpu.prof")
@@ -241,10 +243,17 @@ func parseFile(path string) error {
 }
 
 func parallelParse(requests []*ParseRequest, msgChan chan msg, results []*ParseResult) {
+	total := len(requests)
+	if *lines {
+		total = 0
+		for _, r := range requests {
+			total += len(strings.Split(r.Source, "\n"))
+		}
+	}
 	p, _ := pterm.DefaultProgressbar.
-		WithTotal(len(requests)).
+		WithTotal(total).
 		WithMaxWidth(-1).
-		WithTitle("Parse file").
+		WithTitle(requests[0].FileName).
 		Start()
 
 	numWorkers := runtime.GOMAXPROCS(0) - 1
@@ -267,7 +276,19 @@ func parallelParse(requests []*ParseRequest, msgChan chan msg, results []*ParseR
 				log.String("error", result.Error.Error()),
 			)
 		}
-		p.Increment()
+		if !*lines {
+			p.Increment()
+		} else {
+			count := len(strings.Split(result.Source, "\n"))
+			// log.Debug(
+			//	"Parse Progress",
+			//	log.Int("index", result.Index),
+			//	log.Int("start", result.Start),
+			//	log.Int("count", count),
+			//	log.String("source", result.Source),
+			// )
+			p.Add(count)
+		}
 		//	result.AstFunc(result.Start)
 	}
 	close(parseChan)

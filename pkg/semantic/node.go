@@ -40,19 +40,19 @@ const (
 	Assignment
 )
 
-func (*node) Type() NodeType {
+func (node) Type() NodeType {
 	return NilNode
 }
 
-func (n *node) Line() int {
+func (n node) Line() int {
 	return n.line
 }
 
-func (n *node) Column() int {
+func (n node) Column() int {
 	return n.column
 }
 
-func (n *node) Span() Span {
+func (n node) Span() Span {
 	return n.span
 }
 
