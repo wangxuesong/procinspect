@@ -65,14 +65,14 @@ func main() {
 
 	g.WriteHeader()
 
-	//sort.Sort(exprTypes)
+	// sort.Sort(exprTypes)
 	err = g.WriteTypes(KindExpr, exprTypes)
 	if err != nil {
 		err = fmt.Errorf("generating expr content: %w", err)
 		return
 	}
 
-	//sort.Sort(stmtTypes)
+	// sort.Sort(stmtTypes)
 	// 合并 declTypes
 	stmtTypes = append(stmtTypes, declTypes...)
 	err = g.WriteTypes(KindStmt, stmtTypes)
@@ -84,6 +84,12 @@ func main() {
 	err = g.WriteTypes(KindNode, nodeTypes)
 	if err != nil {
 		err = fmt.Errorf("generating node content: %w", err)
+		return
+	}
+
+	err = g.WriteGobRegister(KindNode, nodeTypes)
+	if err != nil {
+		err = fmt.Errorf("generating register content: %w", err)
 		return
 	}
 
@@ -141,7 +147,9 @@ func (g *Generator) WriteHeader() {
 package semantic
 
 import (
+	"encoding/gob"
 	"errors"
+	"sync"
 )
 
 `)
@@ -164,17 +172,26 @@ func (g *Generator) WriteTo(writer io.Writer) (int64, error) {
 }
 
 func (g *Generator) WriteTypes(kind string, types Types) (err error) {
-	//err = g.checkExprTypes(kind, types)
-	//if err != nil {
-	//	err = fmt.Errorf("checking exprTypes: %w", err)
-	//	return
-	//}
-
 	g.writeVisitor(kind, types)
 
 	for _, item := range types {
 		g.writeAccept(kind, item)
 	}
+
+	return
+}
+
+func (g *Generator) WriteGobRegister(kind string, types Types) (err error) {
+	g.buf.WriteString("var register = sync.OnceFunc(func() {")
+	g.linebreak()
+
+	for _, item := range types {
+		fmt.Fprintf(&g.buf, "gob.Register(&%s{})", item.Name)
+		g.linebreak()
+	}
+
+	g.buf.WriteString("})")
+	g.linebreak()
 
 	return
 }
@@ -209,18 +226,6 @@ func (g *Generator) checkExprTypes(kind string, types Types) (err error) {
 			err = fmt.Errorf("fields are empty for type %q", item.Name)
 			return
 		}
-		//fields := strings.Split(item.Fields, ",")
-		//for fieldIdx, field := range fields {
-		//	field = strings.TrimSpace(field)
-		//	if field == "" {
-		//		err = fmt.Errorf("empty field at index %d from type %q", fieldIdx, item.Name)
-		//		return
-		//	}
-		//	if !ast.IsExported(field) {
-		//		err = fmt.Errorf("field %q of type %q is not exported", field, item.Name)
-		//		return
-		//	}
-		//}
 	}
 
 	return
@@ -269,10 +274,10 @@ func (g *Generator) writeType(kind string, item Type) {
 	_, _ = fmt.Fprintf(&g.buf, "type %s %s", item.Name, item.Fields)
 	g.linebreak()
 
-	//fields := strings.Split(item.Fields, ",")
-	//g.buf.WriteString(strings.Join(fields, "\n"))
+	// fields := strings.Split(item.Fields, ",")
+	// g.buf.WriteString(strings.Join(fields, "\n"))
 	//
-	//g.buf.WriteString(`}`)
+	// g.buf.WriteString(`}`)
 	g.linebreak()
 	g.linebreak()
 

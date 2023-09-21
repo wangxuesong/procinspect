@@ -11,35 +11,35 @@ const (
 
 type (
 	WildCardField struct {
-		node
+		SyntaxNode
 
 		Table  string
 		Schema string
 	}
 
 	SelectField struct {
-		node
+		SyntaxNode
 		WildCard *WildCardField
 		Expr     Expr
 	}
 
 	FieldList struct {
-		node
+		SyntaxNode
 		Fields []*SelectField
 	}
 
 	TableRef struct {
-		node
+		SyntaxNode
 		Table string
 	}
 
 	FromClause struct {
-		node
+		SyntaxNode
 		TableRefs []*TableRef
 	}
 
 	ForUpdateClause struct {
-		node
+		SyntaxNode
 		Options Expr
 	}
 
@@ -49,7 +49,7 @@ type (
 	}
 
 	SelectStatement struct {
-		node
+		SyntaxNode
 		Fields      *FieldList
 		From        *FromClause
 		Where       Expr
@@ -59,66 +59,66 @@ type (
 	}
 
 	WithClause struct {
-		node
+		SyntaxNode
 		IsRecursive bool
 		CTEs        []*CommonTableExpression
 	}
 
 	SetOperationStatement struct {
-		node
+		SyntaxNode
 		SelectList []Statement
 	}
 
 	CreateTypeStatement struct {
-		node
+		SyntaxNode
 		Name string
 	}
 
 	CreateNestTableStatement struct {
-		node
+		SyntaxNode
 		CreateTypeStatement
 	}
 
 	CreateSynonymStatement struct {
-		node
+		SyntaxNode
 		Synonym  Expr
 		Original Expr
 	}
 
 	CaseWhenStatement struct {
-		node
+		SyntaxNode
 		Expr        Expr
 		WhenClauses []*CaseWhenBlock
 		ElseClause  *CaseWhenBlock
 	}
 
 	CaseWhenBlock struct {
-		node
+		SyntaxNode
 		Condition Expr
 		Expr      Expr
 		Stmts     []Statement
 	}
 
 	CommitStatement struct {
-		node
+		SyntaxNode
 	}
 
 	RollbackStatement struct {
-		node
+		SyntaxNode
 	}
 
 	ContinueStatement struct {
-		node
+		SyntaxNode
 	}
 
 	DeleteStatement struct {
-		node
+		SyntaxNode
 		Table Expr
 		Where Expr
 	}
 
 	UpdateStatement struct {
-		node
+		SyntaxNode
 		Table    Expr
 		Where    Expr
 		SetExprs []Expr
@@ -126,20 +126,20 @@ type (
 	}
 
 	InsertStatement struct {
-		node
+		SyntaxNode
 		AllInto []*InsertIntoClause
 		Select  *SelectStatement
 	}
 
 	InsertIntoClause struct {
-		node
+		SyntaxNode
 		Table   *TableRef
 		Columns []Expr
 		Values  []Expr
 	}
 
 	MergeStatement struct {
-		node
+		SyntaxNode
 		Table       *TableRef
 		Using       Expr
 		OnCondition Expr
@@ -148,14 +148,14 @@ type (
 	}
 
 	MergeUpdateStatement struct {
-		node
+		SyntaxNode
 		SetElems []Expr
 		Where    Expr
 		Delete   Expr
 	}
 
 	MergeInsertStatement struct {
-		node
+		SyntaxNode
 	}
 )
 

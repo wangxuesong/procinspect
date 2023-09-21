@@ -6,175 +6,175 @@ type (
 		expr()
 	}
 
-	expression struct {
-		node
+	ExprNode struct {
+		SyntaxNode
 	}
 
 	NumericLiteral struct {
-		expression
+		ExprNode
 		Value int64
 	}
 
 	CursorAttribute struct {
-		expression
+		ExprNode
 		Cursor string
 		Attr   string
 	}
 
 	UnaryLogicalExpression struct {
-		expression
+		ExprNode
 		Expr     Expr
 		Operator string
 		Not      bool
 	}
 
 	RelationalExpression struct {
-		expression
+		ExprNode
 		Left     Expr
 		Right    Expr
 		Operator string
 	}
 
 	InExpression struct {
-		expression
+		ExprNode
 		Expr  Expr
 		Elems []Expr
 	}
 
 	LikeExpression struct {
-		expression
+		ExprNode
 		Expr     Expr
 		LikeExpr Expr
 	}
 
 	BetweenExpression struct {
-		expression
+		ExprNode
 		Expr  Expr
 		Elems []Expr
 	}
 
 	ExistsExpression struct {
-		expression
+		ExprNode
 		Expr Expr
 	}
 
 	QueryExpression struct {
-		expression
+		ExprNode
 		Query *SelectStatement
 	}
 
 	BinaryExpression struct {
-		expression
+		ExprNode
 		Left     Expr
 		Right    Expr
 		Operator string
 	}
 
 	FunctionCallExpression struct {
-		expression
+		ExprNode
 		Name Expr
 		Args []Expr
 	}
 
 	DotExpression struct {
-		expression
+		ExprNode
 		Name   Expr
 		Parent Expr
 	}
 
 	NameExpression struct {
-		expression
+		ExprNode
 		Name string
 	}
 
 	StringLiteral struct {
-		expression
+		ExprNode
 		Value string
 	}
 
 	NullExpression struct {
-		expression
+		ExprNode
 	}
 
 	SignExpression struct {
-		expression
+		ExprNode
 		Expr Expr
 		Sign string
 	}
 
 	OuterJoinExpression struct {
-		expression
+		ExprNode
 		Expr Expr
 	}
 
 	AliasExpression struct {
-		expression
+		ExprNode
 		Expr  Expr
 		Alias string
 	}
 
 	StatementExpression struct {
-		expression
+		ExprNode
 		Stmt Statement
 	}
 
 	CastExpression struct {
-		expression
+		ExprNode
 		Expr     Expr
 		DataType string
 	}
 
 	BindNameExpression struct {
-		expression
+		ExprNode
 		Name Expr
 	}
 
 	ForUpdateOptionsExpression struct {
-		expression
+		ExprNode
 		SkipLocked bool
 		NoWait     bool
 		Wait       Expr
 	}
 
 	NamedArgumentExpression struct {
-		expression
+		ExprNode
 		Name  Expr
 		Value Expr
 	}
 
 	ListaggExpression struct {
-		expression
+		ExprNode
 		Args   []Expr
 		Within Expr
 		Over   Expr
 	}
 
 	OrderByClause struct {
-		expression
+		ExprNode
 		Siblings bool
 		Elements []Expr
 	}
 
 	OrderByElement struct {
-		expression
+		ExprNode
 		Desc bool
 		Item Expr
 	}
 
 	ExprListExpression struct {
-		expression
+		ExprNode
 		Exprs []Expr
 	}
 
 	UsingElement struct {
-		expression
+		ExprNode
 		IsIn  bool
 		IsOut bool
 		Elem  Expr
 	}
 
 	CommonTableExpression struct {
-		expression
+		ExprNode
 		Name        Expr
 		Query       *StatementExpression
 		ColNameList []Expr
@@ -182,4 +182,4 @@ type (
 	}
 )
 
-func (n *expression) expr() {}
+func (n *ExprNode) expr() {}

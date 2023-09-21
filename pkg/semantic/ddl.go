@@ -2,7 +2,7 @@ package semantic
 
 type (
 	CreatePackageStatement struct {
-		node
+		SyntaxNode
 		Name       string
 		Procedures []*CreateProcedureStatement
 		Types      []Declaration
@@ -10,14 +10,14 @@ type (
 	}
 
 	CreatePackageBodyStatement struct {
-		node
+		SyntaxNode
 		Name       string
 		Procedures []*CreateProcedureStatement
 		Functions  []*CreateFunctionStatement
 	}
 
 	CreateProcedureStatement struct {
-		node
+		SyntaxNode
 		Name         string
 		Parameters   []*Parameter
 		Declarations []Declaration
@@ -26,7 +26,7 @@ type (
 	}
 
 	CreateFunctionStatement struct {
-		node
+		SyntaxNode
 		Name         string
 		Parameters   []*Parameter
 		Return       string
@@ -36,29 +36,29 @@ type (
 	}
 
 	Body struct {
-		node
+		SyntaxNode
 		Statements []Statement
 	}
 
 	DropFunctionStatement struct {
-		node
+		SyntaxNode
 		Name string
 	}
 
 	DropProcedureStatement struct {
-		node
+		SyntaxNode
 		Name string
 	}
 
 	DropPackageStatement struct {
-		node
+		SyntaxNode
 		Name   string
 		Schema string
 		IsBody bool
 	}
 
 	DropTriggerStatement struct {
-		node
+		SyntaxNode
 		Name string
 	}
 )
