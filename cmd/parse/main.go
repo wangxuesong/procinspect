@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"errors"
 	"flag"
 	"fmt"
@@ -25,13 +26,16 @@ import (
 )
 
 var (
-	file     = flag.String("file", "", "")
-	dir      = flag.String("dir", "", "")
-	prof     = flag.Bool("prof", false, "")
-	parallel = flag.Bool("p", false, "parallel parse")
-	verbose  = flag.Bool("v", false, "verbose")
-	size     = flag.Int64("size", 500*1024, "size")
-	index    = flag.Int("index", 0, "start from index")
+	file       = flag.String("file", "", "")
+	dir        = flag.String("dir", "", "")
+	prof       = flag.Bool("prof", false, "")
+	parallel   = flag.Bool("p", false, "parallel parse")
+	verbose    = flag.Bool("v", false, "verbose")
+	size       = flag.Int64("size", 500*1024, "size")
+	index      = flag.Int("index", 0, "start from index")
+	lines      = flag.Bool("lines", false, "progress by line")
+	serialize  = flag.Bool("s", false, "serialize")
+	totalLines int
 )
 
 type WorkerPool struct {
@@ -109,6 +113,11 @@ type (
 func main() {
 	flag.Parse()
 	// flag.PrintDefaults()
+
+	if *dir != "" && *serialize {
+		panic("dir and serialize can not be set at the same time")
+
+	}
 
 	if *prof {
 		pf, err := os.Create("./cpu.prof")
@@ -241,10 +250,17 @@ func parseFile(path string) error {
 }
 
 func parallelParse(requests []*ParseRequest, msgChan chan msg, results []*ParseResult) {
+	total := len(requests)
+	if *lines {
+		total = 0
+		for _, r := range requests {
+			total += len(strings.Split(r.Source, "\n"))
+		}
+	}
 	p, _ := pterm.DefaultProgressbar.
-		WithTotal(len(requests)).
+		WithTotal(total).
 		WithMaxWidth(-1).
-		WithTitle("Parse file").
+		WithTitle(requests[0].FileName).
 		Start()
 
 	numWorkers := runtime.GOMAXPROCS(0) - 1
@@ -267,7 +283,19 @@ func parallelParse(requests []*ParseRequest, msgChan chan msg, results []*ParseR
 				log.String("error", result.Error.Error()),
 			)
 		}
-		p.Increment()
+		if !*lines {
+			p.Increment()
+		} else {
+			count := len(strings.Split(result.Source, "\n"))
+			// log.Debug(
+			//	"Parse Progress",
+			//	log.Int("index", result.Index),
+			//	log.Int("start", result.Start),
+			//	log.Int("count", count),
+			//	log.String("source", result.Source),
+			// )
+			p.Add(count)
+		}
 		//	result.AstFunc(result.Start)
 	}
 	close(parseChan)
@@ -341,7 +369,38 @@ func parseBlock(r *ParseRequest) *ParseResult {
 	if err != nil {
 		result.Error = err
 	} else {
-		result.AstFunc = s
+		if *serialize {
+			filename := strings.TrimSuffix(filepath.Base(r.FileName), filepath.Ext(r.FileName)) + ".ast"
+			result.AstFunc = func(start int) (*semantic.Script, error) {
+				script, err := s(start)
+				if err != nil {
+					return nil, err
+				}
+
+				buf, err := semantic.NewNodeEncoder().Encode(script)
+				if err == nil {
+					file, err := os.Create(filename)
+					if err != nil {
+						log.Error("Serialize Error", log.String("error", err.Error()))
+						return script, err
+					}
+					defer file.Close()
+
+					gw := gzip.NewWriter(file)
+					defer gw.Close()
+
+					_, err = gw.Write(buf)
+					if err != nil {
+						log.Error("Serialize Error", log.String("error", err.Error()))
+						return script, err
+					}
+				}
+
+				return script, nil
+			}
+		} else {
+			result.AstFunc = s
+		}
 	}
 	return result
 }
