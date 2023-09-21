@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"errors"
 	"flag"
 	"fmt"
@@ -33,6 +34,7 @@ var (
 	size       = flag.Int64("size", 500*1024, "size")
 	index      = flag.Int("index", 0, "start from index")
 	lines      = flag.Bool("lines", false, "progress by line")
+	serialize  = flag.Bool("s", false, "serialize")
 	totalLines int
 )
 
@@ -111,6 +113,11 @@ type (
 func main() {
 	flag.Parse()
 	// flag.PrintDefaults()
+
+	if *dir != "" && *serialize {
+		panic("dir and serialize can not be set at the same time")
+
+	}
 
 	if *prof {
 		pf, err := os.Create("./cpu.prof")
@@ -321,6 +328,9 @@ func prepareRequest(path string) ([]*ParseRequest, error) {
 		start := 0
 		offset := 0
 		for i, block := range blocks {
+			if strings.TrimSpace(block) == "" {
+				continue
+			}
 			requests = append(requests, &ParseRequest{
 				FileName: name,
 				Source:   block,
@@ -359,7 +369,38 @@ func parseBlock(r *ParseRequest) *ParseResult {
 	if err != nil {
 		result.Error = err
 	} else {
-		result.AstFunc = s
+		if *serialize {
+			filename := strings.TrimSuffix(filepath.Base(r.FileName), filepath.Ext(r.FileName)) + ".ast"
+			result.AstFunc = func(start int) (*semantic.Script, error) {
+				script, err := s(start)
+				if err != nil {
+					return nil, err
+				}
+
+				buf, err := semantic.NewNodeEncoder().Encode(script)
+				if err == nil {
+					file, err := os.Create(filename)
+					if err != nil {
+						log.Error("Serialize Error", log.String("error", err.Error()))
+						return script, err
+					}
+					defer file.Close()
+
+					gw := gzip.NewWriter(file)
+					defer gw.Close()
+
+					_, err = gw.Write(buf)
+					if err != nil {
+						log.Error("Serialize Error", log.String("error", err.Error()))
+						return script, err
+					}
+				}
+
+				return script, nil
+			}
+		} else {
+			result.AstFunc = s
+		}
 	}
 	return result
 }

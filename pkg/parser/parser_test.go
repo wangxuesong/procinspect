@@ -2511,3 +2511,121 @@ when matched then
 
 	// runTestSuite(t, tests)
 }
+
+func TestSerializeStatement(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "simple merge",
+			text: `
+merge into t1
+using t2
+on (t1.a=t2.a)
+when matched then
+	update set t1.b=t2.b;`,
+			Func: func(t *testing.T, root any) {
+				_node := root.(*semantic.Script)
+				encoder := semantic.NewNodeEncoder()
+				buff, err := encoder.Encode(_node)
+				assert.Nil(t, err)
+				decoder := semantic.NewNodeDecoder[*semantic.Script]()
+				node, err := decoder.Decode(buff)
+				assert.Nil(t, err)
+				assert.IsType(t, &semantic.Script{}, node)
+				script := node.(*semantic.Script)
+				assert.Equal(t, _node, script)
+				assert.Equal(t, len(script.Statements), 1)
+				assert.IsType(t, &semantic.MergeStatement{}, script.Statements[0])
+				stmt := script.Statements[0].(*semantic.MergeStatement)
+				assert.Equal(t, "t1", stmt.Table.Table)
+				assert.IsType(t, &semantic.NameExpression{}, stmt.Using)
+				name := stmt.Using.(*semantic.NameExpression)
+				assert.Equal(t, name.Name, "t2")
+				assert.IsType(t, &semantic.RelationalExpression{}, stmt.OnCondition)
+				rel := stmt.OnCondition.(*semantic.RelationalExpression)
+				assert.Equal(t, "=", rel.Operator)
+				assert.IsType(t, &semantic.DotExpression{}, rel.Left)
+				dot := rel.Left.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "a", name.Name)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				dot = dot.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "t1", name.Name)
+				assert.IsType(t, &semantic.DotExpression{}, rel.Right)
+				dot = rel.Right.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "a", name.Name)
+				assert.IsType(t, &semantic.DotExpression{}, dot.Parent)
+				dot = dot.Parent.(*semantic.DotExpression)
+				assert.IsType(t, &semantic.NameExpression{}, dot.Name)
+				name = dot.Name.(*semantic.NameExpression)
+				assert.Equal(t, "t2", name.Name)
+				assert.Nil(t, stmt.MergeInsert)
+				assert.NotNil(t, stmt.MergeUpdate)
+			},
+		},
+		{
+			name: "create function",
+			text: `create or replace function test return number is
+	begin
+		select 1 from dual;
+		return(a);
+	end;`,
+			Func: func(t *testing.T, root any) {
+				_node := root.(*semantic.Script)
+				encoder := semantic.NewNodeEncoder()
+				buff, err := encoder.Encode(_node)
+				assert.Nil(t, err)
+				decoder := semantic.NewNodeDecoder[*semantic.Script]()
+				node, err := decoder.Decode(buff)
+				assert.Nil(t, err)
+				assert.IsType(t, &semantic.Script{}, node)
+				script := node.(*semantic.Script)
+				assert.Equal(t, _node, script)
+
+				assert.Equal(t, len(script.Statements), 1)
+				assert.IsType(t, &semantic.CreateFunctionStatement{}, script.Statements[0])
+				stmt := script.Statements[0].(*semantic.CreateFunctionStatement)
+
+				assert.Equal(t, 1, stmt.Line())
+				assert.Equal(t, 1, stmt.Column())
+
+				assert.True(t, stmt.IsReplace)
+
+				assert.Equal(t, stmt.Name, "test")
+
+				assert.NotNil(t, stmt.Body)
+				assert.Equal(t, len(stmt.Body.Statements), 2)
+
+				assert.IsType(t, &semantic.SelectStatement{}, stmt.Body.Statements[0])
+				select1 := stmt.Body.Statements[0].(*semantic.SelectStatement)
+				assert.Equal(t, select1.From.TableRefs[0].Table, "dual")
+				// assert line & column
+				assert.Equal(t, 3, select1.Line())
+				assert.Equal(t, 3, select1.Column())
+
+				assert.IsType(t, &semantic.ReturnStatement{}, stmt.Body.Statements[1])
+				r := stmt.Body.Statements[1].(*semantic.ReturnStatement)
+				assert.IsType(t, &semantic.NameExpression{}, r.Name)
+				name := r.Name.(*semantic.NameExpression)
+				assert.Equal(t, "a", name.Name)
+				// assert line & column
+				assert.Equal(t, 4, r.Line())
+				assert.Equal(t, 3, r.Column())
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.root != nil {
+				runTest(t, test.text, test.Func, test.root)
+			} else {
+				runTest(t, test.text, test.Func)
+			}
+		})
+	}
+}
