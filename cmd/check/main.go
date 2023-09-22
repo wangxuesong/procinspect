@@ -1,28 +1,31 @@
 package main
 
 import (
+	"compress/gzip"
+	"errors"
 	"flag"
 	"fmt"
-	"log"
+	"io"
 	"os"
 	"path/filepath"
-	"procinspect/pkg/semantic"
-	"reflect"
 	"runtime/pprof"
 	"time"
 
 	"procinspect/pkg/checker"
+	"procinspect/pkg/log"
+	"procinspect/pkg/semantic"
 )
 
 var (
 	file = flag.String("file", "", "")
 	dir  = flag.String("dir", "", "")
 	prof = flag.Bool("prof", false, "")
+	bin  = flag.String("bin", "", "")
 )
 
 func main() {
 	flag.Parse()
-	//flag.PrintDefaults()
+	// flag.PrintDefaults()
 
 	if *prof {
 		pf, err := os.Create("./cpu.prof")
@@ -32,6 +35,22 @@ func main() {
 		}
 		pprof.StartCPUProfile(pf)
 		defer pprof.StopCPUProfile()
+	}
+	{
+		i := 0
+		if *dir != "" {
+			i++
+		}
+		if *file != "" {
+			i++
+		}
+		if *bin != "" {
+			i++
+		}
+		if i > 1 {
+			fmt.Println("only one of -dir, -file, -bin is allowed")
+			return
+		}
 	}
 
 	var sql string
@@ -51,6 +70,9 @@ func main() {
 		sql = *file
 		_ = parseFile(sql)
 		return
+	} else if *bin != "" {
+		filename := *bin
+		checkBinary(filename)
 	}
 }
 
@@ -82,7 +104,7 @@ func parseFile(sql string) error {
 	script, err := checker.LoadScript(string(text))
 	elapsed := time.Since(start)
 	if err != nil {
-		//name := filepath.Base(absPath)
+		// name := filepath.Base(absPath)
 		fmt.Printf("error:\n%s\n", err)
 		return err
 	} else {
@@ -94,17 +116,62 @@ func parseFile(sql string) error {
 }
 
 func check(script *semantic.Script) error {
-	if len(script.Statements) == 0 {
-		return nil
-	}
+	v := checker.NewValidVisitor()
+	err := script.Accept(v)
 
-	for _, stmt := range script.Statements {
-		switch stmt.(type) {
-		case *semantic.CreateNestTableStatement:
-			log.Println("unsupported nest table on line", stmt.Line())
-		default:
-			log.Println("unsupported statement ", reflect.TypeOf(stmt).Elem().Name())
+	var errs checker.SqlValidationErrors
+	errors.As(err, &errs)
+	for _, err := range errs {
+		log.Error("unsupported", log.String("err", err.Error()))
+	}
+	if errs == nil {
+		_, ok := err.(interface{ Unwrap() []error })
+		if ok {
+			errs := err.(interface{ Unwrap() []error }).Unwrap()
+			for _, err := range errs {
+				log.Error("unexpected", log.String("err", err.Error()))
+			}
 		}
 	}
 	return nil
+}
+
+func checkBinary(filename string) {
+	absPath, err := filepath.Abs(filename)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	f, err := os.Open(absPath)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	gr, err := gzip.NewReader(f)
+	if err != nil {
+		return
+	}
+	defer gr.Close()
+
+	// read file to string
+	text, err := io.ReadAll(gr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// parse file
+	log.Info("Start Parse", log.String("file", filepath.Base(absPath)))
+	start := time.Now()
+	script, err := semantic.NewNodeDecoder[*semantic.Script]().Decode(text)
+	elapsed := time.Since(start)
+	log.Info("End Parse", log.String("file", filepath.Base(absPath)),
+		log.String("duration", elapsed.String()))
+	if err != nil {
+		// name := filepath.Base(absPath)
+		fmt.Printf("error:\n%s\n", err)
+		return
+	}
+	check(script)
 }

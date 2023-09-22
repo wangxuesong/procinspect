@@ -28,7 +28,7 @@ func NewNodeDecoder[T Node]() *NodeDecoder[T] {
 	return &NodeDecoder[T]{}
 }
 
-func (n *NodeDecoder[T]) Decode(data []byte) (Node, error) {
+func (n *NodeDecoder[T]) Decode(data []byte) (T, error) {
 	var node T
 	err := gob.NewDecoder(bytes.NewReader(data)).Decode(&node)
 	return node, err

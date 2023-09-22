@@ -47,3 +47,7 @@ func (v *ValidVisitor) VisitScript(node *semantic.Script) error {
 func (v *ValidVisitor) VisitCreateNestTableStatement(node *semantic.CreateNestTableStatement) error {
 	return v.v.Validate(node)
 }
+
+func (v *ValidVisitor) VisitSelectStatement(node *semantic.SelectStatement) error {
+	return v.v.Validate(node)
+}

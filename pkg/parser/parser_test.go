@@ -2111,6 +2111,26 @@ func TestParseSelectStatement(t *testing.T) {
 	tests := testSuite{}
 
 	tests = append(tests, testCase{
+		name: "select dblink",
+		text: `select * from test@dblink`,
+		Func: func(t *testing.T, root any) {
+			node := root.(*semantic.Script)
+			assert.Greater(t, len(node.Statements), 0)
+			stmt, ok := node.Statements[0].(*semantic.SelectStatement)
+			assert.True(t, ok)
+			assert.NotNil(t, stmt)
+			assert.Equal(t, 1, stmt.Line())
+			assert.Equal(t, 1, stmt.Column())
+			assert.Equal(t, len(stmt.Fields.Fields), 1)
+			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
+			assert.Equal(t, len(stmt.From.TableRefs), 1)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "test")
+			assert.NotNil(t, stmt.ForUpdate)
+			assert.NotNil(t, stmt.ForUpdate.Options)
+		},
+	})
+
+	tests = append(tests, testCase{
 		name: "select for update",
 		text: `select * from test for update nowait;`,
 		Func: func(t *testing.T, root any) {
@@ -2531,7 +2551,7 @@ when matched then
 				node, err := decoder.Decode(buff)
 				assert.Nil(t, err)
 				assert.IsType(t, &semantic.Script{}, node)
-				script := node.(*semantic.Script)
+				script := node
 				assert.Equal(t, _node, script)
 				assert.Equal(t, len(script.Statements), 1)
 				assert.IsType(t, &semantic.MergeStatement{}, script.Statements[0])
@@ -2583,7 +2603,7 @@ when matched then
 				node, err := decoder.Decode(buff)
 				assert.Nil(t, err)
 				assert.IsType(t, &semantic.Script{}, node)
-				script := node.(*semantic.Script)
+				script := node
 				assert.Equal(t, _node, script)
 
 				assert.Equal(t, len(script.Statements), 1)

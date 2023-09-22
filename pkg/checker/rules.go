@@ -2,6 +2,7 @@ package checker
 
 import (
 	"context"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 
@@ -36,6 +37,23 @@ var rules = []rule{
 		validateUpdateStatement,
 		"unsupported: update set multiple columns with select",
 	},
+	{
+		"select from dblink",
+		&semantic.SelectStatement{},
+		validateSelectFromDblink,
+		"unsupported: select from dblink",
+	},
+}
+
+func validateSelectFromDblink(r rule) validator.StructLevelFuncCtx {
+	return func(ctx context.Context, sl validator.StructLevel) {
+		cur := sl.Current().Interface().(semantic.SelectStatement)
+		for _, table := range cur.From.TableRefs {
+			if strings.Index(table.Table, "@") >= 0 {
+				sl.ReportError(cur, table.Table, table.Table, r.name, r.message)
+			}
+		}
+	}
 }
 
 func validateUpdateStatement(r rule) validator.StructLevelFuncCtx {
