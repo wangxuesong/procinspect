@@ -31,8 +31,8 @@ var (
 		KindStmt: `func (s StubStmtVisitor) Visit%s(_ *%s) (error) {
 	return errors.New("visit func for %s is not implemented")
 }`,
-		KindNode: `func (s StubNodeVisitor) Visit%s(_ *%s) (error) {
-	return errors.New("visit func for %s is not implemented")
+		KindNode: `func (s StubNodeVisitor) Visit%s(n *%s) (error) {
+	return VisitChildren(s, n) // %s
 }`,
 	}
 	fmtTypeAccept = map[string]string{

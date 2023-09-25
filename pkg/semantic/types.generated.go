@@ -803,364 +803,364 @@ type StubNodeVisitor struct{}
 
 var _ NodeVisitor = StubNodeVisitor{}
 
-func (s StubNodeVisitor) VisitAliasExpression(_ *AliasExpression) error {
-	return errors.New("visit func for AliasExpression is not implemented")
+func (s StubNodeVisitor) VisitAliasExpression(n *AliasExpression) error {
+	return VisitChildren(s, n) // AliasExpression
 }
 
-func (s StubNodeVisitor) VisitArgument(_ *Argument) error {
-	return errors.New("visit func for Argument is not implemented")
+func (s StubNodeVisitor) VisitArgument(n *Argument) error {
+	return VisitChildren(s, n) // Argument
 }
 
-func (s StubNodeVisitor) VisitAssignmentStatement(_ *AssignmentStatement) error {
-	return errors.New("visit func for AssignmentStatement is not implemented")
+func (s StubNodeVisitor) VisitAssignmentStatement(n *AssignmentStatement) error {
+	return VisitChildren(s, n) // AssignmentStatement
 }
 
-func (s StubNodeVisitor) VisitAutonomousTransactionDeclaration(_ *AutonomousTransactionDeclaration) error {
-	return errors.New("visit func for AutonomousTransactionDeclaration is not implemented")
+func (s StubNodeVisitor) VisitAutonomousTransactionDeclaration(n *AutonomousTransactionDeclaration) error {
+	return VisitChildren(s, n) // AutonomousTransactionDeclaration
 }
 
-func (s StubNodeVisitor) VisitBetweenExpression(_ *BetweenExpression) error {
-	return errors.New("visit func for BetweenExpression is not implemented")
+func (s StubNodeVisitor) VisitBetweenExpression(n *BetweenExpression) error {
+	return VisitChildren(s, n) // BetweenExpression
 }
 
-func (s StubNodeVisitor) VisitBinaryExpression(_ *BinaryExpression) error {
-	return errors.New("visit func for BinaryExpression is not implemented")
+func (s StubNodeVisitor) VisitBinaryExpression(n *BinaryExpression) error {
+	return VisitChildren(s, n) // BinaryExpression
 }
 
-func (s StubNodeVisitor) VisitBindNameExpression(_ *BindNameExpression) error {
-	return errors.New("visit func for BindNameExpression is not implemented")
+func (s StubNodeVisitor) VisitBindNameExpression(n *BindNameExpression) error {
+	return VisitChildren(s, n) // BindNameExpression
 }
 
-func (s StubNodeVisitor) VisitBlockStatement(_ *BlockStatement) error {
-	return errors.New("visit func for BlockStatement is not implemented")
+func (s StubNodeVisitor) VisitBlockStatement(n *BlockStatement) error {
+	return VisitChildren(s, n) // BlockStatement
 }
 
-func (s StubNodeVisitor) VisitBody(_ *Body) error {
-	return errors.New("visit func for Body is not implemented")
+func (s StubNodeVisitor) VisitBody(n *Body) error {
+	return VisitChildren(s, n) // Body
 }
 
-func (s StubNodeVisitor) VisitCaseWhenBlock(_ *CaseWhenBlock) error {
-	return errors.New("visit func for CaseWhenBlock is not implemented")
+func (s StubNodeVisitor) VisitCaseWhenBlock(n *CaseWhenBlock) error {
+	return VisitChildren(s, n) // CaseWhenBlock
 }
 
-func (s StubNodeVisitor) VisitCaseWhenStatement(_ *CaseWhenStatement) error {
-	return errors.New("visit func for CaseWhenStatement is not implemented")
+func (s StubNodeVisitor) VisitCaseWhenStatement(n *CaseWhenStatement) error {
+	return VisitChildren(s, n) // CaseWhenStatement
 }
 
-func (s StubNodeVisitor) VisitCastExpression(_ *CastExpression) error {
-	return errors.New("visit func for CastExpression is not implemented")
+func (s StubNodeVisitor) VisitCastExpression(n *CastExpression) error {
+	return VisitChildren(s, n) // CastExpression
 }
 
-func (s StubNodeVisitor) VisitCloseStatement(_ *CloseStatement) error {
-	return errors.New("visit func for CloseStatement is not implemented")
+func (s StubNodeVisitor) VisitCloseStatement(n *CloseStatement) error {
+	return VisitChildren(s, n) // CloseStatement
 }
 
-func (s StubNodeVisitor) VisitCommitStatement(_ *CommitStatement) error {
-	return errors.New("visit func for CommitStatement is not implemented")
+func (s StubNodeVisitor) VisitCommitStatement(n *CommitStatement) error {
+	return VisitChildren(s, n) // CommitStatement
 }
 
-func (s StubNodeVisitor) VisitCommonTableExpression(_ *CommonTableExpression) error {
-	return errors.New("visit func for CommonTableExpression is not implemented")
+func (s StubNodeVisitor) VisitCommonTableExpression(n *CommonTableExpression) error {
+	return VisitChildren(s, n) // CommonTableExpression
 }
 
-func (s StubNodeVisitor) VisitContinueStatement(_ *ContinueStatement) error {
-	return errors.New("visit func for ContinueStatement is not implemented")
+func (s StubNodeVisitor) VisitContinueStatement(n *ContinueStatement) error {
+	return VisitChildren(s, n) // ContinueStatement
 }
 
-func (s StubNodeVisitor) VisitCreateFunctionStatement(_ *CreateFunctionStatement) error {
-	return errors.New("visit func for CreateFunctionStatement is not implemented")
+func (s StubNodeVisitor) VisitCreateFunctionStatement(n *CreateFunctionStatement) error {
+	return VisitChildren(s, n) // CreateFunctionStatement
 }
 
-func (s StubNodeVisitor) VisitCreateNestTableStatement(_ *CreateNestTableStatement) error {
-	return errors.New("visit func for CreateNestTableStatement is not implemented")
+func (s StubNodeVisitor) VisitCreateNestTableStatement(n *CreateNestTableStatement) error {
+	return VisitChildren(s, n) // CreateNestTableStatement
 }
 
-func (s StubNodeVisitor) VisitCreatePackageBodyStatement(_ *CreatePackageBodyStatement) error {
-	return errors.New("visit func for CreatePackageBodyStatement is not implemented")
+func (s StubNodeVisitor) VisitCreatePackageBodyStatement(n *CreatePackageBodyStatement) error {
+	return VisitChildren(s, n) // CreatePackageBodyStatement
 }
 
-func (s StubNodeVisitor) VisitCreatePackageStatement(_ *CreatePackageStatement) error {
-	return errors.New("visit func for CreatePackageStatement is not implemented")
+func (s StubNodeVisitor) VisitCreatePackageStatement(n *CreatePackageStatement) error {
+	return VisitChildren(s, n) // CreatePackageStatement
 }
 
-func (s StubNodeVisitor) VisitCreateProcedureStatement(_ *CreateProcedureStatement) error {
-	return errors.New("visit func for CreateProcedureStatement is not implemented")
+func (s StubNodeVisitor) VisitCreateProcedureStatement(n *CreateProcedureStatement) error {
+	return VisitChildren(s, n) // CreateProcedureStatement
 }
 
-func (s StubNodeVisitor) VisitCreateSynonymStatement(_ *CreateSynonymStatement) error {
-	return errors.New("visit func for CreateSynonymStatement is not implemented")
+func (s StubNodeVisitor) VisitCreateSynonymStatement(n *CreateSynonymStatement) error {
+	return VisitChildren(s, n) // CreateSynonymStatement
 }
 
-func (s StubNodeVisitor) VisitCreateTypeStatement(_ *CreateTypeStatement) error {
-	return errors.New("visit func for CreateTypeStatement is not implemented")
+func (s StubNodeVisitor) VisitCreateTypeStatement(n *CreateTypeStatement) error {
+	return VisitChildren(s, n) // CreateTypeStatement
 }
 
-func (s StubNodeVisitor) VisitCursorAttribute(_ *CursorAttribute) error {
-	return errors.New("visit func for CursorAttribute is not implemented")
+func (s StubNodeVisitor) VisitCursorAttribute(n *CursorAttribute) error {
+	return VisitChildren(s, n) // CursorAttribute
 }
 
-func (s StubNodeVisitor) VisitCursorDeclaration(_ *CursorDeclaration) error {
-	return errors.New("visit func for CursorDeclaration is not implemented")
+func (s StubNodeVisitor) VisitCursorDeclaration(n *CursorDeclaration) error {
+	return VisitChildren(s, n) // CursorDeclaration
 }
 
-func (s StubNodeVisitor) VisitDeleteStatement(_ *DeleteStatement) error {
-	return errors.New("visit func for DeleteStatement is not implemented")
+func (s StubNodeVisitor) VisitDeleteStatement(n *DeleteStatement) error {
+	return VisitChildren(s, n) // DeleteStatement
 }
 
-func (s StubNodeVisitor) VisitDotExpression(_ *DotExpression) error {
-	return errors.New("visit func for DotExpression is not implemented")
+func (s StubNodeVisitor) VisitDotExpression(n *DotExpression) error {
+	return VisitChildren(s, n) // DotExpression
 }
 
-func (s StubNodeVisitor) VisitDropFunctionStatement(_ *DropFunctionStatement) error {
-	return errors.New("visit func for DropFunctionStatement is not implemented")
+func (s StubNodeVisitor) VisitDropFunctionStatement(n *DropFunctionStatement) error {
+	return VisitChildren(s, n) // DropFunctionStatement
 }
 
-func (s StubNodeVisitor) VisitDropPackageStatement(_ *DropPackageStatement) error {
-	return errors.New("visit func for DropPackageStatement is not implemented")
+func (s StubNodeVisitor) VisitDropPackageStatement(n *DropPackageStatement) error {
+	return VisitChildren(s, n) // DropPackageStatement
 }
 
-func (s StubNodeVisitor) VisitDropProcedureStatement(_ *DropProcedureStatement) error {
-	return errors.New("visit func for DropProcedureStatement is not implemented")
+func (s StubNodeVisitor) VisitDropProcedureStatement(n *DropProcedureStatement) error {
+	return VisitChildren(s, n) // DropProcedureStatement
 }
 
-func (s StubNodeVisitor) VisitDropTriggerStatement(_ *DropTriggerStatement) error {
-	return errors.New("visit func for DropTriggerStatement is not implemented")
+func (s StubNodeVisitor) VisitDropTriggerStatement(n *DropTriggerStatement) error {
+	return VisitChildren(s, n) // DropTriggerStatement
 }
 
-func (s StubNodeVisitor) VisitElseBlock(_ *ElseBlock) error {
-	return errors.New("visit func for ElseBlock is not implemented")
+func (s StubNodeVisitor) VisitElseBlock(n *ElseBlock) error {
+	return VisitChildren(s, n) // ElseBlock
 }
 
-func (s StubNodeVisitor) VisitExceptionDeclaration(_ *ExceptionDeclaration) error {
-	return errors.New("visit func for ExceptionDeclaration is not implemented")
+func (s StubNodeVisitor) VisitExceptionDeclaration(n *ExceptionDeclaration) error {
+	return VisitChildren(s, n) // ExceptionDeclaration
 }
 
-func (s StubNodeVisitor) VisitExecuteImmediateStatement(_ *ExecuteImmediateStatement) error {
-	return errors.New("visit func for ExecuteImmediateStatement is not implemented")
+func (s StubNodeVisitor) VisitExecuteImmediateStatement(n *ExecuteImmediateStatement) error {
+	return VisitChildren(s, n) // ExecuteImmediateStatement
 }
 
-func (s StubNodeVisitor) VisitExistsExpression(_ *ExistsExpression) error {
-	return errors.New("visit func for ExistsExpression is not implemented")
+func (s StubNodeVisitor) VisitExistsExpression(n *ExistsExpression) error {
+	return VisitChildren(s, n) // ExistsExpression
 }
 
-func (s StubNodeVisitor) VisitExitStatement(_ *ExitStatement) error {
-	return errors.New("visit func for ExitStatement is not implemented")
+func (s StubNodeVisitor) VisitExitStatement(n *ExitStatement) error {
+	return VisitChildren(s, n) // ExitStatement
 }
 
-func (s StubNodeVisitor) VisitExprListExpression(_ *ExprListExpression) error {
-	return errors.New("visit func for ExprListExpression is not implemented")
+func (s StubNodeVisitor) VisitExprListExpression(n *ExprListExpression) error {
+	return VisitChildren(s, n) // ExprListExpression
 }
 
-func (s StubNodeVisitor) VisitFetchStatement(_ *FetchStatement) error {
-	return errors.New("visit func for FetchStatement is not implemented")
+func (s StubNodeVisitor) VisitFetchStatement(n *FetchStatement) error {
+	return VisitChildren(s, n) // FetchStatement
 }
 
-func (s StubNodeVisitor) VisitFieldList(_ *FieldList) error {
-	return errors.New("visit func for FieldList is not implemented")
+func (s StubNodeVisitor) VisitFieldList(n *FieldList) error {
+	return VisitChildren(s, n) // FieldList
 }
 
-func (s StubNodeVisitor) VisitForUpdateClause(_ *ForUpdateClause) error {
-	return errors.New("visit func for ForUpdateClause is not implemented")
+func (s StubNodeVisitor) VisitForUpdateClause(n *ForUpdateClause) error {
+	return VisitChildren(s, n) // ForUpdateClause
 }
 
-func (s StubNodeVisitor) VisitForUpdateOptionsExpression(_ *ForUpdateOptionsExpression) error {
-	return errors.New("visit func for ForUpdateOptionsExpression is not implemented")
+func (s StubNodeVisitor) VisitForUpdateOptionsExpression(n *ForUpdateOptionsExpression) error {
+	return VisitChildren(s, n) // ForUpdateOptionsExpression
 }
 
-func (s StubNodeVisitor) VisitFromClause(_ *FromClause) error {
-	return errors.New("visit func for FromClause is not implemented")
+func (s StubNodeVisitor) VisitFromClause(n *FromClause) error {
+	return VisitChildren(s, n) // FromClause
 }
 
-func (s StubNodeVisitor) VisitFunctionCallExpression(_ *FunctionCallExpression) error {
-	return errors.New("visit func for FunctionCallExpression is not implemented")
+func (s StubNodeVisitor) VisitFunctionCallExpression(n *FunctionCallExpression) error {
+	return VisitChildren(s, n) // FunctionCallExpression
 }
 
-func (s StubNodeVisitor) VisitFunctionDeclaration(_ *FunctionDeclaration) error {
-	return errors.New("visit func for FunctionDeclaration is not implemented")
+func (s StubNodeVisitor) VisitFunctionDeclaration(n *FunctionDeclaration) error {
+	return VisitChildren(s, n) // FunctionDeclaration
 }
 
-func (s StubNodeVisitor) VisitGotoStatement(_ *GotoStatement) error {
-	return errors.New("visit func for GotoStatement is not implemented")
+func (s StubNodeVisitor) VisitGotoStatement(n *GotoStatement) error {
+	return VisitChildren(s, n) // GotoStatement
 }
 
-func (s StubNodeVisitor) VisitIfStatement(_ *IfStatement) error {
-	return errors.New("visit func for IfStatement is not implemented")
+func (s StubNodeVisitor) VisitIfStatement(n *IfStatement) error {
+	return VisitChildren(s, n) // IfStatement
 }
 
-func (s StubNodeVisitor) VisitInExpression(_ *InExpression) error {
-	return errors.New("visit func for InExpression is not implemented")
+func (s StubNodeVisitor) VisitInExpression(n *InExpression) error {
+	return VisitChildren(s, n) // InExpression
 }
 
-func (s StubNodeVisitor) VisitInsertIntoClause(_ *InsertIntoClause) error {
-	return errors.New("visit func for InsertIntoClause is not implemented")
+func (s StubNodeVisitor) VisitInsertIntoClause(n *InsertIntoClause) error {
+	return VisitChildren(s, n) // InsertIntoClause
 }
 
-func (s StubNodeVisitor) VisitInsertStatement(_ *InsertStatement) error {
-	return errors.New("visit func for InsertStatement is not implemented")
+func (s StubNodeVisitor) VisitInsertStatement(n *InsertStatement) error {
+	return VisitChildren(s, n) // InsertStatement
 }
 
-func (s StubNodeVisitor) VisitIntoClause(_ *IntoClause) error {
-	return errors.New("visit func for IntoClause is not implemented")
+func (s StubNodeVisitor) VisitIntoClause(n *IntoClause) error {
+	return VisitChildren(s, n) // IntoClause
 }
 
-func (s StubNodeVisitor) VisitLabelDeclaration(_ *LabelDeclaration) error {
-	return errors.New("visit func for LabelDeclaration is not implemented")
+func (s StubNodeVisitor) VisitLabelDeclaration(n *LabelDeclaration) error {
+	return VisitChildren(s, n) // LabelDeclaration
 }
 
-func (s StubNodeVisitor) VisitLikeExpression(_ *LikeExpression) error {
-	return errors.New("visit func for LikeExpression is not implemented")
+func (s StubNodeVisitor) VisitLikeExpression(n *LikeExpression) error {
+	return VisitChildren(s, n) // LikeExpression
 }
 
-func (s StubNodeVisitor) VisitListaggExpression(_ *ListaggExpression) error {
-	return errors.New("visit func for ListaggExpression is not implemented")
+func (s StubNodeVisitor) VisitListaggExpression(n *ListaggExpression) error {
+	return VisitChildren(s, n) // ListaggExpression
 }
 
-func (s StubNodeVisitor) VisitLoopStatement(_ *LoopStatement) error {
-	return errors.New("visit func for LoopStatement is not implemented")
+func (s StubNodeVisitor) VisitLoopStatement(n *LoopStatement) error {
+	return VisitChildren(s, n) // LoopStatement
 }
 
-func (s StubNodeVisitor) VisitMergeInsertStatement(_ *MergeInsertStatement) error {
-	return errors.New("visit func for MergeInsertStatement is not implemented")
+func (s StubNodeVisitor) VisitMergeInsertStatement(n *MergeInsertStatement) error {
+	return VisitChildren(s, n) // MergeInsertStatement
 }
 
-func (s StubNodeVisitor) VisitMergeStatement(_ *MergeStatement) error {
-	return errors.New("visit func for MergeStatement is not implemented")
+func (s StubNodeVisitor) VisitMergeStatement(n *MergeStatement) error {
+	return VisitChildren(s, n) // MergeStatement
 }
 
-func (s StubNodeVisitor) VisitMergeUpdateStatement(_ *MergeUpdateStatement) error {
-	return errors.New("visit func for MergeUpdateStatement is not implemented")
+func (s StubNodeVisitor) VisitMergeUpdateStatement(n *MergeUpdateStatement) error {
+	return VisitChildren(s, n) // MergeUpdateStatement
 }
 
-func (s StubNodeVisitor) VisitNameExpression(_ *NameExpression) error {
-	return errors.New("visit func for NameExpression is not implemented")
+func (s StubNodeVisitor) VisitNameExpression(n *NameExpression) error {
+	return VisitChildren(s, n) // NameExpression
 }
 
-func (s StubNodeVisitor) VisitNamedArgumentExpression(_ *NamedArgumentExpression) error {
-	return errors.New("visit func for NamedArgumentExpression is not implemented")
+func (s StubNodeVisitor) VisitNamedArgumentExpression(n *NamedArgumentExpression) error {
+	return VisitChildren(s, n) // NamedArgumentExpression
 }
 
-func (s StubNodeVisitor) VisitNestTableTypeDeclaration(_ *NestTableTypeDeclaration) error {
-	return errors.New("visit func for NestTableTypeDeclaration is not implemented")
+func (s StubNodeVisitor) VisitNestTableTypeDeclaration(n *NestTableTypeDeclaration) error {
+	return VisitChildren(s, n) // NestTableTypeDeclaration
 }
 
-func (s StubNodeVisitor) VisitNullExpression(_ *NullExpression) error {
-	return errors.New("visit func for NullExpression is not implemented")
+func (s StubNodeVisitor) VisitNullExpression(n *NullExpression) error {
+	return VisitChildren(s, n) // NullExpression
 }
 
-func (s StubNodeVisitor) VisitNullStatement(_ *NullStatement) error {
-	return errors.New("visit func for NullStatement is not implemented")
+func (s StubNodeVisitor) VisitNullStatement(n *NullStatement) error {
+	return VisitChildren(s, n) // NullStatement
 }
 
-func (s StubNodeVisitor) VisitNumericLiteral(_ *NumericLiteral) error {
-	return errors.New("visit func for NumericLiteral is not implemented")
+func (s StubNodeVisitor) VisitNumericLiteral(n *NumericLiteral) error {
+	return VisitChildren(s, n) // NumericLiteral
 }
 
-func (s StubNodeVisitor) VisitOpenForStatement(_ *OpenForStatement) error {
-	return errors.New("visit func for OpenForStatement is not implemented")
+func (s StubNodeVisitor) VisitOpenForStatement(n *OpenForStatement) error {
+	return VisitChildren(s, n) // OpenForStatement
 }
 
-func (s StubNodeVisitor) VisitOpenStatement(_ *OpenStatement) error {
-	return errors.New("visit func for OpenStatement is not implemented")
+func (s StubNodeVisitor) VisitOpenStatement(n *OpenStatement) error {
+	return VisitChildren(s, n) // OpenStatement
 }
 
-func (s StubNodeVisitor) VisitOrderByClause(_ *OrderByClause) error {
-	return errors.New("visit func for OrderByClause is not implemented")
+func (s StubNodeVisitor) VisitOrderByClause(n *OrderByClause) error {
+	return VisitChildren(s, n) // OrderByClause
 }
 
-func (s StubNodeVisitor) VisitOrderByElement(_ *OrderByElement) error {
-	return errors.New("visit func for OrderByElement is not implemented")
+func (s StubNodeVisitor) VisitOrderByElement(n *OrderByElement) error {
+	return VisitChildren(s, n) // OrderByElement
 }
 
-func (s StubNodeVisitor) VisitOuterJoinExpression(_ *OuterJoinExpression) error {
-	return errors.New("visit func for OuterJoinExpression is not implemented")
+func (s StubNodeVisitor) VisitOuterJoinExpression(n *OuterJoinExpression) error {
+	return VisitChildren(s, n) // OuterJoinExpression
 }
 
-func (s StubNodeVisitor) VisitParameter(_ *Parameter) error {
-	return errors.New("visit func for Parameter is not implemented")
+func (s StubNodeVisitor) VisitParameter(n *Parameter) error {
+	return VisitChildren(s, n) // Parameter
 }
 
-func (s StubNodeVisitor) VisitProcedureCall(_ *ProcedureCall) error {
-	return errors.New("visit func for ProcedureCall is not implemented")
+func (s StubNodeVisitor) VisitProcedureCall(n *ProcedureCall) error {
+	return VisitChildren(s, n) // ProcedureCall
 }
 
-func (s StubNodeVisitor) VisitQueryExpression(_ *QueryExpression) error {
-	return errors.New("visit func for QueryExpression is not implemented")
+func (s StubNodeVisitor) VisitQueryExpression(n *QueryExpression) error {
+	return VisitChildren(s, n) // QueryExpression
 }
 
-func (s StubNodeVisitor) VisitRaiseStatement(_ *RaiseStatement) error {
-	return errors.New("visit func for RaiseStatement is not implemented")
+func (s StubNodeVisitor) VisitRaiseStatement(n *RaiseStatement) error {
+	return VisitChildren(s, n) // RaiseStatement
 }
 
-func (s StubNodeVisitor) VisitRelationalExpression(_ *RelationalExpression) error {
-	return errors.New("visit func for RelationalExpression is not implemented")
+func (s StubNodeVisitor) VisitRelationalExpression(n *RelationalExpression) error {
+	return VisitChildren(s, n) // RelationalExpression
 }
 
-func (s StubNodeVisitor) VisitReturnStatement(_ *ReturnStatement) error {
-	return errors.New("visit func for ReturnStatement is not implemented")
+func (s StubNodeVisitor) VisitReturnStatement(n *ReturnStatement) error {
+	return VisitChildren(s, n) // ReturnStatement
 }
 
-func (s StubNodeVisitor) VisitRollbackStatement(_ *RollbackStatement) error {
-	return errors.New("visit func for RollbackStatement is not implemented")
+func (s StubNodeVisitor) VisitRollbackStatement(n *RollbackStatement) error {
+	return VisitChildren(s, n) // RollbackStatement
 }
 
-func (s StubNodeVisitor) VisitScript(_ *Script) error {
-	return errors.New("visit func for Script is not implemented")
+func (s StubNodeVisitor) VisitScript(n *Script) error {
+	return VisitChildren(s, n) // Script
 }
 
-func (s StubNodeVisitor) VisitSelectField(_ *SelectField) error {
-	return errors.New("visit func for SelectField is not implemented")
+func (s StubNodeVisitor) VisitSelectField(n *SelectField) error {
+	return VisitChildren(s, n) // SelectField
 }
 
-func (s StubNodeVisitor) VisitSelectStatement(_ *SelectStatement) error {
-	return errors.New("visit func for SelectStatement is not implemented")
+func (s StubNodeVisitor) VisitSelectStatement(n *SelectStatement) error {
+	return VisitChildren(s, n) // SelectStatement
 }
 
-func (s StubNodeVisitor) VisitSetOperationStatement(_ *SetOperationStatement) error {
-	return errors.New("visit func for SetOperationStatement is not implemented")
+func (s StubNodeVisitor) VisitSetOperationStatement(n *SetOperationStatement) error {
+	return VisitChildren(s, n) // SetOperationStatement
 }
 
-func (s StubNodeVisitor) VisitSignExpression(_ *SignExpression) error {
-	return errors.New("visit func for SignExpression is not implemented")
+func (s StubNodeVisitor) VisitSignExpression(n *SignExpression) error {
+	return VisitChildren(s, n) // SignExpression
 }
 
-func (s StubNodeVisitor) VisitStatementExpression(_ *StatementExpression) error {
-	return errors.New("visit func for StatementExpression is not implemented")
+func (s StubNodeVisitor) VisitStatementExpression(n *StatementExpression) error {
+	return VisitChildren(s, n) // StatementExpression
 }
 
-func (s StubNodeVisitor) VisitStringLiteral(_ *StringLiteral) error {
-	return errors.New("visit func for StringLiteral is not implemented")
+func (s StubNodeVisitor) VisitStringLiteral(n *StringLiteral) error {
+	return VisitChildren(s, n) // StringLiteral
 }
 
-func (s StubNodeVisitor) VisitTableRef(_ *TableRef) error {
-	return errors.New("visit func for TableRef is not implemented")
+func (s StubNodeVisitor) VisitTableRef(n *TableRef) error {
+	return VisitChildren(s, n) // TableRef
 }
 
-func (s StubNodeVisitor) VisitUnaryLogicalExpression(_ *UnaryLogicalExpression) error {
-	return errors.New("visit func for UnaryLogicalExpression is not implemented")
+func (s StubNodeVisitor) VisitUnaryLogicalExpression(n *UnaryLogicalExpression) error {
+	return VisitChildren(s, n) // UnaryLogicalExpression
 }
 
-func (s StubNodeVisitor) VisitUpdateStatement(_ *UpdateStatement) error {
-	return errors.New("visit func for UpdateStatement is not implemented")
+func (s StubNodeVisitor) VisitUpdateStatement(n *UpdateStatement) error {
+	return VisitChildren(s, n) // UpdateStatement
 }
 
-func (s StubNodeVisitor) VisitUsingClause(_ *UsingClause) error {
-	return errors.New("visit func for UsingClause is not implemented")
+func (s StubNodeVisitor) VisitUsingClause(n *UsingClause) error {
+	return VisitChildren(s, n) // UsingClause
 }
 
-func (s StubNodeVisitor) VisitUsingElement(_ *UsingElement) error {
-	return errors.New("visit func for UsingElement is not implemented")
+func (s StubNodeVisitor) VisitUsingElement(n *UsingElement) error {
+	return VisitChildren(s, n) // UsingElement
 }
 
-func (s StubNodeVisitor) VisitVariableDeclaration(_ *VariableDeclaration) error {
-	return errors.New("visit func for VariableDeclaration is not implemented")
+func (s StubNodeVisitor) VisitVariableDeclaration(n *VariableDeclaration) error {
+	return VisitChildren(s, n) // VariableDeclaration
 }
 
-func (s StubNodeVisitor) VisitWildCardField(_ *WildCardField) error {
-	return errors.New("visit func for WildCardField is not implemented")
+func (s StubNodeVisitor) VisitWildCardField(n *WildCardField) error {
+	return VisitChildren(s, n) // WildCardField
 }
 
-func (s StubNodeVisitor) VisitWithClause(_ *WithClause) error {
-	return errors.New("visit func for WithClause is not implemented")
+func (s StubNodeVisitor) VisitWithClause(n *WithClause) error {
+	return VisitChildren(s, n) // WithClause
 }
 
 func (b *AliasExpression) Accept(visitor NodeVisitor) (err error) {
