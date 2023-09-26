@@ -24,9 +24,21 @@ func LoadScript(src string) (*semantic.Script, error) {
 }
 
 func NewValidVisitor() *ValidVisitor {
-	return &ValidVisitor{
+	v := &ValidVisitor{
 		v: NewSqlValidator(),
 	}
+	v.StubNodeVisitor.NodeVisitor = v
+	return v
+}
+
+func (v *ValidVisitor) VisitChildren(node semantic.AstNode) (err error) {
+	for _, child := range semantic.GetChildren(node) {
+		e := child.Accept(v)
+		if e != nil {
+			err = errors.Join(err, e)
+		}
+	}
+	return
 }
 
 func (v *ValidVisitor) VisitScript(node *semantic.Script) error {
@@ -49,5 +61,6 @@ func (v *ValidVisitor) VisitCreateNestTableStatement(node *semantic.CreateNestTa
 }
 
 func (v *ValidVisitor) VisitSelectStatement(node *semantic.SelectStatement) error {
-	return v.v.Validate(node)
+	err := v.VisitChildren(node)
+	return errors.Join(err, v.v.Validate(node))
 }

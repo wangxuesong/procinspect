@@ -9,7 +9,7 @@ type (
 
 	Node interface {
 		AstNode
-		Type() NodeType
+		// Type() NodeType
 		Line() int
 		Column() int
 		Span() Span

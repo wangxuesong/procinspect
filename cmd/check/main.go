@@ -122,7 +122,7 @@ func check(script *semantic.Script) error {
 	var errs checker.SqlValidationErrors
 	errors.As(err, &errs)
 	for _, err := range errs {
-		log.Error("unsupported", log.String("err", err.Error()))
+		log.Warn("unsupported", log.String("err", err.Error()), log.Int("line", err.Line))
 	}
 	if errs == nil {
 		_, ok := err.(interface{ Unwrap() []error })

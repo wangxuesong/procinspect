@@ -33,6 +33,10 @@ func GetChildren(node AstNode) []AstNode {
 	for i := 0; i < rv.NumField(); i++ {
 		field := rv.Field(i)
 
+		if field.IsZero() {
+			continue
+		}
+
 		if field.Kind() == reflect.Slice { // 如果字段是一个 slice
 			// 遍历 slice 的每个元素
 			for j := 0; j < field.Len(); j++ {
@@ -42,8 +46,12 @@ func GetChildren(node AstNode) []AstNode {
 				}
 			}
 		} else if field.Kind() == reflect.Ptr { // 如果字段是一个指针
+			if field.IsNil() {
+				continue
+			}
 			field = field.Elem() // 获取指针指向的实际对象
-		} else if field.Kind() == reflect.Struct { // 如果字段是一个 struct
+		}
+		if field.Kind() == reflect.Struct || field.Kind() == reflect.Interface { // 如果字段是一个 struct
 			if field.IsValid() { // 字段是否有效
 				// 如果字段是一个 AstNode，我们添加它到 children 中
 				if field.Type().Implements(reflect.TypeOf((*AstNode)(nil)).Elem()) {
