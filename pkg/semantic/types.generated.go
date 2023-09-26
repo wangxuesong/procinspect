@@ -41,9 +41,9 @@ type ExprVisitor interface {
 	VisitUsingElement(v *UsingElement) (result interface{}, err error)
 }
 
-type StubExprVisitor struct{}
+type StubExprVisitor struct{ ExprVisitor }
 
-var _ ExprVisitor = StubExprVisitor{}
+var _ ExprVisitor = &StubExprVisitor{}
 
 func (s StubExprVisitor) VisitAliasExpression(_ *AliasExpression) (interface{}, error) {
 	return nil, errors.New("visit func for AliasExpression is not implemented")
@@ -334,9 +334,9 @@ type StmtVisitor interface {
 	VisitVariableDeclaration(v *VariableDeclaration) (err error)
 }
 
-type StubStmtVisitor struct{}
+type StubStmtVisitor struct{ StmtVisitor }
 
-var _ StmtVisitor = StubStmtVisitor{}
+var _ StmtVisitor = &StubStmtVisitor{}
 
 func (s StubStmtVisitor) VisitAssignmentStatement(_ *AssignmentStatement) error {
 	return errors.New("visit func for AssignmentStatement is not implemented")
@@ -707,6 +707,7 @@ func (b *VariableDeclaration) StmtAccept(visitor StmtVisitor) (err error) {
 }
 
 type NodeVisitor interface {
+	VisitChildren(n AstNode) (err error)
 	VisitAliasExpression(v *AliasExpression) (err error)
 	VisitArgument(v *Argument) (err error)
 	VisitAssignmentStatement(v *AssignmentStatement) (err error)
@@ -799,728 +800,728 @@ type NodeVisitor interface {
 	VisitWithClause(v *WithClause) (err error)
 }
 
-type StubNodeVisitor struct{}
+type StubNodeVisitor struct{ NodeVisitor }
 
-var _ NodeVisitor = StubNodeVisitor{}
+var _ NodeVisitor = &StubNodeVisitor{}
 
-func (s StubNodeVisitor) VisitAliasExpression(n *AliasExpression) error {
-	return VisitChildren(s, n) // AliasExpression
+func (s *StubNodeVisitor) VisitAliasExpression(n *AliasExpression) error {
+	return s.VisitChildren(n) // AliasExpression
 }
 
-func (s StubNodeVisitor) VisitArgument(n *Argument) error {
-	return VisitChildren(s, n) // Argument
+func (s *StubNodeVisitor) VisitArgument(n *Argument) error {
+	return s.VisitChildren(n) // Argument
 }
 
-func (s StubNodeVisitor) VisitAssignmentStatement(n *AssignmentStatement) error {
-	return VisitChildren(s, n) // AssignmentStatement
+func (s *StubNodeVisitor) VisitAssignmentStatement(n *AssignmentStatement) error {
+	return s.VisitChildren(n) // AssignmentStatement
 }
 
-func (s StubNodeVisitor) VisitAutonomousTransactionDeclaration(n *AutonomousTransactionDeclaration) error {
-	return VisitChildren(s, n) // AutonomousTransactionDeclaration
+func (s *StubNodeVisitor) VisitAutonomousTransactionDeclaration(n *AutonomousTransactionDeclaration) error {
+	return s.VisitChildren(n) // AutonomousTransactionDeclaration
 }
 
-func (s StubNodeVisitor) VisitBetweenExpression(n *BetweenExpression) error {
-	return VisitChildren(s, n) // BetweenExpression
+func (s *StubNodeVisitor) VisitBetweenExpression(n *BetweenExpression) error {
+	return s.VisitChildren(n) // BetweenExpression
 }
 
-func (s StubNodeVisitor) VisitBinaryExpression(n *BinaryExpression) error {
-	return VisitChildren(s, n) // BinaryExpression
+func (s *StubNodeVisitor) VisitBinaryExpression(n *BinaryExpression) error {
+	return s.VisitChildren(n) // BinaryExpression
 }
 
-func (s StubNodeVisitor) VisitBindNameExpression(n *BindNameExpression) error {
-	return VisitChildren(s, n) // BindNameExpression
+func (s *StubNodeVisitor) VisitBindNameExpression(n *BindNameExpression) error {
+	return s.VisitChildren(n) // BindNameExpression
 }
 
-func (s StubNodeVisitor) VisitBlockStatement(n *BlockStatement) error {
-	return VisitChildren(s, n) // BlockStatement
+func (s *StubNodeVisitor) VisitBlockStatement(n *BlockStatement) error {
+	return s.VisitChildren(n) // BlockStatement
 }
 
-func (s StubNodeVisitor) VisitBody(n *Body) error {
-	return VisitChildren(s, n) // Body
+func (s *StubNodeVisitor) VisitBody(n *Body) error {
+	return s.VisitChildren(n) // Body
 }
 
-func (s StubNodeVisitor) VisitCaseWhenBlock(n *CaseWhenBlock) error {
-	return VisitChildren(s, n) // CaseWhenBlock
+func (s *StubNodeVisitor) VisitCaseWhenBlock(n *CaseWhenBlock) error {
+	return s.VisitChildren(n) // CaseWhenBlock
 }
 
-func (s StubNodeVisitor) VisitCaseWhenStatement(n *CaseWhenStatement) error {
-	return VisitChildren(s, n) // CaseWhenStatement
+func (s *StubNodeVisitor) VisitCaseWhenStatement(n *CaseWhenStatement) error {
+	return s.VisitChildren(n) // CaseWhenStatement
 }
 
-func (s StubNodeVisitor) VisitCastExpression(n *CastExpression) error {
-	return VisitChildren(s, n) // CastExpression
+func (s *StubNodeVisitor) VisitCastExpression(n *CastExpression) error {
+	return s.VisitChildren(n) // CastExpression
 }
 
-func (s StubNodeVisitor) VisitCloseStatement(n *CloseStatement) error {
-	return VisitChildren(s, n) // CloseStatement
+func (s *StubNodeVisitor) VisitCloseStatement(n *CloseStatement) error {
+	return s.VisitChildren(n) // CloseStatement
 }
 
-func (s StubNodeVisitor) VisitCommitStatement(n *CommitStatement) error {
-	return VisitChildren(s, n) // CommitStatement
+func (s *StubNodeVisitor) VisitCommitStatement(n *CommitStatement) error {
+	return s.VisitChildren(n) // CommitStatement
 }
 
-func (s StubNodeVisitor) VisitCommonTableExpression(n *CommonTableExpression) error {
-	return VisitChildren(s, n) // CommonTableExpression
+func (s *StubNodeVisitor) VisitCommonTableExpression(n *CommonTableExpression) error {
+	return s.VisitChildren(n) // CommonTableExpression
 }
 
-func (s StubNodeVisitor) VisitContinueStatement(n *ContinueStatement) error {
-	return VisitChildren(s, n) // ContinueStatement
+func (s *StubNodeVisitor) VisitContinueStatement(n *ContinueStatement) error {
+	return s.VisitChildren(n) // ContinueStatement
 }
 
-func (s StubNodeVisitor) VisitCreateFunctionStatement(n *CreateFunctionStatement) error {
-	return VisitChildren(s, n) // CreateFunctionStatement
+func (s *StubNodeVisitor) VisitCreateFunctionStatement(n *CreateFunctionStatement) error {
+	return s.VisitChildren(n) // CreateFunctionStatement
 }
 
-func (s StubNodeVisitor) VisitCreateNestTableStatement(n *CreateNestTableStatement) error {
-	return VisitChildren(s, n) // CreateNestTableStatement
+func (s *StubNodeVisitor) VisitCreateNestTableStatement(n *CreateNestTableStatement) error {
+	return s.VisitChildren(n) // CreateNestTableStatement
 }
 
-func (s StubNodeVisitor) VisitCreatePackageBodyStatement(n *CreatePackageBodyStatement) error {
-	return VisitChildren(s, n) // CreatePackageBodyStatement
+func (s *StubNodeVisitor) VisitCreatePackageBodyStatement(n *CreatePackageBodyStatement) error {
+	return s.VisitChildren(n) // CreatePackageBodyStatement
 }
 
-func (s StubNodeVisitor) VisitCreatePackageStatement(n *CreatePackageStatement) error {
-	return VisitChildren(s, n) // CreatePackageStatement
+func (s *StubNodeVisitor) VisitCreatePackageStatement(n *CreatePackageStatement) error {
+	return s.VisitChildren(n) // CreatePackageStatement
 }
 
-func (s StubNodeVisitor) VisitCreateProcedureStatement(n *CreateProcedureStatement) error {
-	return VisitChildren(s, n) // CreateProcedureStatement
+func (s *StubNodeVisitor) VisitCreateProcedureStatement(n *CreateProcedureStatement) error {
+	return s.VisitChildren(n) // CreateProcedureStatement
 }
 
-func (s StubNodeVisitor) VisitCreateSynonymStatement(n *CreateSynonymStatement) error {
-	return VisitChildren(s, n) // CreateSynonymStatement
+func (s *StubNodeVisitor) VisitCreateSynonymStatement(n *CreateSynonymStatement) error {
+	return s.VisitChildren(n) // CreateSynonymStatement
 }
 
-func (s StubNodeVisitor) VisitCreateTypeStatement(n *CreateTypeStatement) error {
-	return VisitChildren(s, n) // CreateTypeStatement
+func (s *StubNodeVisitor) VisitCreateTypeStatement(n *CreateTypeStatement) error {
+	return s.VisitChildren(n) // CreateTypeStatement
 }
 
-func (s StubNodeVisitor) VisitCursorAttribute(n *CursorAttribute) error {
-	return VisitChildren(s, n) // CursorAttribute
+func (s *StubNodeVisitor) VisitCursorAttribute(n *CursorAttribute) error {
+	return s.VisitChildren(n) // CursorAttribute
 }
 
-func (s StubNodeVisitor) VisitCursorDeclaration(n *CursorDeclaration) error {
-	return VisitChildren(s, n) // CursorDeclaration
+func (s *StubNodeVisitor) VisitCursorDeclaration(n *CursorDeclaration) error {
+	return s.VisitChildren(n) // CursorDeclaration
 }
 
-func (s StubNodeVisitor) VisitDeleteStatement(n *DeleteStatement) error {
-	return VisitChildren(s, n) // DeleteStatement
+func (s *StubNodeVisitor) VisitDeleteStatement(n *DeleteStatement) error {
+	return s.VisitChildren(n) // DeleteStatement
 }
 
-func (s StubNodeVisitor) VisitDotExpression(n *DotExpression) error {
-	return VisitChildren(s, n) // DotExpression
+func (s *StubNodeVisitor) VisitDotExpression(n *DotExpression) error {
+	return s.VisitChildren(n) // DotExpression
 }
 
-func (s StubNodeVisitor) VisitDropFunctionStatement(n *DropFunctionStatement) error {
-	return VisitChildren(s, n) // DropFunctionStatement
+func (s *StubNodeVisitor) VisitDropFunctionStatement(n *DropFunctionStatement) error {
+	return s.VisitChildren(n) // DropFunctionStatement
 }
 
-func (s StubNodeVisitor) VisitDropPackageStatement(n *DropPackageStatement) error {
-	return VisitChildren(s, n) // DropPackageStatement
+func (s *StubNodeVisitor) VisitDropPackageStatement(n *DropPackageStatement) error {
+	return s.VisitChildren(n) // DropPackageStatement
 }
 
-func (s StubNodeVisitor) VisitDropProcedureStatement(n *DropProcedureStatement) error {
-	return VisitChildren(s, n) // DropProcedureStatement
+func (s *StubNodeVisitor) VisitDropProcedureStatement(n *DropProcedureStatement) error {
+	return s.VisitChildren(n) // DropProcedureStatement
 }
 
-func (s StubNodeVisitor) VisitDropTriggerStatement(n *DropTriggerStatement) error {
-	return VisitChildren(s, n) // DropTriggerStatement
+func (s *StubNodeVisitor) VisitDropTriggerStatement(n *DropTriggerStatement) error {
+	return s.VisitChildren(n) // DropTriggerStatement
 }
 
-func (s StubNodeVisitor) VisitElseBlock(n *ElseBlock) error {
-	return VisitChildren(s, n) // ElseBlock
+func (s *StubNodeVisitor) VisitElseBlock(n *ElseBlock) error {
+	return s.VisitChildren(n) // ElseBlock
 }
 
-func (s StubNodeVisitor) VisitExceptionDeclaration(n *ExceptionDeclaration) error {
-	return VisitChildren(s, n) // ExceptionDeclaration
+func (s *StubNodeVisitor) VisitExceptionDeclaration(n *ExceptionDeclaration) error {
+	return s.VisitChildren(n) // ExceptionDeclaration
 }
 
-func (s StubNodeVisitor) VisitExecuteImmediateStatement(n *ExecuteImmediateStatement) error {
-	return VisitChildren(s, n) // ExecuteImmediateStatement
+func (s *StubNodeVisitor) VisitExecuteImmediateStatement(n *ExecuteImmediateStatement) error {
+	return s.VisitChildren(n) // ExecuteImmediateStatement
 }
 
-func (s StubNodeVisitor) VisitExistsExpression(n *ExistsExpression) error {
-	return VisitChildren(s, n) // ExistsExpression
+func (s *StubNodeVisitor) VisitExistsExpression(n *ExistsExpression) error {
+	return s.VisitChildren(n) // ExistsExpression
 }
 
-func (s StubNodeVisitor) VisitExitStatement(n *ExitStatement) error {
-	return VisitChildren(s, n) // ExitStatement
+func (s *StubNodeVisitor) VisitExitStatement(n *ExitStatement) error {
+	return s.VisitChildren(n) // ExitStatement
 }
 
-func (s StubNodeVisitor) VisitExprListExpression(n *ExprListExpression) error {
-	return VisitChildren(s, n) // ExprListExpression
+func (s *StubNodeVisitor) VisitExprListExpression(n *ExprListExpression) error {
+	return s.VisitChildren(n) // ExprListExpression
 }
 
-func (s StubNodeVisitor) VisitFetchStatement(n *FetchStatement) error {
-	return VisitChildren(s, n) // FetchStatement
+func (s *StubNodeVisitor) VisitFetchStatement(n *FetchStatement) error {
+	return s.VisitChildren(n) // FetchStatement
 }
 
-func (s StubNodeVisitor) VisitFieldList(n *FieldList) error {
-	return VisitChildren(s, n) // FieldList
+func (s *StubNodeVisitor) VisitFieldList(n *FieldList) error {
+	return s.VisitChildren(n) // FieldList
 }
 
-func (s StubNodeVisitor) VisitForUpdateClause(n *ForUpdateClause) error {
-	return VisitChildren(s, n) // ForUpdateClause
+func (s *StubNodeVisitor) VisitForUpdateClause(n *ForUpdateClause) error {
+	return s.VisitChildren(n) // ForUpdateClause
 }
 
-func (s StubNodeVisitor) VisitForUpdateOptionsExpression(n *ForUpdateOptionsExpression) error {
-	return VisitChildren(s, n) // ForUpdateOptionsExpression
+func (s *StubNodeVisitor) VisitForUpdateOptionsExpression(n *ForUpdateOptionsExpression) error {
+	return s.VisitChildren(n) // ForUpdateOptionsExpression
 }
 
-func (s StubNodeVisitor) VisitFromClause(n *FromClause) error {
-	return VisitChildren(s, n) // FromClause
+func (s *StubNodeVisitor) VisitFromClause(n *FromClause) error {
+	return s.VisitChildren(n) // FromClause
 }
 
-func (s StubNodeVisitor) VisitFunctionCallExpression(n *FunctionCallExpression) error {
-	return VisitChildren(s, n) // FunctionCallExpression
+func (s *StubNodeVisitor) VisitFunctionCallExpression(n *FunctionCallExpression) error {
+	return s.VisitChildren(n) // FunctionCallExpression
 }
 
-func (s StubNodeVisitor) VisitFunctionDeclaration(n *FunctionDeclaration) error {
-	return VisitChildren(s, n) // FunctionDeclaration
+func (s *StubNodeVisitor) VisitFunctionDeclaration(n *FunctionDeclaration) error {
+	return s.VisitChildren(n) // FunctionDeclaration
 }
 
-func (s StubNodeVisitor) VisitGotoStatement(n *GotoStatement) error {
-	return VisitChildren(s, n) // GotoStatement
+func (s *StubNodeVisitor) VisitGotoStatement(n *GotoStatement) error {
+	return s.VisitChildren(n) // GotoStatement
 }
 
-func (s StubNodeVisitor) VisitIfStatement(n *IfStatement) error {
-	return VisitChildren(s, n) // IfStatement
+func (s *StubNodeVisitor) VisitIfStatement(n *IfStatement) error {
+	return s.VisitChildren(n) // IfStatement
 }
 
-func (s StubNodeVisitor) VisitInExpression(n *InExpression) error {
-	return VisitChildren(s, n) // InExpression
+func (s *StubNodeVisitor) VisitInExpression(n *InExpression) error {
+	return s.VisitChildren(n) // InExpression
 }
 
-func (s StubNodeVisitor) VisitInsertIntoClause(n *InsertIntoClause) error {
-	return VisitChildren(s, n) // InsertIntoClause
+func (s *StubNodeVisitor) VisitInsertIntoClause(n *InsertIntoClause) error {
+	return s.VisitChildren(n) // InsertIntoClause
 }
 
-func (s StubNodeVisitor) VisitInsertStatement(n *InsertStatement) error {
-	return VisitChildren(s, n) // InsertStatement
+func (s *StubNodeVisitor) VisitInsertStatement(n *InsertStatement) error {
+	return s.VisitChildren(n) // InsertStatement
 }
 
-func (s StubNodeVisitor) VisitIntoClause(n *IntoClause) error {
-	return VisitChildren(s, n) // IntoClause
+func (s *StubNodeVisitor) VisitIntoClause(n *IntoClause) error {
+	return s.VisitChildren(n) // IntoClause
 }
 
-func (s StubNodeVisitor) VisitLabelDeclaration(n *LabelDeclaration) error {
-	return VisitChildren(s, n) // LabelDeclaration
+func (s *StubNodeVisitor) VisitLabelDeclaration(n *LabelDeclaration) error {
+	return s.VisitChildren(n) // LabelDeclaration
 }
 
-func (s StubNodeVisitor) VisitLikeExpression(n *LikeExpression) error {
-	return VisitChildren(s, n) // LikeExpression
+func (s *StubNodeVisitor) VisitLikeExpression(n *LikeExpression) error {
+	return s.VisitChildren(n) // LikeExpression
 }
 
-func (s StubNodeVisitor) VisitListaggExpression(n *ListaggExpression) error {
-	return VisitChildren(s, n) // ListaggExpression
+func (s *StubNodeVisitor) VisitListaggExpression(n *ListaggExpression) error {
+	return s.VisitChildren(n) // ListaggExpression
 }
 
-func (s StubNodeVisitor) VisitLoopStatement(n *LoopStatement) error {
-	return VisitChildren(s, n) // LoopStatement
+func (s *StubNodeVisitor) VisitLoopStatement(n *LoopStatement) error {
+	return s.VisitChildren(n) // LoopStatement
 }
 
-func (s StubNodeVisitor) VisitMergeInsertStatement(n *MergeInsertStatement) error {
-	return VisitChildren(s, n) // MergeInsertStatement
+func (s *StubNodeVisitor) VisitMergeInsertStatement(n *MergeInsertStatement) error {
+	return s.VisitChildren(n) // MergeInsertStatement
 }
 
-func (s StubNodeVisitor) VisitMergeStatement(n *MergeStatement) error {
-	return VisitChildren(s, n) // MergeStatement
+func (s *StubNodeVisitor) VisitMergeStatement(n *MergeStatement) error {
+	return s.VisitChildren(n) // MergeStatement
 }
 
-func (s StubNodeVisitor) VisitMergeUpdateStatement(n *MergeUpdateStatement) error {
-	return VisitChildren(s, n) // MergeUpdateStatement
+func (s *StubNodeVisitor) VisitMergeUpdateStatement(n *MergeUpdateStatement) error {
+	return s.VisitChildren(n) // MergeUpdateStatement
 }
 
-func (s StubNodeVisitor) VisitNameExpression(n *NameExpression) error {
-	return VisitChildren(s, n) // NameExpression
+func (s *StubNodeVisitor) VisitNameExpression(n *NameExpression) error {
+	return s.VisitChildren(n) // NameExpression
 }
 
-func (s StubNodeVisitor) VisitNamedArgumentExpression(n *NamedArgumentExpression) error {
-	return VisitChildren(s, n) // NamedArgumentExpression
+func (s *StubNodeVisitor) VisitNamedArgumentExpression(n *NamedArgumentExpression) error {
+	return s.VisitChildren(n) // NamedArgumentExpression
 }
 
-func (s StubNodeVisitor) VisitNestTableTypeDeclaration(n *NestTableTypeDeclaration) error {
-	return VisitChildren(s, n) // NestTableTypeDeclaration
+func (s *StubNodeVisitor) VisitNestTableTypeDeclaration(n *NestTableTypeDeclaration) error {
+	return s.VisitChildren(n) // NestTableTypeDeclaration
 }
 
-func (s StubNodeVisitor) VisitNullExpression(n *NullExpression) error {
-	return VisitChildren(s, n) // NullExpression
+func (s *StubNodeVisitor) VisitNullExpression(n *NullExpression) error {
+	return s.VisitChildren(n) // NullExpression
 }
 
-func (s StubNodeVisitor) VisitNullStatement(n *NullStatement) error {
-	return VisitChildren(s, n) // NullStatement
+func (s *StubNodeVisitor) VisitNullStatement(n *NullStatement) error {
+	return s.VisitChildren(n) // NullStatement
 }
 
-func (s StubNodeVisitor) VisitNumericLiteral(n *NumericLiteral) error {
-	return VisitChildren(s, n) // NumericLiteral
+func (s *StubNodeVisitor) VisitNumericLiteral(n *NumericLiteral) error {
+	return s.VisitChildren(n) // NumericLiteral
 }
 
-func (s StubNodeVisitor) VisitOpenForStatement(n *OpenForStatement) error {
-	return VisitChildren(s, n) // OpenForStatement
+func (s *StubNodeVisitor) VisitOpenForStatement(n *OpenForStatement) error {
+	return s.VisitChildren(n) // OpenForStatement
 }
 
-func (s StubNodeVisitor) VisitOpenStatement(n *OpenStatement) error {
-	return VisitChildren(s, n) // OpenStatement
+func (s *StubNodeVisitor) VisitOpenStatement(n *OpenStatement) error {
+	return s.VisitChildren(n) // OpenStatement
 }
 
-func (s StubNodeVisitor) VisitOrderByClause(n *OrderByClause) error {
-	return VisitChildren(s, n) // OrderByClause
+func (s *StubNodeVisitor) VisitOrderByClause(n *OrderByClause) error {
+	return s.VisitChildren(n) // OrderByClause
 }
 
-func (s StubNodeVisitor) VisitOrderByElement(n *OrderByElement) error {
-	return VisitChildren(s, n) // OrderByElement
+func (s *StubNodeVisitor) VisitOrderByElement(n *OrderByElement) error {
+	return s.VisitChildren(n) // OrderByElement
 }
 
-func (s StubNodeVisitor) VisitOuterJoinExpression(n *OuterJoinExpression) error {
-	return VisitChildren(s, n) // OuterJoinExpression
+func (s *StubNodeVisitor) VisitOuterJoinExpression(n *OuterJoinExpression) error {
+	return s.VisitChildren(n) // OuterJoinExpression
 }
 
-func (s StubNodeVisitor) VisitParameter(n *Parameter) error {
-	return VisitChildren(s, n) // Parameter
+func (s *StubNodeVisitor) VisitParameter(n *Parameter) error {
+	return s.VisitChildren(n) // Parameter
 }
 
-func (s StubNodeVisitor) VisitProcedureCall(n *ProcedureCall) error {
-	return VisitChildren(s, n) // ProcedureCall
+func (s *StubNodeVisitor) VisitProcedureCall(n *ProcedureCall) error {
+	return s.VisitChildren(n) // ProcedureCall
 }
 
-func (s StubNodeVisitor) VisitQueryExpression(n *QueryExpression) error {
-	return VisitChildren(s, n) // QueryExpression
+func (s *StubNodeVisitor) VisitQueryExpression(n *QueryExpression) error {
+	return s.VisitChildren(n) // QueryExpression
 }
 
-func (s StubNodeVisitor) VisitRaiseStatement(n *RaiseStatement) error {
-	return VisitChildren(s, n) // RaiseStatement
+func (s *StubNodeVisitor) VisitRaiseStatement(n *RaiseStatement) error {
+	return s.VisitChildren(n) // RaiseStatement
 }
 
-func (s StubNodeVisitor) VisitRelationalExpression(n *RelationalExpression) error {
-	return VisitChildren(s, n) // RelationalExpression
+func (s *StubNodeVisitor) VisitRelationalExpression(n *RelationalExpression) error {
+	return s.VisitChildren(n) // RelationalExpression
 }
 
-func (s StubNodeVisitor) VisitReturnStatement(n *ReturnStatement) error {
-	return VisitChildren(s, n) // ReturnStatement
+func (s *StubNodeVisitor) VisitReturnStatement(n *ReturnStatement) error {
+	return s.VisitChildren(n) // ReturnStatement
 }
 
-func (s StubNodeVisitor) VisitRollbackStatement(n *RollbackStatement) error {
-	return VisitChildren(s, n) // RollbackStatement
+func (s *StubNodeVisitor) VisitRollbackStatement(n *RollbackStatement) error {
+	return s.VisitChildren(n) // RollbackStatement
 }
 
-func (s StubNodeVisitor) VisitScript(n *Script) error {
-	return VisitChildren(s, n) // Script
+func (s *StubNodeVisitor) VisitScript(n *Script) error {
+	return s.VisitChildren(n) // Script
 }
 
-func (s StubNodeVisitor) VisitSelectField(n *SelectField) error {
-	return VisitChildren(s, n) // SelectField
+func (s *StubNodeVisitor) VisitSelectField(n *SelectField) error {
+	return s.VisitChildren(n) // SelectField
 }
 
-func (s StubNodeVisitor) VisitSelectStatement(n *SelectStatement) error {
-	return VisitChildren(s, n) // SelectStatement
+func (s *StubNodeVisitor) VisitSelectStatement(n *SelectStatement) error {
+	return s.VisitChildren(n) // SelectStatement
 }
 
-func (s StubNodeVisitor) VisitSetOperationStatement(n *SetOperationStatement) error {
-	return VisitChildren(s, n) // SetOperationStatement
+func (s *StubNodeVisitor) VisitSetOperationStatement(n *SetOperationStatement) error {
+	return s.VisitChildren(n) // SetOperationStatement
 }
 
-func (s StubNodeVisitor) VisitSignExpression(n *SignExpression) error {
-	return VisitChildren(s, n) // SignExpression
+func (s *StubNodeVisitor) VisitSignExpression(n *SignExpression) error {
+	return s.VisitChildren(n) // SignExpression
 }
 
-func (s StubNodeVisitor) VisitStatementExpression(n *StatementExpression) error {
-	return VisitChildren(s, n) // StatementExpression
+func (s *StubNodeVisitor) VisitStatementExpression(n *StatementExpression) error {
+	return s.VisitChildren(n) // StatementExpression
 }
 
-func (s StubNodeVisitor) VisitStringLiteral(n *StringLiteral) error {
-	return VisitChildren(s, n) // StringLiteral
+func (s *StubNodeVisitor) VisitStringLiteral(n *StringLiteral) error {
+	return s.VisitChildren(n) // StringLiteral
 }
 
-func (s StubNodeVisitor) VisitTableRef(n *TableRef) error {
-	return VisitChildren(s, n) // TableRef
+func (s *StubNodeVisitor) VisitTableRef(n *TableRef) error {
+	return s.VisitChildren(n) // TableRef
 }
 
-func (s StubNodeVisitor) VisitUnaryLogicalExpression(n *UnaryLogicalExpression) error {
-	return VisitChildren(s, n) // UnaryLogicalExpression
+func (s *StubNodeVisitor) VisitUnaryLogicalExpression(n *UnaryLogicalExpression) error {
+	return s.VisitChildren(n) // UnaryLogicalExpression
 }
 
-func (s StubNodeVisitor) VisitUpdateStatement(n *UpdateStatement) error {
-	return VisitChildren(s, n) // UpdateStatement
+func (s *StubNodeVisitor) VisitUpdateStatement(n *UpdateStatement) error {
+	return s.VisitChildren(n) // UpdateStatement
 }
 
-func (s StubNodeVisitor) VisitUsingClause(n *UsingClause) error {
-	return VisitChildren(s, n) // UsingClause
+func (s *StubNodeVisitor) VisitUsingClause(n *UsingClause) error {
+	return s.VisitChildren(n) // UsingClause
 }
 
-func (s StubNodeVisitor) VisitUsingElement(n *UsingElement) error {
-	return VisitChildren(s, n) // UsingElement
+func (s *StubNodeVisitor) VisitUsingElement(n *UsingElement) error {
+	return s.VisitChildren(n) // UsingElement
 }
 
-func (s StubNodeVisitor) VisitVariableDeclaration(n *VariableDeclaration) error {
-	return VisitChildren(s, n) // VariableDeclaration
+func (s *StubNodeVisitor) VisitVariableDeclaration(n *VariableDeclaration) error {
+	return s.VisitChildren(n) // VariableDeclaration
 }
 
-func (s StubNodeVisitor) VisitWildCardField(n *WildCardField) error {
-	return VisitChildren(s, n) // WildCardField
+func (s *StubNodeVisitor) VisitWildCardField(n *WildCardField) error {
+	return s.VisitChildren(n) // WildCardField
 }
 
-func (s StubNodeVisitor) VisitWithClause(n *WithClause) error {
-	return VisitChildren(s, n) // WithClause
+func (s *StubNodeVisitor) VisitWithClause(n *WithClause) error {
+	return s.VisitChildren(n) // WithClause
 }
 
-func (b *AliasExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitAliasExpression(b)
+func (b AliasExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitAliasExpression(&b)
 }
 
-func (b *Argument) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitArgument(b)
+func (b Argument) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitArgument(&b)
 }
 
-func (b *AssignmentStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitAssignmentStatement(b)
+func (b AssignmentStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitAssignmentStatement(&b)
 }
 
-func (b *AutonomousTransactionDeclaration) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitAutonomousTransactionDeclaration(b)
+func (b AutonomousTransactionDeclaration) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitAutonomousTransactionDeclaration(&b)
 }
 
-func (b *BetweenExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitBetweenExpression(b)
+func (b BetweenExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitBetweenExpression(&b)
 }
 
-func (b *BinaryExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitBinaryExpression(b)
+func (b BinaryExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitBinaryExpression(&b)
 }
 
-func (b *BindNameExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitBindNameExpression(b)
+func (b BindNameExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitBindNameExpression(&b)
 }
 
-func (b *BlockStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitBlockStatement(b)
+func (b BlockStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitBlockStatement(&b)
 }
 
-func (b *Body) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitBody(b)
+func (b Body) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitBody(&b)
 }
 
-func (b *CaseWhenBlock) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCaseWhenBlock(b)
+func (b CaseWhenBlock) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCaseWhenBlock(&b)
 }
 
-func (b *CaseWhenStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCaseWhenStatement(b)
+func (b CaseWhenStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCaseWhenStatement(&b)
 }
 
-func (b *CastExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCastExpression(b)
+func (b CastExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCastExpression(&b)
 }
 
-func (b *CloseStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCloseStatement(b)
+func (b CloseStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCloseStatement(&b)
 }
 
-func (b *CommitStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCommitStatement(b)
+func (b CommitStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCommitStatement(&b)
 }
 
-func (b *CommonTableExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCommonTableExpression(b)
+func (b CommonTableExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCommonTableExpression(&b)
 }
 
-func (b *ContinueStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitContinueStatement(b)
+func (b ContinueStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitContinueStatement(&b)
 }
 
-func (b *CreateFunctionStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCreateFunctionStatement(b)
+func (b CreateFunctionStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCreateFunctionStatement(&b)
 }
 
-func (b *CreateNestTableStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCreateNestTableStatement(b)
+func (b CreateNestTableStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCreateNestTableStatement(&b)
 }
 
-func (b *CreatePackageBodyStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCreatePackageBodyStatement(b)
+func (b CreatePackageBodyStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCreatePackageBodyStatement(&b)
 }
 
-func (b *CreatePackageStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCreatePackageStatement(b)
+func (b CreatePackageStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCreatePackageStatement(&b)
 }
 
-func (b *CreateProcedureStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCreateProcedureStatement(b)
+func (b CreateProcedureStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCreateProcedureStatement(&b)
 }
 
-func (b *CreateSynonymStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCreateSynonymStatement(b)
+func (b CreateSynonymStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCreateSynonymStatement(&b)
 }
 
-func (b *CreateTypeStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCreateTypeStatement(b)
+func (b CreateTypeStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCreateTypeStatement(&b)
 }
 
-func (b *CursorAttribute) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCursorAttribute(b)
+func (b CursorAttribute) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCursorAttribute(&b)
 }
 
-func (b *CursorDeclaration) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitCursorDeclaration(b)
+func (b CursorDeclaration) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCursorDeclaration(&b)
 }
 
-func (b *DeleteStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitDeleteStatement(b)
+func (b DeleteStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitDeleteStatement(&b)
 }
 
-func (b *DotExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitDotExpression(b)
+func (b DotExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitDotExpression(&b)
 }
 
-func (b *DropFunctionStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitDropFunctionStatement(b)
+func (b DropFunctionStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitDropFunctionStatement(&b)
 }
 
-func (b *DropPackageStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitDropPackageStatement(b)
+func (b DropPackageStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitDropPackageStatement(&b)
 }
 
-func (b *DropProcedureStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitDropProcedureStatement(b)
+func (b DropProcedureStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitDropProcedureStatement(&b)
 }
 
-func (b *DropTriggerStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitDropTriggerStatement(b)
+func (b DropTriggerStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitDropTriggerStatement(&b)
 }
 
-func (b *ElseBlock) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitElseBlock(b)
+func (b ElseBlock) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitElseBlock(&b)
 }
 
-func (b *ExceptionDeclaration) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitExceptionDeclaration(b)
+func (b ExceptionDeclaration) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitExceptionDeclaration(&b)
 }
 
-func (b *ExecuteImmediateStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitExecuteImmediateStatement(b)
+func (b ExecuteImmediateStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitExecuteImmediateStatement(&b)
 }
 
-func (b *ExistsExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitExistsExpression(b)
+func (b ExistsExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitExistsExpression(&b)
 }
 
-func (b *ExitStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitExitStatement(b)
+func (b ExitStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitExitStatement(&b)
 }
 
-func (b *ExprListExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitExprListExpression(b)
+func (b ExprListExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitExprListExpression(&b)
 }
 
-func (b *FetchStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitFetchStatement(b)
+func (b FetchStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitFetchStatement(&b)
 }
 
-func (b *FieldList) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitFieldList(b)
+func (b FieldList) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitFieldList(&b)
 }
 
-func (b *ForUpdateClause) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitForUpdateClause(b)
+func (b ForUpdateClause) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitForUpdateClause(&b)
 }
 
-func (b *ForUpdateOptionsExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitForUpdateOptionsExpression(b)
+func (b ForUpdateOptionsExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitForUpdateOptionsExpression(&b)
 }
 
-func (b *FromClause) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitFromClause(b)
+func (b FromClause) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitFromClause(&b)
 }
 
-func (b *FunctionCallExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitFunctionCallExpression(b)
+func (b FunctionCallExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitFunctionCallExpression(&b)
 }
 
-func (b *FunctionDeclaration) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitFunctionDeclaration(b)
+func (b FunctionDeclaration) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitFunctionDeclaration(&b)
 }
 
-func (b *GotoStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitGotoStatement(b)
+func (b GotoStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitGotoStatement(&b)
 }
 
-func (b *IfStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitIfStatement(b)
+func (b IfStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitIfStatement(&b)
 }
 
-func (b *InExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitInExpression(b)
+func (b InExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitInExpression(&b)
 }
 
-func (b *InsertIntoClause) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitInsertIntoClause(b)
+func (b InsertIntoClause) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitInsertIntoClause(&b)
 }
 
-func (b *InsertStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitInsertStatement(b)
+func (b InsertStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitInsertStatement(&b)
 }
 
-func (b *IntoClause) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitIntoClause(b)
+func (b IntoClause) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitIntoClause(&b)
 }
 
-func (b *LabelDeclaration) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitLabelDeclaration(b)
+func (b LabelDeclaration) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitLabelDeclaration(&b)
 }
 
-func (b *LikeExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitLikeExpression(b)
+func (b LikeExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitLikeExpression(&b)
 }
 
-func (b *ListaggExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitListaggExpression(b)
+func (b ListaggExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitListaggExpression(&b)
 }
 
-func (b *LoopStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitLoopStatement(b)
+func (b LoopStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitLoopStatement(&b)
 }
 
-func (b *MergeInsertStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitMergeInsertStatement(b)
+func (b MergeInsertStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitMergeInsertStatement(&b)
 }
 
-func (b *MergeStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitMergeStatement(b)
+func (b MergeStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitMergeStatement(&b)
 }
 
-func (b *MergeUpdateStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitMergeUpdateStatement(b)
+func (b MergeUpdateStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitMergeUpdateStatement(&b)
 }
 
-func (b *NameExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitNameExpression(b)
+func (b NameExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitNameExpression(&b)
 }
 
-func (b *NamedArgumentExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitNamedArgumentExpression(b)
+func (b NamedArgumentExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitNamedArgumentExpression(&b)
 }
 
-func (b *NestTableTypeDeclaration) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitNestTableTypeDeclaration(b)
+func (b NestTableTypeDeclaration) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitNestTableTypeDeclaration(&b)
 }
 
-func (b *NullExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitNullExpression(b)
+func (b NullExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitNullExpression(&b)
 }
 
-func (b *NullStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitNullStatement(b)
+func (b NullStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitNullStatement(&b)
 }
 
-func (b *NumericLiteral) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitNumericLiteral(b)
+func (b NumericLiteral) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitNumericLiteral(&b)
 }
 
-func (b *OpenForStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitOpenForStatement(b)
+func (b OpenForStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitOpenForStatement(&b)
 }
 
-func (b *OpenStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitOpenStatement(b)
+func (b OpenStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitOpenStatement(&b)
 }
 
-func (b *OrderByClause) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitOrderByClause(b)
+func (b OrderByClause) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitOrderByClause(&b)
 }
 
-func (b *OrderByElement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitOrderByElement(b)
+func (b OrderByElement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitOrderByElement(&b)
 }
 
-func (b *OuterJoinExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitOuterJoinExpression(b)
+func (b OuterJoinExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitOuterJoinExpression(&b)
 }
 
-func (b *Parameter) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitParameter(b)
+func (b Parameter) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitParameter(&b)
 }
 
-func (b *ProcedureCall) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitProcedureCall(b)
+func (b ProcedureCall) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitProcedureCall(&b)
 }
 
-func (b *QueryExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitQueryExpression(b)
+func (b QueryExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitQueryExpression(&b)
 }
 
-func (b *RaiseStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitRaiseStatement(b)
+func (b RaiseStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitRaiseStatement(&b)
 }
 
-func (b *RelationalExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitRelationalExpression(b)
+func (b RelationalExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitRelationalExpression(&b)
 }
 
-func (b *ReturnStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitReturnStatement(b)
+func (b ReturnStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitReturnStatement(&b)
 }
 
-func (b *RollbackStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitRollbackStatement(b)
+func (b RollbackStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitRollbackStatement(&b)
 }
 
-func (b *Script) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitScript(b)
+func (b Script) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitScript(&b)
 }
 
-func (b *SelectField) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitSelectField(b)
+func (b SelectField) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitSelectField(&b)
 }
 
-func (b *SelectStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitSelectStatement(b)
+func (b SelectStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitSelectStatement(&b)
 }
 
-func (b *SetOperationStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitSetOperationStatement(b)
+func (b SetOperationStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitSetOperationStatement(&b)
 }
 
-func (b *SignExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitSignExpression(b)
+func (b SignExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitSignExpression(&b)
 }
 
-func (b *StatementExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitStatementExpression(b)
+func (b StatementExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitStatementExpression(&b)
 }
 
-func (b *StringLiteral) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitStringLiteral(b)
+func (b StringLiteral) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitStringLiteral(&b)
 }
 
-func (b *TableRef) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitTableRef(b)
+func (b TableRef) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitTableRef(&b)
 }
 
-func (b *UnaryLogicalExpression) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitUnaryLogicalExpression(b)
+func (b UnaryLogicalExpression) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitUnaryLogicalExpression(&b)
 }
 
-func (b *UpdateStatement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitUpdateStatement(b)
+func (b UpdateStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitUpdateStatement(&b)
 }
 
-func (b *UsingClause) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitUsingClause(b)
+func (b UsingClause) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitUsingClause(&b)
 }
 
-func (b *UsingElement) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitUsingElement(b)
+func (b UsingElement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitUsingElement(&b)
 }
 
-func (b *VariableDeclaration) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitVariableDeclaration(b)
+func (b VariableDeclaration) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitVariableDeclaration(&b)
 }
 
-func (b *WildCardField) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitWildCardField(b)
+func (b WildCardField) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitWildCardField(&b)
 }
 
-func (b *WithClause) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitWithClause(b)
+func (b WithClause) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitWithClause(&b)
 }
 
 var register = sync.OnceFunc(func() {
