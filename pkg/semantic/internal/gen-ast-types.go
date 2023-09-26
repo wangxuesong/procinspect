@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	fmtVistorInterface = map[string]string{
+	fmtVisitorInterface = map[string]string{
 		KindExpr: "Visit%s(v *%s) (result interface{}, err error)",
 		KindStmt: "Visit%s(v *%s) (err error)",
 		KindNode: "Visit%s(v *%s) (err error)",
@@ -31,8 +31,8 @@ var (
 		KindStmt: `func (s StubStmtVisitor) Visit%s(_ *%s) (error) {
 	return errors.New("visit func for %s is not implemented")
 }`,
-		KindNode: `func (s StubNodeVisitor) Visit%s(_ *%s) (error) {
-	return errors.New("visit func for %s is not implemented")
+		KindNode: `func (s *StubNodeVisitor) Visit%s(n *%s) (error) {
+	return s.VisitChildren(n) // %s
 }`,
 	}
 	fmtTypeAccept = map[string]string{
@@ -42,8 +42,8 @@ var (
 		KindStmt: `func (b *%s) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.Visit%s(b)
 }`,
-		KindNode: `func (b *%s) Accept(visitor NodeVisitor) (err error) {
-	return visitor.Visit%s(b)
+		KindNode: `func (b %s) Accept(visitor NodeVisitor) (err error) {
+	return visitor.Visit%s(&b)
 }`,
 	}
 )
@@ -238,10 +238,14 @@ func (g *Generator) linebreak() {
 func (g *Generator) writeVisitor(kind string, types Types) {
 	_, _ = fmt.Fprintf(&g.buf, "type %sVisitor interface {", kind)
 	g.linebreak()
+	if kind == KindNode {
+		_, _ = fmt.Fprintf(&g.buf, "VisitChildren(n AstNode) (err error)")
+	}
+	g.linebreak()
 
 	for _, item := range types {
 		g.buf.WriteByte('\t')
-		_, _ = fmt.Fprintf(&g.buf, fmtVistorInterface[kind], item.Name, item.Name)
+		_, _ = fmt.Fprintf(&g.buf, fmtVisitorInterface[kind], item.Name, item.Name)
 		g.linebreak()
 	}
 
@@ -250,10 +254,10 @@ func (g *Generator) writeVisitor(kind string, types Types) {
 	g.linebreak()
 
 	// stub visitor
-	_, _ = fmt.Fprintf(&g.buf, "type Stub%sVisitor struct{}", kind)
+	_, _ = fmt.Fprintf(&g.buf, "type Stub%sVisitor struct{ %sVisitor}", kind, kind)
 	g.linebreak()
 	g.linebreak()
-	g.buf.WriteString(fmt.Sprintf(`var _ %[1]sVisitor = Stub%[1]sVisitor{}`, kind))
+	g.buf.WriteString(fmt.Sprintf(`var _ %[1]sVisitor = &Stub%[1]sVisitor{}`, kind))
 	g.linebreak()
 	g.linebreak()
 
