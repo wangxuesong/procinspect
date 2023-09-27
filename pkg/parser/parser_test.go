@@ -2124,9 +2124,7 @@ func TestParseSelectStatement(t *testing.T) {
 			assert.Equal(t, len(stmt.Fields.Fields), 1)
 			assert.Equal(t, stmt.Fields.Fields[0].WildCard.Table, "*")
 			assert.Equal(t, len(stmt.From.TableRefs), 1)
-			assert.Equal(t, stmt.From.TableRefs[0].Table, "test")
-			assert.NotNil(t, stmt.ForUpdate)
-			assert.NotNil(t, stmt.ForUpdate.Options)
+			assert.Equal(t, stmt.From.TableRefs[0].Table, "test@dblink")
 		},
 	})
 

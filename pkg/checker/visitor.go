@@ -3,6 +3,8 @@ package checker
 import (
 	"errors"
 
+	"github.com/hashicorp/go-multierror"
+
 	"procinspect/pkg/parser"
 	"procinspect/pkg/semantic"
 )
@@ -32,13 +34,17 @@ func NewValidVisitor() *ValidVisitor {
 }
 
 func (v *ValidVisitor) VisitChildren(node semantic.AstNode) (err error) {
+	var result *multierror.Error
 	for _, child := range semantic.GetChildren(node) {
 		e := child.Accept(v)
 		if e != nil {
-			err = errors.Join(err, e)
+			result = multierror.Append(result, e)
 		}
 	}
-	return
+	var errs *multierror.Error
+	errors.As(v.v.Validate(node), &errs)
+	result = multierror.Append(result, errs.ErrorOrNil())
+	return result.ErrorOrNil()
 }
 
 func (v *ValidVisitor) VisitScript(node *semantic.Script) error {
@@ -56,11 +62,6 @@ func (v *ValidVisitor) VisitScript(node *semantic.Script) error {
 	return nil
 }
 
-func (v *ValidVisitor) VisitCreateNestTableStatement(node *semantic.CreateNestTableStatement) error {
-	return v.v.Validate(node)
-}
-
-func (v *ValidVisitor) VisitSelectStatement(node *semantic.SelectStatement) error {
-	err := v.VisitChildren(node)
-	return errors.Join(err, v.v.Validate(node))
+func (v *ValidVisitor) Error() error {
+	return v.v.Error()
 }

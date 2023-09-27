@@ -1,38 +1,44 @@
 package checker
 
 import (
-	"context"
-	"errors"
+	"reflect"
 
-	"github.com/go-playground/validator/v10"
+	"github.com/hashicorp/go-multierror"
 
 	"procinspect/pkg/semantic"
 )
 
 type (
 	SqlValidator struct {
-		v   *validator.Validate
-		err error
+		err *multierror.Error
 	}
+
+	Validator interface {
+		Validate() error
+	}
+
+	ValidateFunc func() error
 )
 
-func (v *SqlValidator) Validate(node semantic.Node) error {
-	err := v.v.StructCtx(context.Background(), node)
-	var vErrs validator.ValidationErrors
-	if errors.As(err, &vErrs) {
-		var errs SqlValidationErrors
-		for _, er := range vErrs {
-			node := er.Value().(semantic.Node)
-			sqlErr := SqlValidationError{
-				Line: node.Line(),
-				Msg:  er.Param(),
-			}
-			errs = append(errs, sqlErr)
-		}
-		v.err = errs
-	} else {
-		v.err = err
+func (fn ValidateFunc) Validate() error {
+	return fn()
+}
+
+func (v *SqlValidator) Validate(node semantic.AstNode) error {
+	t := reflect.TypeOf(node)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
 	}
+	if r, ok := ruleMap[t]; ok {
+		n := node.(semantic.Node)
+		e := r.checkFunc(r, n)
+		v.err = multierror.Append(v.err, e)
+	}
+
+	return nil
+}
+
+func (v *SqlValidator) Error() error {
 	return v.err
 }
 
@@ -41,20 +47,6 @@ func (v *SqlValidator) Validate(node semantic.Node) error {
 // It initializes a validator and registers the validate rules context.
 // It returns a pointer to the newly created SqlValidator.
 func NewSqlValidator() *SqlValidator {
-	v := validator.New()
-	registerValidateRulesCtx(v, rules)
-	return &SqlValidator{
-		v: v,
-	}
-}
-
-// registerValidateRulesCtx registers the validation rules with the given validator instance.
-//
-// It takes a pointer to a validator.Validate struct and a slice of rule structs as parameters.
-// Each rule struct contains a validation function and a target struct.
-// The function iterates over the rules and registers the validation function with the target struct.
-func registerValidateRulesCtx(v *validator.Validate, rules []rule) {
-	for _, rule := range rules {
-		v.RegisterStructValidationCtx(rule.validFunc(rule), rule.target)
-	}
+	// registerValidateRulesCtx(v, rules)
+	return &SqlValidator{}
 }

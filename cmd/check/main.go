@@ -11,6 +11,8 @@ import (
 	"runtime/pprof"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
+
 	"procinspect/pkg/checker"
 	"procinspect/pkg/log"
 	"procinspect/pkg/semantic"
@@ -117,21 +119,13 @@ func parseFile(sql string) error {
 
 func check(script *semantic.Script) error {
 	v := checker.NewValidVisitor()
-	err := script.Accept(v)
+	_ = script.Accept(v)
 
-	var errs checker.SqlValidationErrors
-	errors.As(err, &errs)
-	for _, err := range errs {
+	var errs *multierror.Error
+	errors.As(v.Error(), &errs)
+	for _, e := range errs.Errors {
+		err := e.(checker.SqlValidationError)
 		log.Warn("unsupported", log.String("err", err.Error()), log.Int("line", err.Line))
-	}
-	if errs == nil {
-		_, ok := err.(interface{ Unwrap() []error })
-		if ok {
-			errs := err.(interface{ Unwrap() []error }).Unwrap()
-			for _, err := range errs {
-				log.Error("unexpected", log.String("err", err.Error()))
-			}
-		}
 	}
 	return nil
 }

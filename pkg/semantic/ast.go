@@ -42,7 +42,10 @@ func GetChildren(node AstNode) []AstNode {
 			for j := 0; j < field.Len(); j++ {
 				// 如果元素是一个 AstNode，我们添加它到 children 中
 				if field.Index(j).Type().Implements(reflect.TypeOf((*AstNode)(nil)).Elem()) {
-					children = append(children, field.Index(j).Interface().(AstNode))
+					a := field.Index(j).Interface()
+					if a != nil {
+						children = append(children, a.(AstNode))
+					}
 				}
 			}
 		} else if field.Kind() == reflect.Ptr { // 如果字段是一个指针

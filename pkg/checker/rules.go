@@ -1,10 +1,7 @@
 package checker
 
 import (
-	"context"
-	"strings"
-
-	"github.com/go-playground/validator/v10"
+	"reflect"
 
 	"procinspect/pkg/semantic"
 )
@@ -12,80 +9,56 @@ import (
 type rule struct {
 	name      string
 	target    semantic.Node
-	validFunc warpFunc
+	checkFunc checkFunc
 	message   string
 }
 
-type warpFunc func(r rule) validator.StructLevelFuncCtx
+type checkFunc func(r rule, node semantic.Node) error
 
-var rules = []rule{
-	{
-		"nest table type declaration",
-		&semantic.NestTableTypeDeclaration{},
-		validateNestTableTypeDeclaration,
-		"unsupported: nest table type declaration",
+var ruleMap = map[reflect.Type]rule{
+	reflect.TypeOf(semantic.CreateNestTableStatement{}): {
+		name:   "nest table type declaration",
+		target: &semantic.NestTableTypeDeclaration{},
+		checkFunc: func(r rule, node semantic.Node) error {
+			return SqlValidationError{Line: node.Line(), Msg: r.message}
+		},
+		message: "unsupported: nest table type declaration",
 	},
-	{
-		"create nest table type",
-		&semantic.CreateNestTableStatement{},
-		validateCreateNestTableType,
-		"unsupported: nest table type declaration",
+	reflect.TypeOf(semantic.NestTableTypeDeclaration{}): {
+		name:   "create nest table type",
+		target: &semantic.CreateNestTableStatement{},
+		checkFunc: func(r rule, node semantic.Node) error {
+			return SqlValidationError{Line: node.Line(), Msg: r.message}
+		},
+		message: "unsupported: nest table type declaration",
 	},
-	{
-		"update set multiple columns with select",
-		&semantic.UpdateStatement{},
-		validateUpdateStatement,
-		"unsupported: update set multiple columns with select",
-	},
-	{
-		"select from dblink",
-		&semantic.SelectStatement{},
-		validateSelectFromDblink,
-		"unsupported: select from dblink",
-	},
-}
-
-func validateSelectFromDblink(r rule) validator.StructLevelFuncCtx {
-	return func(ctx context.Context, sl validator.StructLevel) {
-		cur := sl.Current().Interface().(semantic.SelectStatement)
-		for _, table := range cur.From.TableRefs {
-			if strings.Index(table.Table, "@") >= 0 {
-				sl.ReportError(cur, table.Table, table.Table, r.name, r.message)
+	// reflect.TypeOf(semantic.TableRef{}): {
+	// 	name:   "select from dblink",
+	// 	target: &semantic.SelectStatement{},
+	// 	checkFunc: func(r rule, node semantic.Node) error {
+	// 		table := node.(*semantic.TableRef)
+	// 		if strings.Index(table.Table, "@") >= 0 {
+	// 			return SqlValidationError{Line: node.Line(), Msg: r.message}
+	// 		}
+	// 		return nil
+	// 	},
+	// 	message: "unsupported: select from dblink",
+	// },
+	reflect.TypeOf(semantic.UpdateStatement{}): {
+		name:   "update set multiple columns with select",
+		target: &semantic.UpdateStatement{},
+		checkFunc: func(r rule, node semantic.Node) error {
+			stmt := node.(*semantic.UpdateStatement)
+			binary, ok := stmt.SetExprs[0].(*semantic.BinaryExpression)
+			if ok {
+				_, left := binary.Left.(*semantic.ExprListExpression)
+				_, right := binary.Right.(*semantic.StatementExpression)
+				if left && right {
+					return SqlValidationError{Line: node.Line(), Msg: r.message}
+				}
 			}
-		}
-	}
-}
-
-func validateUpdateStatement(r rule) validator.StructLevelFuncCtx {
-	return func(ctx context.Context, sl validator.StructLevel) {
-		cur := sl.Current().Interface().(semantic.UpdateStatement)
-		binary, ok := cur.SetExprs[0].(*semantic.BinaryExpression)
-		if ok {
-			_, left := binary.Left.(*semantic.ExprListExpression)
-			_, right := binary.Right.(*semantic.StatementExpression)
-			if left && right {
-				sl.ReportError(
-					cur.SetExprs[0],
-					"SetExpres",
-					"SetExpres",
-					r.name,
-					r.message,
-				)
-			}
-		}
-	}
-}
-
-func validateNestTableTypeDeclaration(r rule) validator.StructLevelFuncCtx {
-	return func(ctx context.Context, sl validator.StructLevel) {
-		cur := sl.Current().Interface().(semantic.NestTableTypeDeclaration)
-		sl.ReportError(cur, cur.Name, cur.Name, r.name, r.message)
-	}
-}
-
-func validateCreateNestTableType(r rule) validator.StructLevelFuncCtx {
-	return func(ctx context.Context, sl validator.StructLevel) {
-		cur := sl.Current().Interface().(semantic.CreateNestTableStatement)
-		sl.ReportError(cur, cur.Name, cur.Name, r.name, r.message)
-	}
+			return nil
+		},
+		message: "unsupported: update set multiple columns with select",
+	},
 }

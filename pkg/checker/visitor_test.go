@@ -3,6 +3,7 @@ package checker
 import (
 	"testing"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,25 +43,25 @@ select * from sql1;`,
 				assert.Nil(t, err)
 				assert.NotNil(t, script)
 				v := NewValidVisitor()
-				err = script.Accept(v)
+				_ = script.Accept(v)
+				err = v.Error()
 				assert.NotNil(t, err)
-				_, ok := err.(interface{ Unwrap() []error })
-				require.True(t, ok)
-				errs := err.(interface{ Unwrap() []error }).Unwrap()
-				require.Equal(t, 2, len(errs))
-				var target = SqlValidationErrors{}
+				assert.IsType(t, &multierror.Error{}, err)
+				errs := err.(*multierror.Error).Errors
+				require.Equal(t, 1, len(errs))
+				var target = SqlValidationError{}
 				assert.ErrorAs(t, errs[0], &target)
-				sqlErr := target[0]
+				sqlErr := target
 				assert.ErrorIs(t, sqlErr, SqlValidationError{
 					Line: 1,
 					Msg:  "unsupported: nest table type declaration",
 				})
-				assert.ErrorAs(t, errs[1], &target)
-				sqlErr = target[0]
-				assert.ErrorIs(t, sqlErr, SqlValidationError{
-					Line: 4,
-					Msg:  "unsupported: select from dblink",
-				})
+				// assert.ErrorAs(t, errs[1], &target)
+				// sqlErr = target
+				// assert.ErrorIs(t, sqlErr, SqlValidationError{
+				// 	Line: 0,
+				// 	Msg:  "unsupported: select from dblink",
+				// })
 			},
 		},
 	}

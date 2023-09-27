@@ -1,11 +1,9 @@
 package checker
 
 import (
-	"context"
-	"fmt"
 	"testing"
 
-	validator "github.com/go-playground/validator/v10"
+	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -64,10 +62,16 @@ end;`,
 				err := vv.Validate(stmt)
 				assert.Nil(t, err)
 				err = vv.Validate(stmt.Declarations[0])
-				assert.NotNil(t, err)
-				assert.IsType(t, SqlValidationErrors{}, err)
-				err1 := err.(SqlValidationErrors)[0]
-				assert.Equal(t, 3, err1.Line)
+				assert.Nil(t, err)
+				assert.NotNil(t, vv.Error())
+				err = vv.Error()
+				assert.IsType(t, &multierror.Error{}, err)
+				var err1 *multierror.Error
+				assert.ErrorAs(t, err, &err1)
+				assert.NotNil(t, err1)
+				assert.Equal(t, 1, len(err1.Errors))
+				err2 := err1.Errors[0].(SqlValidationError)
+				assert.Equal(t, 3, err2.Line)
 				err = vv.Validate(stmt.Declarations[1])
 				assert.Nil(t, err)
 				assert.NotNil(t, stmt.Body)
@@ -76,9 +80,10 @@ end;`,
 					err = vv.Validate(stmt.Body.Statements[0])
 					assert.Nil(t, err)
 					err = vv.Validate(stmt.Body.Statements[1])
-					assert.NotNil(t, err)
-					assert.IsType(t, SqlValidationErrors{}, err)
-					e1 := err.(SqlValidationErrors)[0]
+					errs := vv.Error().(*multierror.Error)
+					assert.NotNil(t, errs)
+					assert.IsType(t, SqlValidationError{}, errs.Errors[1])
+					e1 := errs.Errors[1].(SqlValidationError)
 					assert.Error(t, e1)
 					assert.Equal(t, 7, e1.Line)
 					assert.Equal(t, "unsupported: update set multiple columns with select", e1.Error())
@@ -94,21 +99,4 @@ end;`,
 		})
 	}
 
-}
-
-func ValidateSelectStatement(ctx context.Context, sl validator.StructLevel) {
-	stmt, ok := sl.Current().Interface().(semantic.FromClause)
-	if !ok {
-		errors := ctx.Value("errors").(map[string]error)
-		errors["err"] = fmt.Errorf("is not a SelectStatement")
-		return
-	}
-	from := stmt
-	if len(from.TableRefs) > 1 {
-		for _, table := range from.TableRefs {
-			if table.Table == "dual" {
-				sl.ReportError(stmt, "From", "From", "fromdualwithtable", "fromdualwithtable")
-			}
-		}
-	}
 }
