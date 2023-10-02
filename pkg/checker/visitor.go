@@ -42,24 +42,25 @@ func (v *ValidVisitor) VisitChildren(node semantic.AstNode) (err error) {
 		}
 	}
 	var errs *multierror.Error
-	errors.As(v.v.Validate(node), &errs)
-	result = multierror.Append(result, errs.ErrorOrNil())
+	err = v.v.Validate(node)
+	if errors.As(err, &errs) {
+		result = multierror.Append(result, errs.ErrorOrNil())
+	} else {
+		result = multierror.Append(result, err)
+	}
 	return result.ErrorOrNil()
 }
 
 func (v *ValidVisitor) VisitScript(node *semantic.Script) error {
-	var errs []error
+	var errs *multierror.Error
 	for _, stmt := range node.Statements {
 		s := stmt.(semantic.AstNode)
 		err := s.Accept(v)
 		if err != nil {
-			errs = append(errs, err)
+			errs = multierror.Append(errs, err)
 		}
 	}
-	if len(errs) > 0 {
-		return errors.Join(errs...)
-	}
-	return nil
+	return errs.ErrorOrNil()
 }
 
 func (v *ValidVisitor) Error() error {

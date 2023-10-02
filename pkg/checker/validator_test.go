@@ -100,3 +100,51 @@ end;`,
 	}
 
 }
+
+func TestRuleEngine(t *testing.T) {
+	tests := []validTestCase{
+		{
+			"rule engine",
+			`select * from test@dblink;`,
+			func(t *testing.T, root any) {
+				require.IsType(t, &semantic.Script{}, root)
+				node := root.(*semantic.Script)
+				assert.Equal(t, len(node.Statements), 1)
+
+				v := NewValidVisitor()
+				node.Accept(v)
+				assert.Nil(t, v.Error())
+				r := rule{
+					name:      "select from dblink",
+					target:    &semantic.SelectStatement{},
+					checkFunc: validDblinkFunc(`indexOf(node.From.TableRefs[0].Table, "@") > 0`),
+					message:   "unsupported: select from dblink",
+				}
+				addRule(r)
+				e := node.Accept(v)
+				assert.Nil(t, e, func() string {
+					if e != nil {
+						return e.Error()
+					}
+					return ""
+				}())
+				assert.NotNil(t, v.Error())
+				err := v.Error()
+				assert.IsType(t, &multierror.Error{}, err)
+				var err1 *multierror.Error
+				assert.ErrorAs(t, err, &err1)
+				assert.NotNil(t, err1)
+				assert.Equal(t, 1, len(err1.Errors))
+				err2 := err1.Errors[0].(SqlValidationError)
+				assert.Equal(t, 1, err2.Line)
+				assert.Equal(t, "unsupported: select from dblink", err2.Error())
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runTest(t, test.text, test.Func)
+		})
+	}
+}

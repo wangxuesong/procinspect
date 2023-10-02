@@ -1,6 +1,7 @@
 package checker
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/hashicorp/go-multierror"
@@ -32,7 +33,12 @@ func (v *SqlValidator) Validate(node semantic.AstNode) error {
 	if r, ok := ruleMap[t]; ok {
 		n := node.(semantic.Node)
 		e := r.checkFunc(r, n)
-		v.err = multierror.Append(v.err, e)
+		var verr SqlValidationError
+		if errors.As(e, &verr) {
+			v.err = multierror.Append(v.err, verr)
+		} else {
+			return e
+		}
 	}
 
 	return nil
@@ -47,6 +53,21 @@ func (v *SqlValidator) Error() error {
 // It initializes a validator and registers the validate rules context.
 // It returns a pointer to the newly created SqlValidator.
 func NewSqlValidator() *SqlValidator {
-	// registerValidateRulesCtx(v, rules)
+	registerValidateRules(rules)
 	return &SqlValidator{}
+}
+
+func registerValidateRules(rs []rule) {
+	ruleMap = make(map[reflect.Type]rule)
+	for _, r := range rs {
+		addRule(r)
+	}
+}
+
+func addRule(r rule) {
+	t := reflect.TypeOf(r.target)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	ruleMap[t] = r
 }

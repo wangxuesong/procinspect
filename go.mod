@@ -5,6 +5,7 @@ go 1.18
 require (
 	atomicgo.dev/cursor v0.1.3
 	github.com/antlr4-go/antlr/v4 v4.13.0
+	github.com/antonmedv/expr v1.15.3
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/pterm/pterm v0.12.63
 	github.com/stretchr/testify v1.8.4
