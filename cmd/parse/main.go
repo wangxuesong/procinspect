@@ -114,11 +114,6 @@ func main() {
 	flag.Parse()
 	// flag.PrintDefaults()
 
-	if *dir != "" && *serialize {
-		panic("dir and serialize can not be set at the same time")
-
-	}
-
 	if *prof {
 		pf, err := os.Create("./cpu.prof")
 		if err != nil {
@@ -238,15 +233,61 @@ func parseFile(path string) error {
 		log.String("duration", elapsed.String()))
 
 	// 生成 AST
+	script := &semantic.Script{}
 	for _, result := range results {
-		_, err := result.AstFunc(result.Start)
+		s, err := result.AstFunc(result.Start)
 		if err != nil {
 			log.Error("Check Error", log.String("file", filepath.Base(absPath)),
 				log.String("error", err.Error()),
 			)
 		}
+		script = appendScript(script, s)
+	}
+
+	// serialize
+	if *serialize {
+		filename := strings.TrimSuffix(filepath.Base(absPath), filepath.Ext(absPath)) + ".ast"
+		err = marshal(filename, script)
+		if err != nil {
+			log.Error("Serialize Error", log.String("file", filepath.Base(absPath)),
+				log.String("error", err.Error()),
+			)
+		}
 	}
 	return nil
+}
+
+func marshal(path string, script *semantic.Script) error {
+	filename := path
+	buf, err := semantic.NewNodeEncoder().Encode(script)
+	if err != nil {
+		log.Error("Serialize Error", log.String("error", err.Error()))
+		return err
+	}
+
+	file, err := os.Create(filename)
+	if err != nil {
+		log.Error("Serialize Error", log.String("error", err.Error()))
+		return err
+	}
+	defer file.Close()
+
+	gw := gzip.NewWriter(file)
+	defer gw.Close()
+
+	_, err = gw.Write(buf)
+	if err != nil {
+		log.Error("Serialize Error", log.String("error", err.Error()))
+		return err
+	}
+	return nil
+}
+
+func appendScript(script *semantic.Script, s *semantic.Script) *semantic.Script {
+	for _, stmt := range s.Statements {
+		script.Statements = append(script.Statements, stmt)
+	}
+	return script
 }
 
 func parallelParse(requests []*ParseRequest, msgChan chan msg, results []*ParseResult) {
@@ -370,30 +411,10 @@ func parseBlock(r *ParseRequest) *ParseResult {
 		result.Error = err
 	} else {
 		if *serialize {
-			filename := strings.TrimSuffix(filepath.Base(r.FileName), filepath.Ext(r.FileName)) + ".ast"
 			result.AstFunc = func(start int) (*semantic.Script, error) {
 				script, err := s(start)
 				if err != nil {
 					return nil, err
-				}
-
-				buf, err := semantic.NewNodeEncoder().Encode(script)
-				if err == nil {
-					file, err := os.Create(filename)
-					if err != nil {
-						log.Error("Serialize Error", log.String("error", err.Error()))
-						return script, err
-					}
-					defer file.Close()
-
-					gw := gzip.NewWriter(file)
-					defer gw.Close()
-
-					_, err = gw.Write(buf)
-					if err != nil {
-						log.Error("Serialize Error", log.String("error", err.Error()))
-						return script, err
-					}
 				}
 
 				return script, nil
