@@ -237,9 +237,24 @@ func parseFile(path string) error {
 	for _, result := range results {
 		s, err := result.AstFunc(result.Start)
 		if err != nil {
-			log.Error("Check Error", log.String("file", filepath.Base(absPath)),
-				log.String("error", err.Error()),
-			)
+			joinErr, ok := err.(interface{ Unwrap() []error })
+			if ok {
+				errs := joinErr.Unwrap()
+				for _, e := range errs {
+					var pe parser.ParseError
+					if errors.As(e, &pe) {
+						log.Warn(pe.Msg, log.Int("line", pe.Line), log.Int("column", pe.Column))
+					} else {
+						log.Error("Semantic Error", log.String("file", filepath.Base(absPath)),
+							log.String("error", e.Error()),
+						)
+					}
+				}
+			} else {
+				log.Error("Semantic Error", log.String("file", filepath.Base(absPath)),
+					log.String("error", err.Error()),
+				)
+			}
 		}
 		script = appendScript(script, s)
 	}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"procinspect/pkg/log"
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
 )
@@ -60,11 +59,9 @@ func (v *plsqlVisitor) Errors() []ParseError {
 }
 
 func (v *plsqlVisitor) ReportError(msg string, line, column int) {
-	defer log.Sync()
-	log.Warn(msg, log.Int("line", line+v.StartLine), log.Int("column", column))
 	v.errors = append(v.errors, ParseError{
 		Kind:   ErrSemantic,
-		Line:   line,
+		Line:   line + v.StartLine,
 		Column: column,
 		Msg:    msg,
 	})
