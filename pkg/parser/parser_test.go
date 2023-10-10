@@ -2647,3 +2647,52 @@ when matched then
 		})
 	}
 }
+
+func TestParseErrors(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "semantic error",
+			text: `create table test (a number);`,
+			Func: func(t *testing.T, root any) {
+				assert.NotNil(t, root)
+				err, ok := root.(error)
+				assert.True(t, ok)
+				assert.Equal(t, "unprocessed syntax *parser.Create_tableContext", err.Error())
+				errs, ok := err.(interface {
+					Unwrap() []error
+				})
+				assert.True(t, ok)
+				assert.IsType(t, ParseError{
+					Line:   1,
+					Column: 1,
+					Msg:    "unprocessed syntax *parser.Create_tableContext",
+				}, errs.Unwrap()[0])
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			p := plsql.NewParser(test.text)
+			root := p.Sql_script()
+			if p.Error() != nil {
+				test.Func(t, p.Error())
+				return
+			}
+			assert.Nil(t, p.Error(), p.Error())
+			assert.NotNil(t, root)
+			assert.IsType(t, &plsql.Sql_scriptContext{}, root)
+			_, ok := root.(*plsql.Sql_scriptContext)
+			assert.True(t, ok)
+
+			node, err := GeneralScript(root)
+			if err != nil {
+				test.Func(t, err)
+				return
+			}
+			assert.NotNil(t, node)
+			assert.Fail(t, "should not be here")
+		})
+	}
+
+}

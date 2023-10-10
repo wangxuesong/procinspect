@@ -1,7 +1,9 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	"procinspect/pkg/log"
@@ -13,6 +15,8 @@ type (
 	plsqlVisitor struct {
 		plsql.BasePlSqlParserVisitor
 		StartLine int
+
+		errors []ParseError
 	}
 )
 
@@ -41,9 +45,29 @@ func newPlSqlVisitor(startLineNo ...int) *plsqlVisitor {
 	return v
 }
 
+func (v *plsqlVisitor) Error() (err error) {
+	if len(v.errors) == 0 {
+		return nil
+	}
+	for _, e := range v.errors {
+		err = errors.Join(err, e)
+	}
+	return
+}
+
+func (v *plsqlVisitor) Errors() []ParseError {
+	return v.errors
+}
+
 func (v *plsqlVisitor) ReportError(msg string, line, column int) {
 	defer log.Sync()
 	log.Warn(msg, log.Int("line", line+v.StartLine), log.Int("column", column))
+	v.errors = append(v.errors, ParseError{
+		Kind:   ErrSemantic,
+		Line:   line,
+		Column: column,
+		Msg:    msg,
+	})
 }
 
 func (v *plsqlVisitor) Visit(tree antlr.ParseTree) interface{} {
@@ -51,17 +75,16 @@ func (v *plsqlVisitor) Visit(tree antlr.ParseTree) interface{} {
 }
 
 func (v *plsqlVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (v *plsqlVisitor) VisitErrorNode(node antlr.ErrorNode) interface{} {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func GeneralScript(root plsql.ISql_scriptContext) (script *semantic.Script, err error) {
-	var e error
 	defer func() {
 		if e := recover(); e != nil {
 			err = fmt.Errorf("%v", e)
@@ -70,7 +93,7 @@ func GeneralScript(root plsql.ISql_scriptContext) (script *semantic.Script, err 
 
 	visitor := newPlSqlVisitor()
 	script = visitor.VisitSql_script(root.(*plsql.Sql_scriptContext)).(*semantic.Script)
-	return script, e
+	return script, visitor.Error()
 }
 
 func (v *plsqlVisitor) VisitChildren(node antlr.RuleNode) interface{} {
@@ -347,7 +370,7 @@ func (v *plsqlVisitor) VisitSelected_list(ctx *plsql.Selected_listContext) inter
 
 func (v *plsqlVisitor) VisitTable_ref_list(ctx *plsql.Table_ref_listContext) interface{} {
 	from := newAstNode[semantic.FromClause](ctx)
-	//tables := make([]*semantic.TableRef, 0, len(ctx.AllTable_ref()))
+	// tables := make([]*semantic.TableRef, 0, len(ctx.AllTable_ref()))
 	for _, t := range ctx.AllTable_ref() {
 		from.TableRefs = append(from.TableRefs, &semantic.TableRef{
 			Table: t.GetText(),
