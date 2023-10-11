@@ -42,8 +42,8 @@ var (
 		KindStmt: `func (b *%s) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.Visit%s(b)
 }`,
-		KindNode: `func (b %s) Accept(visitor NodeVisitor) (err error) {
-	return visitor.Visit%s(&b)
+		KindNode: `func (b *%s) Accept(visitor NodeVisitor) (err error) {
+	return visitor.Visit%s(b)
 }`,
 	}
 )

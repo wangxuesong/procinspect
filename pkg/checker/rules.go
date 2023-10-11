@@ -19,21 +19,21 @@ type checkFunc func(r rule, node semantic.Node) error
 
 var rules = []rule{{
 	name:   "nest table type declaration",
-	target: semantic.NestTableTypeDeclaration{},
+	target: &semantic.NestTableTypeDeclaration{},
 	checkFunc: func(r rule, node semantic.Node) error {
 		return SqlValidationError{Line: node.Line(), Msg: r.message}
 	},
 	message: "unsupported: nest table type declaration",
 }, {
 	name:   "create nest table type",
-	target: semantic.CreateNestTableStatement{},
+	target: &semantic.CreateNestTableStatement{},
 	checkFunc: func(r rule, node semantic.Node) error {
 		return SqlValidationError{Line: node.Line(), Msg: r.message}
 	},
 	message: "unsupported: nest table type declaration",
 }, {
 	name:   "update set multiple columns with select",
-	target: semantic.UpdateStatement{},
+	target: &semantic.UpdateStatement{},
 	checkFunc: func(r rule, node semantic.Node) error {
 		stmt := node.(*semantic.UpdateStatement)
 		binary, ok := stmt.SetExprs[0].(*semantic.BinaryExpression)
