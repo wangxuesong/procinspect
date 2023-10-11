@@ -7,7 +7,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"procinspect/pkg/log"
 	plsql "procinspect/pkg/parser/internal/plsql/parser"
 	"procinspect/pkg/semantic"
 )
@@ -27,8 +26,12 @@ func newExprVisitor(visitor *plsqlVisitor) *exprVisitor {
 }
 
 func (v *exprVisitor) ReportError(msg string, line, column int) {
-	defer log.Sync()
-	log.Warn(msg, log.Int("line", line+v.StartLine), log.Int("column", column))
+	v.stmtVisitor.errors = append(v.stmtVisitor.errors, ParseError{
+		Kind:   ErrSemantic,
+		Line:   line + v.StartLine,
+		Column: column,
+		Msg:    msg,
+	})
 }
 
 func (v *exprVisitor) Visit(tree antlr.ParseTree) interface{} {
@@ -40,7 +43,7 @@ func (v *exprVisitor) VisitTerminal(node antlr.TerminalNode) interface{} {
 }
 
 func (v *exprVisitor) VisitErrorNode(_ antlr.ErrorNode) interface{} {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
@@ -147,9 +150,7 @@ func (v *exprVisitor) VisitExpressions(ctx *plsql.ExpressionsContext) interface{
 
 		exprs = append(exprs, expr)
 	}
-	//if len(exprs) == 1 {
-	//	return exprs[0]
-	//}
+
 	return exprs
 }
 
@@ -983,7 +984,7 @@ func (v *exprVisitor) VisitGeneral_element_part(ctx *plsql.General_element_partC
 		}
 	}
 	if ctx.Function_argument(0) != nil {
-		args := ctx.Function_argument(0).Accept(v).([]semantic.Expr) //v.VisitFunction_argument(ctx.Function_argument(0).(*plsql.Function_argumentContext)).([]interface{})
+		args := ctx.Function_argument(0).Accept(v).([]semantic.Expr) // v.VisitFunction_argument(ctx.Function_argument(0).(*plsql.Function_argumentContext)).([]interface{})
 		expr := newAstNode[semantic.FunctionCallExpression](ctx)
 		for _, arg := range args {
 			var ok bool
