@@ -29,6 +29,10 @@ func GetChildren(node AstNode) []AstNode {
 		rv = rv.Elem()
 	}
 
+	if rv.Kind() != reflect.Struct {
+		return children
+	}
+
 	// 现在 rv 应该是一个 struct，我们遍历它的所有字段
 	for i := 0; i < rv.NumField(); i++ {
 		field := rv.Field(i)
