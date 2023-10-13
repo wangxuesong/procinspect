@@ -19,7 +19,7 @@ type (
 func LoadScript(src string) (*semantic.Script, error) {
 	script, err := parser.ParseScript(src)
 	if err != nil {
-		return nil, err
+		return script, err
 	}
 
 	return script, nil
