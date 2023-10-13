@@ -456,11 +456,13 @@ func (v *plsqlVisitor) VisitCursor_declaration(ctx *plsql.Cursor_declarationCont
 		cursor.Parameters = append(cursor.Parameters, v.VisitParameter_spec(p.(*plsql.Parameter_specContext)).(*semantic.Parameter))
 	}
 	var ok bool
-	cursor.Stmt, ok = ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
+	stmt, ok := ctx.Select_statement().Accept(v).(*semantic.SelectStatement)
 	if !ok {
 		v.ReportError(fmt.Sprintf("unprocessed syntax %T",
 			ctx.Select_statement().GetChild(0)),
 			ctx.GetStart().GetLine(), ctx.GetStart().GetColumn())
+	} else {
+		cursor.Stmt = stmt
 	}
 	return cursor
 }
