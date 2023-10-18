@@ -2,6 +2,17 @@ package parser
 
 type ErrorKind int
 
+func (k ErrorKind) String() string {
+	switch k {
+	case ErrSyntax:
+		return "syntax"
+	case ErrSemantic:
+		return "semantic"
+	default:
+		return "unknown"
+	}
+}
+
 type ParseError struct {
 	Kind   ErrorKind
 	Line   int

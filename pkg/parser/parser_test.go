@@ -2669,6 +2669,17 @@ func TestParseErrors(t *testing.T) {
 				}, errs.Unwrap()[0])
 			},
 		},
+		{
+			name: "syntax error",
+			text: `select * from (select * from (
+select * from test.1));`,
+			Func: func(t *testing.T, root any) {
+				assert.NotNil(t, root)
+				err := root.(error)
+				assert.NotNil(t, err)
+				assert.Equal(t, "syntax error at line 2, column 18: [dml_table_expression_clause table_ref_aux_internal table_ref_aux table_ref table_ref_list from_clause query_block subquery_basic_elements subquery select_only_statement select_statement dml_table_expression_clause table_ref_aux_internal table_ref_aux table_ref table_ref_list from_clause query_block subquery_basic_elements subquery select_only_statement select_statement data_manipulation_language_statements unit_statement sql_script]", err.Error())
+			},
+		},
 	}
 
 	for _, test := range tests {
