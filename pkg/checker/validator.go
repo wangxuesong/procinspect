@@ -11,7 +11,8 @@ import (
 
 type (
 	SqlValidator struct {
-		err *multierror.Error
+		err     *multierror.Error
+		ruleMap map[reflect.Type]Rule
 	}
 
 	Validator interface {
@@ -30,9 +31,9 @@ func (v *SqlValidator) Validate(node semantic.AstNode) error {
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
-	if r, ok := ruleMap[t]; ok {
+	if r, ok := v.ruleMap[t]; ok {
 		n := node.(semantic.Node)
-		e := r.checkFunc(r, n)
+		e := r.CheckFunc(r, n)
 		var verr SqlValidationError
 		if errors.As(e, &verr) {
 			v.err = multierror.Append(v.err, verr)
@@ -53,21 +54,19 @@ func (v *SqlValidator) Error() error {
 // It initializes a validator and registers the validate rules context.
 // It returns a pointer to the newly created SqlValidator.
 func NewSqlValidator() *SqlValidator {
-	registerValidateRules(rules)
-	return &SqlValidator{}
+	v := &SqlValidator{
+		ruleMap: make(map[reflect.Type]Rule),
+	}
+	v.RegisterValidateRules(rules)
+	return v
 }
 
-func registerValidateRules(rs []rule) {
-	ruleMap = make(map[reflect.Type]rule)
+func (v *SqlValidator) RegisterValidateRules(rs []Rule) {
 	for _, r := range rs {
-		addRule(r)
+		t := reflect.TypeOf(r.Target)
+		if t.Kind() == reflect.Ptr {
+			t = t.Elem()
+		}
+		v.ruleMap[t] = r
 	}
-}
-
-func addRule(r rule) {
-	t := reflect.TypeOf(r.target)
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	ruleMap[t] = r
 }

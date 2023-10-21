@@ -66,3 +66,7 @@ func (v *ValidVisitor) VisitScript(node *semantic.Script) error {
 func (v *ValidVisitor) Error() error {
 	return v.v.Error()
 }
+
+func (v *ValidVisitor) RegisterValidateRules(r []Rule) {
+	v.v.RegisterValidateRules(r)
+}

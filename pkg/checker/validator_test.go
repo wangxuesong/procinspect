@@ -114,13 +114,13 @@ func TestRuleEngine(t *testing.T) {
 				v := NewValidVisitor()
 				node.Accept(v)
 				assert.Nil(t, v.Error())
-				r := rule{
-					name:      "select from dblink",
-					target:    &semantic.SelectStatement{},
-					checkFunc: validDblinkFunc(`indexOf(node.From.TableRefs[0].Table, "@") > 0`),
-					message:   "unsupported: select from dblink",
+				r := Rule{
+					Name:      "select from dblink",
+					Target:    &semantic.SelectStatement{},
+					CheckFunc: ValidExprFunc(`indexOf(node.From.TableRefs[0].Table, "@") > 0`),
+					Message:   "unsupported: select from dblink",
 				}
-				addRule(r)
+				v.RegisterValidateRules([]Rule{r})
 				e := node.Accept(v)
 				assert.Nil(t, e, func() string {
 					if e != nil {
