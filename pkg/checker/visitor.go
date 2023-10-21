@@ -53,13 +53,9 @@ func (v *ValidVisitor) VisitChildren(node semantic.AstNode) (err error) {
 
 func (v *ValidVisitor) VisitScript(node *semantic.Script) error {
 	var errs *multierror.Error
-	for _, stmt := range node.Statements {
-		s := stmt.(semantic.AstNode)
-		err := s.Accept(v)
-		if err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
+	err := v.VisitChildren(node)
+	errs = multierror.Append(errs, err)
+
 	return errs.ErrorOrNil()
 }
 
