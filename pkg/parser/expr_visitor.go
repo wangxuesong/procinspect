@@ -1167,12 +1167,18 @@ func (v *exprVisitor) VisitDml_table_expression_clause(ctx *plsql.Dml_table_expr
 		)
 		return nil
 	} else if ctx.Select_statement() != nil {
-		v.ReportError(
-			fmt.Sprintf("unsupported expression %T", ctx.Select_statement()),
-			ctx.Select_statement().GetStart().GetLine(),
-			ctx.Select_statement().GetStart().GetColumn(),
-		)
-		return nil
+		stmt, ok := ctx.Select_statement().Accept(v.stmtVisitor).(semantic.Statement)
+		if !ok {
+			v.ReportError(
+				fmt.Sprintf("unsupported expression %T", ctx.Select_statement()),
+				ctx.Select_statement().GetStart().GetLine(),
+				ctx.Select_statement().GetStart().GetColumn(),
+			)
+			return nil
+		}
+		expr := newAstNode[semantic.StatementExpression](ctx.Select_statement())
+		expr.Stmt = stmt
+		return expr
 	} else {
 		expr := &semantic.NameExpression{Name: ctx.Tableview_name().GetText()}
 		if ctx.Sample_clause() != nil {
