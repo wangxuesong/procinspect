@@ -11,19 +11,19 @@ type (
 	}
 
 	AssignmentStatement struct {
-		node
+		SyntaxNode
 		Left  string
 		Right Expr
 	}
 
 	BlockStatement struct {
-		node
+		SyntaxNode
 		Declarations []Declaration
 		Body         *Body
 	}
 
 	IfStatement struct {
-		node
+		SyntaxNode
 		blockDepth
 		Condition Expr
 		ThenBlock []Statement
@@ -32,56 +32,77 @@ type (
 	}
 
 	ElseBlock struct {
-		node
+		SyntaxNode
 		blockDepth
 		Statements []Statement
 	}
 
 	LoopStatement struct {
-		node
+		SyntaxNode
 		blockDepth
 		Statements []Statement
 	}
 
 	OpenStatement struct {
-		node
+		SyntaxNode
 		Name string
 	}
 
+	OpenForStatement struct {
+		SyntaxNode
+		Name  Expr
+		For   Expr
+		Using Expr
+	}
+
 	CloseStatement struct {
-		node
+		SyntaxNode
 		Name string
 	}
 
 	FetchStatement struct {
-		node
+		SyntaxNode
 		Cursor string
 		Into   string
 	}
 
 	ExitStatement struct {
-		node
+		SyntaxNode
 		Condition Expr
 	}
 
 	ReturnStatement struct {
-		node
+		SyntaxNode
 		Name Expr
 	}
 
 	NullStatement struct {
-		node
+		SyntaxNode
 	}
 
 	ProcedureCall struct {
-		node
+		SyntaxNode
 		Name      Expr
 		Arguments []Expr
 	}
 
 	ExecuteImmediateStatement struct {
-		node
-		Sql string
+		SyntaxNode
+		Sql   string
+		Into  *IntoClause
+		Using *UsingClause
+	}
+
+	IntoClause struct {
+		SyntaxNode
+		IsBulk bool
+		Vars   []Expr
+	}
+
+	UsingClause struct {
+		ExprNode
+		WildCard *string
+		Elems    []Expr
 	}
 
 	Declaration interface {
@@ -90,19 +111,19 @@ type (
 	}
 
 	VariableDeclaration struct {
-		node
+		SyntaxNode
 		Name           string
 		DataType       string
 		Initialization Expr
 	}
 
 	ExceptionDeclaration struct {
-		node
+		SyntaxNode
 		Name string
 	}
 
 	CursorDeclaration struct {
-		node
+		SyntaxNode
 		Name        string
 		Parameters  []*Parameter
 		Stmt        Statement
@@ -111,29 +132,44 @@ type (
 	}
 
 	NestTableTypeDeclaration struct {
-		node
+		SyntaxNode
 		Name string
 	}
 
 	FunctionDeclaration struct {
-		node
+		SyntaxNode
 		Name       string
 		Parameters []*Parameter
 	}
 
 	Parameter struct {
-		node
+		SyntaxNode
 		Name     string
 		DataType string
 	}
 
 	Argument struct {
-		node
+		SyntaxNode
 		Name string
 	}
 
 	AutonomousTransactionDeclaration struct {
-		node
+		SyntaxNode
+	}
+
+	RaiseStatement struct {
+		SyntaxNode
+		Name string
+	}
+
+	GotoStatement struct {
+		SyntaxNode
+		Label string
+	}
+
+	LabelDeclaration struct {
+		SyntaxNode
+		Label string
 	}
 )
 
@@ -171,6 +207,8 @@ func (l *LoopStatement) statement() {}
 
 func (o *OpenStatement) statement() {}
 
+func (o *OpenForStatement) statement() {}
+
 func (c *CloseStatement) statement() {}
 
 func (s *FetchStatement) statement() {}
@@ -184,3 +222,9 @@ func (s *ReturnStatement) statement() {}
 func (s *NullStatement) statement() {}
 
 func (s *ExecuteImmediateStatement) statement() {}
+
+func (s *RaiseStatement) statement() {}
+
+func (s *GotoStatement) statement() {}
+
+func (s *LabelDeclaration) statement() {}

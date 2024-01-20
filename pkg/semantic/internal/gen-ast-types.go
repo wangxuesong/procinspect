@@ -15,73 +15,38 @@ import (
 const (
 	KindExpr = "Expr"
 	KindStmt = "Stmt"
+	KindNode = "Node"
 )
 
-var exprTypes = Types{
-	{
-		Name:    "NumericLiteral",
-		Fields:  "semantic.NumericLiteral",
-		Comment: "",
-	},
-	{
-		Name:    "NameExpression",
-		Fields:  "semantic.NameExpression",
-		Comment: "",
-	},
-	{
-		Name:    "DotExpression",
-		Fields:  "semantic.DotExpression",
-		Comment: "",
-	},
-}
-
-var stmtTypes = Types{
-	{
-		Name:    "Script",
-		Fields:  "semantic.Script",
-		Comment: "",
-	},
-	{
-		Name:    "CreateProcedureStatement",
-		Fields:  "semantic.CreateProcedureStatement",
-		Comment: "",
-	},
-	{
-		Name:    "CreatePackageStatement",
-		Fields:  "semantic.CreatePackageStatement",
-		Comment: "",
-	},
-	{
-		Name:    "CreatePackageBodyStatement",
-		Fields:  "semantic.CreatePackageBodyStatement",
-		Comment: "",
-	},
-	{
-		Name:    "BlockStatement",
-		Fields:  "semantic.BlockStatement",
-		Comment: "",
-	},
-	{
-		Name:    "Body",
-		Fields:  "semantic.Body",
-		Comment: "",
-	},
-	{
-		Name:    "AssignmentStatement",
-		Fields:  "semantic.AssignmentStatement",
-		Comment: "",
-	},
-	{
-		Name:    "ProcedureCall",
-		Fields:  "semantic.ProcedureCall",
-		Comment: "",
-	},
-	{
-		Name:    "VariableDeclaration",
-		Fields:  "semantic.VariableDeclaration",
-		Comment: "",
-	},
-}
+var (
+	fmtVisitorInterface = map[string]string{
+		KindExpr: "Visit%s(v *%s) (result interface{}, err error)",
+		KindStmt: "Visit%s(v *%s) (err error)",
+		KindNode: "Visit%s(v *%s) (err error)",
+	}
+	fmtStubVisitorImpl = map[string]string{
+		KindExpr: `func (s StubExprVisitor) Visit%s(_ *%s) (interface{}, error) {
+	return nil, errors.New("visit func for %s is not implemented")
+}`,
+		KindStmt: `func (s StubStmtVisitor) Visit%s(_ *%s) (error) {
+	return errors.New("visit func for %s is not implemented")
+}`,
+		KindNode: `func (s *StubNodeVisitor) Visit%s(n *%s) (error) {
+	return s.VisitChildren(n) // %s
+}`,
+	}
+	fmtTypeAccept = map[string]string{
+		KindExpr: `func (b *%s) ExprAccept(visitor ExprVisitor) (result interface{}, err error) {
+	return visitor.Visit%s(b)
+}`,
+		KindStmt: `func (b *%s) StmtAccept(visitor StmtVisitor) (err error) {
+	return visitor.Visit%s(b)
+}`,
+		KindNode: `func (b *%s) Accept(visitor NodeVisitor) (err error) {
+	return visitor.Visit%s(b)
+}`,
+	}
+)
 
 var output = flag.String("o", "exprTypes.generated.go", "output file path")
 
@@ -100,17 +65,31 @@ func main() {
 
 	g.WriteHeader()
 
-	//sort.Sort(exprTypes)
+	// sort.Sort(exprTypes)
 	err = g.WriteTypes(KindExpr, exprTypes)
 	if err != nil {
 		err = fmt.Errorf("generating expr content: %w", err)
 		return
 	}
 
-	//sort.Sort(stmtTypes)
+	// sort.Sort(stmtTypes)
+	// 合并 declTypes
+	stmtTypes = append(stmtTypes, declTypes...)
 	err = g.WriteTypes(KindStmt, stmtTypes)
 	if err != nil {
 		err = fmt.Errorf("generating stmt content: %w", err)
+		return
+	}
+
+	err = g.WriteTypes(KindNode, nodeTypes)
+	if err != nil {
+		err = fmt.Errorf("generating node content: %w", err)
+		return
+	}
+
+	err = g.WriteGobRegister(KindNode, nodeTypes)
+	if err != nil {
+		err = fmt.Errorf("generating register content: %w", err)
 		return
 	}
 
@@ -168,7 +147,9 @@ func (g *Generator) WriteHeader() {
 package semantic
 
 import (
+	"encoding/gob"
 	"errors"
+	"sync"
 )
 
 `)
@@ -191,17 +172,26 @@ func (g *Generator) WriteTo(writer io.Writer) (int64, error) {
 }
 
 func (g *Generator) WriteTypes(kind string, types Types) (err error) {
-	//err = g.checkExprTypes(kind, types)
-	//if err != nil {
-	//	err = fmt.Errorf("checking exprTypes: %w", err)
-	//	return
-	//}
-
 	g.writeVisitor(kind, types)
 
 	for _, item := range types {
 		g.writeAccept(kind, item)
 	}
+
+	return
+}
+
+func (g *Generator) WriteGobRegister(kind string, types Types) (err error) {
+	g.buf.WriteString("var register = sync.OnceFunc(func() {")
+	g.linebreak()
+
+	for _, item := range types {
+		fmt.Fprintf(&g.buf, "gob.Register(&%s{})", item.Name)
+		g.linebreak()
+	}
+
+	g.buf.WriteString("})")
+	g.linebreak()
 
 	return
 }
@@ -236,18 +226,6 @@ func (g *Generator) checkExprTypes(kind string, types Types) (err error) {
 			err = fmt.Errorf("fields are empty for type %q", item.Name)
 			return
 		}
-		//fields := strings.Split(item.Fields, ",")
-		//for fieldIdx, field := range fields {
-		//	field = strings.TrimSpace(field)
-		//	if field == "" {
-		//		err = fmt.Errorf("empty field at index %d from type %q", fieldIdx, item.Name)
-		//		return
-		//	}
-		//	if !ast.IsExported(field) {
-		//		err = fmt.Errorf("field %q of type %q is not exported", field, item.Name)
-		//		return
-		//	}
-		//}
 	}
 
 	return
@@ -260,14 +238,14 @@ func (g *Generator) linebreak() {
 func (g *Generator) writeVisitor(kind string, types Types) {
 	_, _ = fmt.Fprintf(&g.buf, "type %sVisitor interface {", kind)
 	g.linebreak()
+	if kind == KindNode {
+		_, _ = fmt.Fprintf(&g.buf, "VisitChildren(n AstNode) (err error)")
+	}
+	g.linebreak()
 
 	for _, item := range types {
 		g.buf.WriteByte('\t')
-		if kind == KindExpr {
-			_, _ = fmt.Fprintf(&g.buf, "Visit%s(v *%s) (result interface{}, err error)", item.Name, item.Name)
-		} else {
-			_, _ = fmt.Fprintf(&g.buf, "Visit%s(v *%s) (err error)", item.Name, item.Name)
-		}
+		_, _ = fmt.Fprintf(&g.buf, fmtVisitorInterface[kind], item.Name, item.Name)
 		g.linebreak()
 	}
 
@@ -276,23 +254,15 @@ func (g *Generator) writeVisitor(kind string, types Types) {
 	g.linebreak()
 
 	// stub visitor
-	_, _ = fmt.Fprintf(&g.buf, "type Stub%sVisitor struct{}", kind)
+	_, _ = fmt.Fprintf(&g.buf, "type Stub%sVisitor struct{ %sVisitor}", kind, kind)
 	g.linebreak()
 	g.linebreak()
-	g.buf.WriteString(`var _ ExprVisitor = StubExprVisitor{}`)
+	g.buf.WriteString(fmt.Sprintf(`var _ %[1]sVisitor = &Stub%[1]sVisitor{}`, kind))
 	g.linebreak()
 	g.linebreak()
 
 	for _, item := range types {
-		if kind == KindExpr {
-			_, _ = fmt.Fprintf(&g.buf, `func (s StubExprVisitor) Visit%s(_ *%s) (interface{}, error) {
-	return nil, errors.New("visit func for %s is not implemented")
-}`, item.Name, item.Name, item.Name)
-		} else {
-			_, _ = fmt.Fprintf(&g.buf, `func (s StubExprVisitor) Visit%s(_ *%s) (error) {
-	return errors.New("visit func for %s is not implemented")
-}`, item.Name, item.Name, item.Name)
-		}
+		_, _ = fmt.Fprintf(&g.buf, fmtStubVisitorImpl[kind], item.Name, item.Name, item.Name)
 
 		g.linebreak()
 		g.linebreak()
@@ -308,10 +278,10 @@ func (g *Generator) writeType(kind string, item Type) {
 	_, _ = fmt.Fprintf(&g.buf, "type %s %s", item.Name, item.Fields)
 	g.linebreak()
 
-	//fields := strings.Split(item.Fields, ",")
-	//g.buf.WriteString(strings.Join(fields, "\n"))
+	// fields := strings.Split(item.Fields, ",")
+	// g.buf.WriteString(strings.Join(fields, "\n"))
 	//
-	//g.buf.WriteString(`}`)
+	// g.buf.WriteString(`}`)
 	g.linebreak()
 	g.linebreak()
 
@@ -324,11 +294,11 @@ func (g *Generator) writeType(kind string, item Type) {
 	g.linebreak()
 
 	if kind == KindExpr {
-		_, _ = fmt.Fprintf(&g.buf, `func (b *%s) Accept(visitor ExprVisitor) (result interface{}, err error) {
+		_, _ = fmt.Fprintf(&g.buf, `func (b *%s) ExprAccept(visitor ExprVisitor) (result interface{}, err error) {
 	return visitor.Visit%s(b)
 }`, item.Name, item.Name)
 	} else {
-		_, _ = fmt.Fprintf(&g.buf, `func (b *%s) Accept(visitor StmtVisitor) (err error) {
+		_, _ = fmt.Fprintf(&g.buf, `func (b *%s) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.Visit%s(b)
 }`, item.Name, item.Name)
 	}
@@ -338,15 +308,7 @@ func (g *Generator) writeType(kind string, item Type) {
 }
 
 func (g *Generator) writeAccept(kind string, item Type) {
-	if kind == KindExpr {
-		_, _ = fmt.Fprintf(&g.buf, `func (b *%s) Accept(visitor ExprVisitor) (result interface{}, err error) {
-	return visitor.Visit%s(b)
-}`, item.Name, item.Name)
-	} else {
-		_, _ = fmt.Fprintf(&g.buf, `func (b *%s) Accept(visitor StmtVisitor) (err error) {
-	return visitor.Visit%s(b)
-}`, item.Name, item.Name)
-	}
+	_, _ = fmt.Fprintf(&g.buf, fmtTypeAccept[kind], item.Name, item.Name)
 
 	g.linebreak()
 	g.linebreak()

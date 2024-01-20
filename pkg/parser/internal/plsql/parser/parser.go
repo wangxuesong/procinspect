@@ -3,13 +3,21 @@ package parser
 import (
 	"errors"
 	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
 )
 
 type (
+	SyntaxError struct {
+		Line    int
+		Column  int
+		Stack   []string
+		Message string
+		Origin  string
+	}
 	MyErrorListener struct {
 		antlr.DefaultErrorListener
-		err error
+		err []error
 	}
 
 	SqlParser struct {
@@ -43,9 +51,22 @@ func NewMyErrorListener() *MyErrorListener {
 func (el *MyErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
 	p := recognizer.(antlr.Parser)
 	stack := p.GetRuleInvocationStack(p.GetParserRuleContext())
-	el.err = errors.Join(el.err, fmt.Errorf("stack: %v; %d:%d at %v: %s", stack[0], line, column, offendingSymbol, ""))
+	el.err = append(el.err, SyntaxError{
+		Line:    line,
+		Column:  column,
+		Stack:   stack,
+		Message: msg,
+		Origin:  fmt.Sprintf("%v", offendingSymbol),
+	})
 }
 
 func (el *MyErrorListener) Error() error {
-	return el.err
+	var errs error
+	errs = errors.Join(el.err...)
+	// }
+	return errs
+}
+
+func (e SyntaxError) Error() string {
+	return fmt.Sprintf("syntax error at line %d, column %d: %v", e.Line, e.Column, e.Stack)
 }

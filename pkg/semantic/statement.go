@@ -1,36 +1,45 @@
 package semantic
 
+type SetOperator int
+
+const (
+	Union SetOperator = iota
+	UnionAll
+	Intersect
+	Minus
+)
+
 type (
 	WildCardField struct {
-		node
+		SyntaxNode
 
 		Table  string
 		Schema string
 	}
 
 	SelectField struct {
-		node
+		SyntaxNode
 		WildCard *WildCardField
 		Expr     Expr
 	}
 
 	FieldList struct {
-		node
+		SyntaxNode
 		Fields []*SelectField
 	}
 
 	TableRef struct {
-		node
+		SyntaxNode
 		Table string
 	}
 
 	FromClause struct {
-		node
+		SyntaxNode
 		TableRefs []*TableRef
 	}
 
 	ForUpdateClause struct {
-		node
+		SyntaxNode
 		Options Expr
 	}
 
@@ -40,63 +49,76 @@ type (
 	}
 
 	SelectStatement struct {
-		node
-		Fields    *FieldList
-		From      *FromClause
-		Where     Expr
-		ForUpdate *ForUpdateClause
+		SyntaxNode
+		Fields      *FieldList
+		From        *FromClause
+		Where       Expr
+		ForUpdate   *ForUpdateClause
+		SetOperator *SetOperator
+		With        *WithClause
+	}
+
+	WithClause struct {
+		SyntaxNode
+		IsRecursive bool
+		CTEs        []*CommonTableExpression
+	}
+
+	SetOperationStatement struct {
+		SyntaxNode
+		SelectList []Statement
 	}
 
 	CreateTypeStatement struct {
-		node
+		SyntaxNode
 		Name string
 	}
 
 	CreateNestTableStatement struct {
-		node
+		SyntaxNode
 		CreateTypeStatement
 	}
 
 	CreateSynonymStatement struct {
-		node
+		SyntaxNode
 		Synonym  Expr
 		Original Expr
 	}
 
 	CaseWhenStatement struct {
-		node
+		SyntaxNode
 		Expr        Expr
 		WhenClauses []*CaseWhenBlock
 		ElseClause  *CaseWhenBlock
 	}
 
 	CaseWhenBlock struct {
-		node
+		SyntaxNode
 		Condition Expr
 		Expr      Expr
 		Stmts     []Statement
 	}
 
 	CommitStatement struct {
-		node
+		SyntaxNode
 	}
 
 	RollbackStatement struct {
-		node
+		SyntaxNode
 	}
 
 	ContinueStatement struct {
-		node
+		SyntaxNode
 	}
 
 	DeleteStatement struct {
-		node
+		SyntaxNode
 		Table Expr
 		Where Expr
 	}
 
 	UpdateStatement struct {
-		node
+		SyntaxNode
 		Table    Expr
 		Where    Expr
 		SetExprs []Expr
@@ -104,16 +126,36 @@ type (
 	}
 
 	InsertStatement struct {
-		node
-		AllInto []*IntoClause
+		SyntaxNode
+		AllInto []*InsertIntoClause
 		Select  *SelectStatement
 	}
 
-	IntoClause struct {
-		node
+	InsertIntoClause struct {
+		SyntaxNode
 		Table   *TableRef
 		Columns []Expr
 		Values  []Expr
+	}
+
+	MergeStatement struct {
+		SyntaxNode
+		Table       *TableRef
+		Using       Expr
+		OnCondition Expr
+		MergeUpdate *MergeUpdateStatement
+		MergeInsert *MergeInsertStatement
+	}
+
+	MergeUpdateStatement struct {
+		SyntaxNode
+		SetElems []Expr
+		Where    Expr
+		Delete   Expr
+	}
+
+	MergeInsertStatement struct {
+		SyntaxNode
 	}
 )
 
@@ -122,6 +164,8 @@ func (s *SelectStatement) Type() NodeType {
 }
 
 func (s *SelectStatement) statement() {}
+
+func (s *SetOperationStatement) statement() {}
 
 func (s *CreateTypeStatement) statement() {}
 
@@ -142,3 +186,9 @@ func (s *DeleteStatement) statement() {}
 func (s *UpdateStatement) statement() {}
 
 func (s *InsertStatement) statement() {}
+
+func (s *MergeStatement) statement() {}
+
+func (s *MergeUpdateStatement) statement() {}
+
+func (s *MergeInsertStatement) statement() {}

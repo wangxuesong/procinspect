@@ -367,6 +367,12 @@ func (s *BasePlSqlParserListener) EnterCreate_function_body(ctx *Create_function
 // ExitCreate_function_body is called when production create_function_body is exited.
 func (s *BasePlSqlParserListener) ExitCreate_function_body(ctx *Create_function_bodyContext) {}
 
+// EnterSql_macro_body is called when production sql_macro_body is entered.
+func (s *BasePlSqlParserListener) EnterSql_macro_body(ctx *Sql_macro_bodyContext) {}
+
+// ExitSql_macro_body is called when production sql_macro_body is exited.
+func (s *BasePlSqlParserListener) ExitSql_macro_body(ctx *Sql_macro_bodyContext) {}
+
 // EnterParallel_enable_clause is called when production parallel_enable_clause is entered.
 func (s *BasePlSqlParserListener) EnterParallel_enable_clause(ctx *Parallel_enable_clauseContext) {}
 
@@ -2450,6 +2456,12 @@ func (s *BasePlSqlParserListener) EnterProgram_unit(ctx *Program_unitContext) {}
 
 // ExitProgram_unit is called when production program_unit is exited.
 func (s *BasePlSqlParserListener) ExitProgram_unit(ctx *Program_unitContext) {}
+
+// EnterCreate_dimension is called when production create_dimension is entered.
+func (s *BasePlSqlParserListener) EnterCreate_dimension(ctx *Create_dimensionContext) {}
+
+// ExitCreate_dimension is called when production create_dimension is exited.
+func (s *BasePlSqlParserListener) ExitCreate_dimension(ctx *Create_dimensionContext) {}
 
 // EnterCreate_directory is called when production create_directory is entered.
 func (s *BasePlSqlParserListener) EnterCreate_directory(ctx *Create_directoryContext) {}
@@ -5009,6 +5021,12 @@ func (s *BasePlSqlParserListener) EnterModify_col_properties(ctx *Modify_col_pro
 // ExitModify_col_properties is called when production modify_col_properties is exited.
 func (s *BasePlSqlParserListener) ExitModify_col_properties(ctx *Modify_col_propertiesContext) {}
 
+// EnterModify_col_visibility is called when production modify_col_visibility is entered.
+func (s *BasePlSqlParserListener) EnterModify_col_visibility(ctx *Modify_col_visibilityContext) {}
+
+// ExitModify_col_visibility is called when production modify_col_visibility is exited.
+func (s *BasePlSqlParserListener) ExitModify_col_visibility(ctx *Modify_col_visibilityContext) {}
+
 // EnterModify_col_substitutable is called when production modify_col_substitutable is entered.
 func (s *BasePlSqlParserListener) EnterModify_col_substitutable(ctx *Modify_col_substitutableContext) {
 }
@@ -5128,6 +5146,12 @@ func (s *BasePlSqlParserListener) EnterColumn_properties(ctx *Column_propertiesC
 
 // ExitColumn_properties is called when production column_properties is exited.
 func (s *BasePlSqlParserListener) ExitColumn_properties(ctx *Column_propertiesContext) {}
+
+// EnterLob_partition_storage is called when production lob_partition_storage is entered.
+func (s *BasePlSqlParserListener) EnterLob_partition_storage(ctx *Lob_partition_storageContext) {}
+
+// ExitLob_partition_storage is called when production lob_partition_storage is exited.
+func (s *BasePlSqlParserListener) ExitLob_partition_storage(ctx *Lob_partition_storageContext) {}
 
 // EnterPeriod_definition is called when production period_definition is entered.
 func (s *BasePlSqlParserListener) EnterPeriod_definition(ctx *Period_definitionContext) {}
@@ -5629,17 +5653,11 @@ func (s *BasePlSqlParserListener) EnterReturn_statement(ctx *Return_statementCon
 // ExitReturn_statement is called when production return_statement is exited.
 func (s *BasePlSqlParserListener) ExitReturn_statement(ctx *Return_statementContext) {}
 
-// EnterFunction_call is called when production function_call is entered.
-func (s *BasePlSqlParserListener) EnterFunction_call(ctx *Function_callContext) {}
+// EnterCall_statement is called when production call_statement is entered.
+func (s *BasePlSqlParserListener) EnterCall_statement(ctx *Call_statementContext) {}
 
-// ExitFunction_call is called when production function_call is exited.
-func (s *BasePlSqlParserListener) ExitFunction_call(ctx *Function_callContext) {}
-
-// EnterProcedure_call is called when production procedure_call is entered.
-func (s *BasePlSqlParserListener) EnterProcedure_call(ctx *Procedure_callContext) {}
-
-// ExitProcedure_call is called when production procedure_call is exited.
-func (s *BasePlSqlParserListener) ExitProcedure_call(ctx *Procedure_callContext) {}
+// ExitCall_statement is called when production call_statement is exited.
+func (s *BasePlSqlParserListener) ExitCall_statement(ctx *Call_statementContext) {}
 
 // EnterPipe_row_statement is called when production pipe_row_statement is entered.
 func (s *BasePlSqlParserListener) EnterPipe_row_statement(ctx *Pipe_row_statementContext) {}

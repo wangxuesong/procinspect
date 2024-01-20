@@ -20,7 +20,7 @@ func ParseScript(src string) (*semantic.Script, error) {
 	visitor := newPlSqlVisitor()
 	script := visitor.VisitSql_script(root.(*parser.Sql_scriptContext)).(*semantic.Script)
 
-	return script, nil
+	return script, visitor.Error()
 }
 
 func ParseSql(src string) (func(int) (*semantic.Script, error), error) {
@@ -34,7 +34,7 @@ func ParseSql(src string) (func(int) (*semantic.Script, error), error) {
 		visitor := newPlSqlVisitor(start)
 		script := visitor.VisitSql_script(root.(*parser.Sql_scriptContext)).(*semantic.Script)
 
-		return script, nil
+		return script, visitor.Error()
 	}, nil
 }
 

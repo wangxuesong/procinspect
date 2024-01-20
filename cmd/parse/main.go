@@ -1,16 +1,24 @@
 package main
 
 import (
+	"compress/gzip"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"runtime/pprof"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
+
+	"atomicgo.dev/cursor"
+	"github.com/pterm/pterm"
+	"go.uber.org/zap"
 
 	"procinspect/pkg/log"
 	"procinspect/pkg/parser"
@@ -18,20 +26,79 @@ import (
 )
 
 var (
-	file     = flag.String("file", "", "")
-	dir      = flag.String("dir", "", "")
-	prof     = flag.Bool("prof", false, "")
-	parallel = flag.Bool("p", false, "parallel parse")
-	verbose  = flag.Bool("v", false, "verbose")
-	size     = flag.Int64("size", 500*1024, "size")
+	file       = flag.String("file", "", "")
+	dir        = flag.String("dir", "", "")
+	prof       = flag.Bool("prof", false, "")
+	parallel   = flag.Bool("p", false, "parallel parse")
+	verbose    = flag.Bool("v", false, "verbose")
+	size       = flag.Int64("size", 500*1024, "size")
+	index      = flag.Int("index", 0, "start from index")
+	lines      = flag.Bool("lines", false, "progress by line")
+	serialize  = flag.Bool("s", false, "serialize")
+	totalLines int
 )
 
+type WorkerPool struct {
+	workers    []*Worker
+	taskQueue  chan Task
+	numWorkers int
+	wg         sync.WaitGroup
+}
+
+type Task func()
+
+type Worker struct {
+	id      int
+	workers *WorkerPool
+}
+
+func NewWorkerPool(numWorkers int, taskQueueSize int) *WorkerPool {
+	pool := &WorkerPool{
+		workers:    make([]*Worker, numWorkers),
+		taskQueue:  make(chan Task, taskQueueSize),
+		numWorkers: numWorkers,
+	}
+
+	for i := 0; i < numWorkers; i++ {
+		worker := &Worker{
+			id:      i + 1,
+			workers: pool,
+		}
+		pool.workers[i] = worker
+		go worker.start()
+	}
+
+	return pool
+}
+
+func (p *WorkerPool) Submit(task Task) {
+	p.taskQueue <- task
+}
+
+func (w *Worker) start() {
+	for task := range w.workers.taskQueue {
+		w.workers.wg.Add(1)
+		func() {
+			defer func() {
+				w.workers.wg.Done()
+				// runtime.GC()
+			}()
+			task()
+		}()
+	}
+}
+
 type (
+	msg struct {
+		Msg    string
+		Fields []zap.Field
+	}
 	ParseRequest struct {
 		FileName string
 		Source   string
 		Index    int
 		Start    int
+		Msg      chan msg
 	}
 	ParseResult struct {
 		FileName string
@@ -45,7 +112,7 @@ type (
 
 func main() {
 	flag.Parse()
-	//flag.PrintDefaults()
+	// flag.PrintDefaults()
 
 	if *prof {
 		pf, err := os.Create("./cpu.prof")
@@ -55,6 +122,12 @@ func main() {
 		}
 		pprof.StartCPUProfile(pf)
 		defer pprof.StopCPUProfile()
+	}
+
+	processSignal()
+
+	if *verbose {
+		log.SetLevel(log.DebugLevel)
 	}
 
 	var sql string
@@ -77,6 +150,17 @@ func main() {
 		_ = parseFile(sql)
 		return
 	}
+}
+
+func processSignal() {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-quit
+		cursor.Show()
+		fmt.Println("Exit")
+		os.Exit(-1)
+	}()
 }
 
 func walkDir(path string, info os.FileInfo, err error) error {
@@ -113,29 +197,15 @@ func parseFile(path string) error {
 	requests, err := prepareRequest(absPath)
 
 	var results []*ParseResult = make([]*ParseResult, len(requests))
+	msgChan := make(chan msg)
+	defer close(msgChan)
 	start := time.Now()
 	if *parallel {
-		parseChan := make(chan *ParseResult)
-		wg := &sync.WaitGroup{}
-		// runtime.GOMAXPROCS(0)
-		for _, req := range requests {
-			wg.Add(1)
-			go func(req *ParseRequest) {
-				defer wg.Done()
-				parseChan <- parseBlock(req)
-			}(req)
-		}
-		for _, _ = range requests {
-			result := <-parseChan
-			results[result.Index] = result
-		}
-		close(parseChan)
-		wg.Wait()
+		parallelParse(requests, msgChan, results)
 	} else {
-		for _, req := range requests {
+		for _, req := range requests[*index:] {
 			result := parseBlock(req)
 			results[result.Index] = result
-			//results = append(results, result)
 		}
 	}
 	elapsed := time.Since(start)
@@ -163,15 +233,128 @@ func parseFile(path string) error {
 		log.String("duration", elapsed.String()))
 
 	// 生成 AST
+	script := &semantic.Script{}
 	for _, result := range results {
-		_, err := result.AstFunc(result.Start)
+		s, err := result.AstFunc(result.Start)
 		if err != nil {
-			log.Error("Check Error", log.String("file", filepath.Base(absPath)),
+			joinErr, ok := err.(interface{ Unwrap() []error })
+			if ok {
+				errs := joinErr.Unwrap()
+				for _, e := range errs {
+					var pe parser.ParseError
+					if errors.As(e, &pe) {
+						log.Warn(pe.Msg, log.Int("line", pe.Line), log.Int("column", pe.Column))
+					} else {
+						log.Error("Semantic Error", log.String("file", filepath.Base(absPath)),
+							log.String("error", e.Error()),
+						)
+					}
+				}
+			} else {
+				log.Error("Semantic Error", log.String("file", filepath.Base(absPath)),
+					log.String("error", err.Error()),
+				)
+			}
+		}
+		script = appendScript(script, s)
+	}
+
+	// serialize
+	if *serialize {
+		filename := strings.TrimSuffix(filepath.Base(absPath), filepath.Ext(absPath)) + ".ast"
+		err = marshal(filename, script)
+		if err != nil {
+			log.Error("Serialize Error", log.String("file", filepath.Base(absPath)),
 				log.String("error", err.Error()),
 			)
 		}
 	}
 	return nil
+}
+
+func marshal(path string, script *semantic.Script) error {
+	filename := path
+	buf, err := semantic.NewNodeEncoder().Encode(script)
+	if err != nil {
+		log.Error("Serialize Error", log.String("error", err.Error()))
+		return err
+	}
+
+	file, err := os.Create(filename)
+	if err != nil {
+		log.Error("Serialize Error", log.String("error", err.Error()))
+		return err
+	}
+	defer file.Close()
+
+	gw := gzip.NewWriter(file)
+	defer gw.Close()
+
+	_, err = gw.Write(buf)
+	if err != nil {
+		log.Error("Serialize Error", log.String("error", err.Error()))
+		return err
+	}
+	return nil
+}
+
+func appendScript(script *semantic.Script, s *semantic.Script) *semantic.Script {
+	for _, stmt := range s.Statements {
+		script.Statements = append(script.Statements, stmt)
+	}
+	return script
+}
+
+func parallelParse(requests []*ParseRequest, msgChan chan msg, results []*ParseResult) {
+	total := len(requests)
+	if *lines {
+		total = 0
+		for _, r := range requests {
+			total += len(strings.Split(r.Source, "\n"))
+		}
+	}
+	p, _ := pterm.DefaultProgressbar.
+		WithTotal(total).
+		WithMaxWidth(-1).
+		WithTitle(requests[0].FileName).
+		Start()
+
+	numWorkers := runtime.GOMAXPROCS(0) - 1
+	pool := NewWorkerPool(numWorkers, len(requests))
+	parseChan := make(chan *ParseResult)
+	for _, req := range requests[*index:] {
+		tmpReq := *req
+		tmpReq.Msg = msgChan
+		pool.Submit(func() {
+			parseChan <- parseBlock(&tmpReq)
+		})
+	}
+	for _, _ = range requests[*index:] {
+		result := <-parseChan
+		results[result.Index] = result
+		if result.Error != nil {
+			log.Error("Parse Error",
+				log.Int("index", result.Index),
+				log.Int("start", result.Start),
+				log.String("error", result.Error.Error()),
+			)
+		}
+		if !*lines {
+			p.Increment()
+		} else {
+			count := len(strings.Split(result.Source, "\n"))
+			// log.Debug(
+			//	"Parse Progress",
+			//	log.Int("index", result.Index),
+			//	log.Int("start", result.Start),
+			//	log.Int("count", count),
+			//	log.String("source", result.Source),
+			// )
+			p.Add(count)
+		}
+		//	result.AstFunc(result.Start)
+	}
+	close(parseChan)
 }
 
 func prepareRequest(path string) ([]*ParseRequest, error) {
@@ -201,6 +384,9 @@ func prepareRequest(path string) ([]*ParseRequest, error) {
 		start := 0
 		offset := 0
 		for i, block := range blocks {
+			if strings.TrimSpace(block) == "" {
+				continue
+			}
 			requests = append(requests, &ParseRequest{
 				FileName: name,
 				Source:   block,
@@ -231,11 +417,26 @@ func parseBlock(r *ParseRequest) *ParseResult {
 	if *verbose {
 		result.Source = r.Source
 	}
+	log.Debug("start parse", log.String("foo", "sss"), log.Int("index", r.Index), log.Int("start", r.Start))
+	el := time.Now()
 	s, err := parser.ParseSql(r.Source)
+	du := time.Since(el)
+	log.Debug("stop parse", log.String("foo", "xxx"), log.Int("index", r.Index), log.String("duration", du.String()), log.Int("start", r.Start))
 	if err != nil {
 		result.Error = err
 	} else {
-		result.AstFunc = s
+		if *serialize {
+			result.AstFunc = func(start int) (*semantic.Script, error) {
+				script, err := s(start)
+				if err != nil {
+					return nil, err
+				}
+
+				return script, nil
+			}
+		} else {
+			result.AstFunc = s
+		}
 	}
 	return result
 }

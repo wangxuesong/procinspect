@@ -3,19 +3,32 @@ package semantic
 type (
 	NodeType int
 
-	Node interface {
-		Type() NodeType
-		Line() int
-		Column() int
+	Span struct {
+		Start, End int
 	}
 
-	node struct {
-		line   int
-		column int
+	Node interface {
+		AstNode
+		// Type() NodeType
+		Line() int
+		Column() int
+		Span() Span
+	}
+
+	SetPosition interface {
+		SetLine(int)
+		SetColumn(int)
+		SetSpan(Span)
+	}
+
+	SyntaxNode struct {
+		SourceLine int
+		SourceCol  int
+		SourceSpan Span
 	}
 
 	Script struct {
-		node
+		SyntaxNode
 		Statements []Statement
 	}
 )
@@ -28,24 +41,32 @@ const (
 	Assignment
 )
 
-func (*node) Type() NodeType {
+func (SyntaxNode) Type() NodeType {
 	return NilNode
 }
 
-func (n *node) Line() int {
-	return n.line
+func (n SyntaxNode) Line() int {
+	return n.SourceLine
 }
 
-func (n *node) Column() int {
-	return n.column
+func (n SyntaxNode) Column() int {
+	return n.SourceCol
 }
 
-func (n *node) SetLine(line int) {
-	n.line = line
+func (n SyntaxNode) Span() Span {
+	return n.SourceSpan
 }
 
-func (n *node) SetColumn(column int) {
-	n.column = column + 1
+func (n *SyntaxNode) SetLine(line int) {
+	n.SourceLine = line
+}
+
+func (n *SyntaxNode) SetColumn(column int) {
+	n.SourceCol = column + 1
+}
+
+func (n *SyntaxNode) SetSpan(span Span) {
+	n.SourceSpan = span
 }
 
 func (*Script) Type() NodeType {

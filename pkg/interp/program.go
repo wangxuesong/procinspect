@@ -77,12 +77,12 @@ func (p *Procedure) Call(i *Interpreter, arguments []any) (result any, err error
 		case *semantic.VariableDeclaration:
 			v := decl.(*semantic.VariableDeclaration)
 			var value any
-			value, err = v.Initialization.(semantic.Expression).Accept(i)
+			value, err = v.Initialization.(semantic.Expression).ExprAccept(i)
 			env.Define(v.Name, value)
 		}
 	}
 
-	err = p.Proc.Body.Accept(i)
+	err = p.Proc.Body.StmtAccept(i)
 	return
 }
 
