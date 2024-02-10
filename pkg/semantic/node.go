@@ -8,7 +8,7 @@ type (
 	}
 
 	Node interface {
-		AstNode
+		// AstNode
 		// Type() NodeType
 		Line() int
 		Column() int

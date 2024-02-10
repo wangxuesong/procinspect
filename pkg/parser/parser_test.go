@@ -2556,6 +2556,62 @@ when matched then
 	// runTestSuite(t, tests)
 }
 
+func TestParseCreateTriggerStatement(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "before insert",
+			text: `
+CREATE OR REPLACE TRIGGER orders_before_insert
+BEFORE INSERT
+   ON orders
+   FOR EACH ROW
+
+DECLARE
+   v_username varchar2(10);
+
+BEGIN
+
+   -- Find username of person performing INSERT into table
+   SELECT user INTO v_username
+   FROM dual;
+
+   -- Update create_date field to current system date
+   :new.create_date := sysdate;
+
+   -- Update created_by field to the username of the person performing the INSERT
+   :new.created_by := v_username;
+
+END;`,
+			Func: func(t *testing.T, root any) {
+				node := root.(*semantic.Script)
+				assert.Equal(t, len(node.Statements), 1)
+				assert.IsType(t, &semantic.CreateSimpleDmlTriggerStatement{}, node.Statements[0])
+				stmt := node.Statements[0].(*semantic.CreateSimpleDmlTriggerStatement)
+				assert.NotNil(t, stmt)
+				assert.Equal(t, "orders_before_insert", stmt.Name)
+				assert.True(t, stmt.IsBefore)
+				assert.Equal(t, "INSERT", stmt.Events[0])
+				assert.Equal(t, "orders", stmt.TableView)
+				assert.True(t, stmt.ForEachRow)
+				assert.NotNil(t, stmt.TriggerBody)
+				body := stmt.TriggerBody
+				assert.Equal(t, 1, len(body.Declarations))
+				assert.Equal(t, 3, len(body.Body.Statements))
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.root != nil {
+				runTest(t, test.text, test.Func, test.root)
+			} else {
+				runTest(t, test.text, test.Func)
+			}
+		})
+	}
+}
+
 func TestSerializeStatement(t *testing.T) {
 	tests := []testCase{
 		{

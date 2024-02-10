@@ -49,8 +49,16 @@ var stmtTypes = Types{{
 	Fields:  "semantic.CreateProcedureStatement",
 	Comment: "",
 }, {
+	Name:    "CreateSimpleDmlTriggerStatement",
+	Fields:  "semantic.CreateSimpleDmlTriggerStatement",
+	Comment: "",
+}, {
 	Name:    "CreateSynonymStatement",
 	Fields:  "semantic.CreateSynonymStatement",
+	Comment: "",
+}, {
+	Name:    "CreateTriggerStatement",
+	Fields:  "semantic.CreateTriggerStatement",
 	Comment: "",
 }, {
 	Name:    "CreateTypeStatement",
@@ -155,6 +163,10 @@ var stmtTypes = Types{{
 }, {
 	Name:    "SetOperationStatement",
 	Fields:  "semantic.SetOperationStatement",
+	Comment: "",
+}, {
+	Name:    "TriggerBody",
+	Fields:  "semantic.TriggerBody",
 	Comment: "",
 }, {
 	Name:    "UpdateStatement",

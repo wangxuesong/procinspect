@@ -298,7 +298,9 @@ type StmtVisitor interface {
 	VisitCreatePackageBodyStatement(v *CreatePackageBodyStatement) (err error)
 	VisitCreatePackageStatement(v *CreatePackageStatement) (err error)
 	VisitCreateProcedureStatement(v *CreateProcedureStatement) (err error)
+	VisitCreateSimpleDmlTriggerStatement(v *CreateSimpleDmlTriggerStatement) (err error)
 	VisitCreateSynonymStatement(v *CreateSynonymStatement) (err error)
+	VisitCreateTriggerStatement(v *CreateTriggerStatement) (err error)
 	VisitCreateTypeStatement(v *CreateTypeStatement) (err error)
 	VisitDeleteStatement(v *DeleteStatement) (err error)
 	VisitDropFunctionStatement(v *DropFunctionStatement) (err error)
@@ -325,6 +327,7 @@ type StmtVisitor interface {
 	VisitRollbackStatement(v *RollbackStatement) (err error)
 	VisitSelectStatement(v *SelectStatement) (err error)
 	VisitSetOperationStatement(v *SetOperationStatement) (err error)
+	VisitTriggerBody(v *TriggerBody) (err error)
 	VisitUpdateStatement(v *UpdateStatement) (err error)
 	VisitAutonomousTransactionDeclaration(v *AutonomousTransactionDeclaration) (err error)
 	VisitCursorDeclaration(v *CursorDeclaration) (err error)
@@ -386,8 +389,16 @@ func (s StubStmtVisitor) VisitCreateProcedureStatement(_ *CreateProcedureStateme
 	return errors.New("visit func for CreateProcedureStatement is not implemented")
 }
 
+func (s StubStmtVisitor) VisitCreateSimpleDmlTriggerStatement(_ *CreateSimpleDmlTriggerStatement) error {
+	return errors.New("visit func for CreateSimpleDmlTriggerStatement is not implemented")
+}
+
 func (s StubStmtVisitor) VisitCreateSynonymStatement(_ *CreateSynonymStatement) error {
 	return errors.New("visit func for CreateSynonymStatement is not implemented")
+}
+
+func (s StubStmtVisitor) VisitCreateTriggerStatement(_ *CreateTriggerStatement) error {
+	return errors.New("visit func for CreateTriggerStatement is not implemented")
 }
 
 func (s StubStmtVisitor) VisitCreateTypeStatement(_ *CreateTypeStatement) error {
@@ -494,6 +505,10 @@ func (s StubStmtVisitor) VisitSetOperationStatement(_ *SetOperationStatement) er
 	return errors.New("visit func for SetOperationStatement is not implemented")
 }
 
+func (s StubStmtVisitor) VisitTriggerBody(_ *TriggerBody) error {
+	return errors.New("visit func for TriggerBody is not implemented")
+}
+
 func (s StubStmtVisitor) VisitUpdateStatement(_ *UpdateStatement) error {
 	return errors.New("visit func for UpdateStatement is not implemented")
 }
@@ -570,8 +585,16 @@ func (b *CreateProcedureStatement) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.VisitCreateProcedureStatement(b)
 }
 
+func (b *CreateSimpleDmlTriggerStatement) StmtAccept(visitor StmtVisitor) (err error) {
+	return visitor.VisitCreateSimpleDmlTriggerStatement(b)
+}
+
 func (b *CreateSynonymStatement) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.VisitCreateSynonymStatement(b)
+}
+
+func (b *CreateTriggerStatement) StmtAccept(visitor StmtVisitor) (err error) {
+	return visitor.VisitCreateTriggerStatement(b)
 }
 
 func (b *CreateTypeStatement) StmtAccept(visitor StmtVisitor) (err error) {
@@ -678,6 +701,10 @@ func (b *SetOperationStatement) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.VisitSetOperationStatement(b)
 }
 
+func (b *TriggerBody) StmtAccept(visitor StmtVisitor) (err error) {
+	return visitor.VisitTriggerBody(b)
+}
+
 func (b *UpdateStatement) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.VisitUpdateStatement(b)
 }
@@ -729,7 +756,9 @@ type NodeVisitor interface {
 	VisitCreatePackageBodyStatement(v *CreatePackageBodyStatement) (err error)
 	VisitCreatePackageStatement(v *CreatePackageStatement) (err error)
 	VisitCreateProcedureStatement(v *CreateProcedureStatement) (err error)
+	VisitCreateSimpleDmlTriggerStatement(v *CreateSimpleDmlTriggerStatement) (err error)
 	VisitCreateSynonymStatement(v *CreateSynonymStatement) (err error)
+	VisitCreateTriggerStatement(v *CreateTriggerStatement) (err error)
 	VisitCreateTypeStatement(v *CreateTypeStatement) (err error)
 	VisitCursorAttribute(v *CursorAttribute) (err error)
 	VisitCursorDeclaration(v *CursorDeclaration) (err error)
@@ -791,6 +820,7 @@ type NodeVisitor interface {
 	VisitStatementExpression(v *StatementExpression) (err error)
 	VisitStringLiteral(v *StringLiteral) (err error)
 	VisitTableRef(v *TableRef) (err error)
+	VisitTriggerBody(v *TriggerBody) (err error)
 	VisitUnaryLogicalExpression(v *UnaryLogicalExpression) (err error)
 	VisitUpdateStatement(v *UpdateStatement) (err error)
 	VisitUsingClause(v *UsingClause) (err error)
@@ -888,8 +918,16 @@ func (s *StubNodeVisitor) VisitCreateProcedureStatement(n *CreateProcedureStatem
 	return s.VisitChildren(n) // CreateProcedureStatement
 }
 
+func (s *StubNodeVisitor) VisitCreateSimpleDmlTriggerStatement(n *CreateSimpleDmlTriggerStatement) error {
+	return s.VisitChildren(n) // CreateSimpleDmlTriggerStatement
+}
+
 func (s *StubNodeVisitor) VisitCreateSynonymStatement(n *CreateSynonymStatement) error {
 	return s.VisitChildren(n) // CreateSynonymStatement
+}
+
+func (s *StubNodeVisitor) VisitCreateTriggerStatement(n *CreateTriggerStatement) error {
+	return s.VisitChildren(n) // CreateTriggerStatement
 }
 
 func (s *StubNodeVisitor) VisitCreateTypeStatement(n *CreateTypeStatement) error {
@@ -1136,6 +1174,10 @@ func (s *StubNodeVisitor) VisitTableRef(n *TableRef) error {
 	return s.VisitChildren(n) // TableRef
 }
 
+func (s *StubNodeVisitor) VisitTriggerBody(n *TriggerBody) error {
+	return s.VisitChildren(n) // TriggerBody
+}
+
 func (s *StubNodeVisitor) VisitUnaryLogicalExpression(n *UnaryLogicalExpression) error {
 	return s.VisitChildren(n) // UnaryLogicalExpression
 }
@@ -1248,8 +1290,16 @@ func (b *CreateProcedureStatement) Accept(visitor NodeVisitor) (err error) {
 	return visitor.VisitCreateProcedureStatement(b)
 }
 
+func (b *CreateSimpleDmlTriggerStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCreateSimpleDmlTriggerStatement(b)
+}
+
 func (b *CreateSynonymStatement) Accept(visitor NodeVisitor) (err error) {
 	return visitor.VisitCreateSynonymStatement(b)
+}
+
+func (b *CreateTriggerStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCreateTriggerStatement(b)
 }
 
 func (b *CreateTypeStatement) Accept(visitor NodeVisitor) (err error) {
@@ -1496,6 +1546,10 @@ func (b *TableRef) Accept(visitor NodeVisitor) (err error) {
 	return visitor.VisitTableRef(b)
 }
 
+func (b *TriggerBody) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitTriggerBody(b)
+}
+
 func (b *UnaryLogicalExpression) Accept(visitor NodeVisitor) (err error) {
 	return visitor.VisitUnaryLogicalExpression(b)
 }
@@ -1546,7 +1600,9 @@ var register = sync.OnceFunc(func() {
 	gob.Register(&CreatePackageBodyStatement{})
 	gob.Register(&CreatePackageStatement{})
 	gob.Register(&CreateProcedureStatement{})
+	gob.Register(&CreateSimpleDmlTriggerStatement{})
 	gob.Register(&CreateSynonymStatement{})
+	gob.Register(&CreateTriggerStatement{})
 	gob.Register(&CreateTypeStatement{})
 	gob.Register(&CursorAttribute{})
 	gob.Register(&CursorDeclaration{})
@@ -1608,6 +1664,7 @@ var register = sync.OnceFunc(func() {
 	gob.Register(&StatementExpression{})
 	gob.Register(&StringLiteral{})
 	gob.Register(&TableRef{})
+	gob.Register(&TriggerBody{})
 	gob.Register(&UnaryLogicalExpression{})
 	gob.Register(&UpdateStatement{})
 	gob.Register(&UsingClause{})

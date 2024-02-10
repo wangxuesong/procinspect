@@ -1427,3 +1427,82 @@ func (v *plsqlVisitor) VisitMerge_insert_clause(ctx *plsql.Merge_insert_clauseCo
 	stmt := newAstNode[semantic.MergeInsertStatement](ctx)
 	return stmt
 }
+
+func (v *plsqlVisitor) VisitCreate_trigger(ctx *plsql.Create_triggerContext) interface{} {
+	var trigger *semantic.CreateTriggerStatement
+	if ctx.Simple_dml_trigger() != nil {
+		stmt, ok := ctx.Simple_dml_trigger().Accept(v).(*semantic.CreateSimpleDmlTriggerStatement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Simple_dml_trigger()),
+				ctx.Simple_dml_trigger().GetStart().GetLine(),
+				ctx.Simple_dml_trigger().GetStart().GetColumn())
+		}
+		trigger = &stmt.CreateTriggerStatement
+		trigger.Name = ctx.Trigger_name().GetText()
+		if ctx.Trigger_body() != nil {
+			triggerBody := ctx.Trigger_body().Accept(v)
+			switch triggerBody.(type) {
+			case *semantic.TriggerBody:
+				trigger.TriggerBody = triggerBody.(*semantic.TriggerBody)
+			}
+		}
+		return stmt
+	}
+	return nil
+}
+
+func (v *plsqlVisitor) VisitSimple_dml_trigger(ctx *plsql.Simple_dml_triggerContext) interface{} {
+	stmt := newAstNode[semantic.CreateSimpleDmlTriggerStatement](ctx)
+	if ctx.BEFORE() != nil {
+		stmt.IsBefore = true
+	} else if ctx.AFTER() != nil {
+		stmt.IsBefore = false
+	}
+	if ctx.Dml_event_clause() != nil {
+		events := ctx.Dml_event_clause().Accept(v).(map[string]interface{})
+		if es, ok := events["events"]; ok {
+			stmt.Events = es.([]string)
+		}
+		if ss, ok := events["tableview"]; ok {
+			stmt.TableView = ss.(string)
+		}
+	}
+	if ctx.For_each_row() != nil {
+		stmt.ForEachRow = true
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitDml_event_clause(ctx *plsql.Dml_event_clauseContext) interface{} {
+	result := make(map[string]interface{})
+	result["events"] = make([]string, 0)
+	for _, event := range ctx.AllDml_event_element() {
+		result["events"] = append(result["events"].([]string), event.GetText())
+	}
+	result["tableview"] = ctx.Tableview_name().GetText()
+	return result
+}
+
+func (v *plsqlVisitor) VisitTrigger_body(ctx *plsql.Trigger_bodyContext) interface{} {
+	if ctx.Trigger_block() != nil {
+		return ctx.Trigger_block().Accept(v)
+	}
+	return nil
+}
+
+func (v *plsqlVisitor) VisitTrigger_block(ctx *plsql.Trigger_blockContext) interface{} {
+	stmt := newAstNode[semantic.TriggerBody](ctx)
+	stmt.Body = ctx.Body().Accept(v).(*semantic.Body)
+	if ctx.AllDeclare_spec() != nil {
+		for _, decl := range ctx.AllDeclare_spec() {
+			declaration, ok := decl.Accept(v).(semantic.Declaration)
+			if !ok {
+				v.ReportError(fmt.Sprintf("unsupported syntax %T", decl),
+					decl.GetStart().GetLine(),
+					decl.GetStart().GetColumn())
+			}
+			stmt.Declarations = append(stmt.Declarations, declaration)
+		}
+	}
+	return stmt
+}

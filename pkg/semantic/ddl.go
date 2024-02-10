@@ -40,6 +40,26 @@ type (
 		Statements []Statement
 	}
 
+	CreateTriggerStatement struct {
+		SyntaxNode
+		Name        string
+		TriggerBody *TriggerBody
+	}
+
+	TriggerBody struct {
+		SyntaxNode
+		Declarations []Declaration
+		Body         *Body
+	}
+
+	CreateSimpleDmlTriggerStatement struct {
+		CreateTriggerStatement
+		IsBefore   bool
+		ForEachRow bool
+		Events     []string
+		TableView  string
+	}
+
 	DropFunctionStatement struct {
 		SyntaxNode
 		Name string
@@ -84,3 +104,9 @@ func (s *DropProcedureStatement) statement() {}
 func (s *DropPackageStatement) statement() {}
 
 func (s *DropTriggerStatement) statement() {}
+
+func (s *CreateTriggerStatement) statement() {}
+
+func (s *CreateSimpleDmlTriggerStatement) statement() {}
+
+func (s *TriggerBody) statement() {}

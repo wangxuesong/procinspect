@@ -85,8 +85,16 @@ var nodeTypes = Types{{
 	Fields:  "semantic.CreateProcedureStatement",
 	Comment: "",
 }, {
+	Name:    "CreateSimpleDmlTriggerStatement",
+	Fields:  "semantic.CreateSimpleDmlTriggerStatement",
+	Comment: "",
+}, {
 	Name:    "CreateSynonymStatement",
 	Fields:  "semantic.CreateSynonymStatement",
+	Comment: "",
+}, {
+	Name:    "CreateTriggerStatement",
+	Fields:  "semantic.CreateTriggerStatement",
 	Comment: "",
 }, {
 	Name:    "CreateTypeStatement",
@@ -331,6 +339,10 @@ var nodeTypes = Types{{
 }, {
 	Name:    "TableRef",
 	Fields:  "semantic.TableRef",
+	Comment: "",
+}, {
+	Name:    "TriggerBody",
+	Fields:  "semantic.TriggerBody",
 	Comment: "",
 }, {
 	Name:    "UnaryLogicalExpression",
