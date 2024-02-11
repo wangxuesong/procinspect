@@ -64,6 +64,25 @@ type (
 		TableView  string
 	}
 
+	CreateCompoundDmlTriggerStatement struct {
+		CreateTriggerStatement
+		Events    []string
+		TableView string
+	}
+
+	CompoundTriggerBlock struct {
+		SyntaxNode
+		Declarations []Declaration
+		TimingPoints []*TimingPoint
+	}
+
+	TimingPoint struct {
+		SyntaxNode
+		IsBefore   bool
+		ForEachRow bool
+		Body       *Body
+	}
+
 	DropFunctionStatement struct {
 		SyntaxNode
 		Name string
@@ -116,3 +135,11 @@ func (s *CreateSimpleDmlTriggerStatement) statement() {}
 func (s *TriggerBlock) statement() {}
 
 func (s *TriggerBlock) triggerBody() {}
+
+func (s *CreateCompoundDmlTriggerStatement) statement() {}
+
+func (s *CompoundTriggerBlock) statement() {}
+
+func (s *CompoundTriggerBlock) triggerBody() {}
+
+func (s *TimingPoint) statement() {}

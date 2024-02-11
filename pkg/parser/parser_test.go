@@ -2600,6 +2600,72 @@ END;`,
 				assert.Equal(t, 3, len(body.Body.Statements))
 			},
 		},
+		{
+			name: "compound trigger",
+			text: `
+create or replace trigger comp_test
+for insert or update or delete
+on emp_test
+compound trigger
+      before statement is
+      begin
+      DBMS_OUTPUT.PUT_LINE('1');
+      end  before statement;
+
+      before each row is
+      begin
+      DBMS_OUTPUT.PUT_LINE('2');
+      end before each row;
+
+      after each row is
+      begin
+      DBMS_OUTPUT.PUT_LINE('3');
+      end after each row;
+
+      after statement is
+      begin
+      DBMS_OUTPUT.PUT_LINE('4');
+      end after statement;
+end;`,
+			Func: func(t *testing.T, root any) {
+				node := root.(*semantic.Script)
+				assert.Equal(t, len(node.Statements), 1)
+				assert.IsType(t, &semantic.CreateCompoundDmlTriggerStatement{}, node.Statements[0])
+				stmt := node.Statements[0].(*semantic.CreateCompoundDmlTriggerStatement)
+				assert.NotNil(t, stmt)
+				assert.Equal(t, "comp_test", stmt.Name)
+				assert.NotNil(t, stmt.TriggerBody)
+				assert.Equal(t, 3, len(stmt.Events))
+				assert.Equal(t, "insert", stmt.Events[0])
+				assert.Equal(t, "update", stmt.Events[1])
+				assert.Equal(t, "delete", stmt.Events[2])
+				assert.Equal(t, "emp_test", stmt.TableView)
+				assert.IsType(t, &semantic.CompoundTriggerBlock{}, stmt.TriggerBody)
+				block := stmt.TriggerBody.(*semantic.CompoundTriggerBlock)
+				assert.NotNil(t, block)
+				assert.Equal(t, 4, len(block.TimingPoints))
+				tp := block.TimingPoints[0]
+				assert.True(t, tp.IsBefore)
+				assert.False(t, tp.ForEachRow)
+				assert.NotNil(t, tp.Body)
+				assert.Equal(t, 1, len(tp.Body.Statements))
+				tp = block.TimingPoints[1]
+				assert.True(t, tp.IsBefore)
+				assert.True(t, tp.ForEachRow)
+				assert.NotNil(t, tp.Body)
+				assert.Equal(t, 1, len(tp.Body.Statements))
+				tp = block.TimingPoints[2]
+				assert.False(t, tp.IsBefore)
+				assert.True(t, tp.ForEachRow)
+				assert.NotNil(t, tp.Body)
+				assert.Equal(t, 1, len(tp.Body.Statements))
+				tp = block.TimingPoints[3]
+				assert.False(t, tp.IsBefore)
+				assert.False(t, tp.ForEachRow)
+				assert.NotNil(t, tp.Body)
+				assert.Equal(t, 1, len(tp.Body.Statements))
+			},
+		},
 	}
 
 	for _, test := range tests {

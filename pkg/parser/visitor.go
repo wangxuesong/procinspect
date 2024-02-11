@@ -1448,6 +1448,26 @@ func (v *plsqlVisitor) VisitCreate_trigger(ctx *plsql.Create_triggerContext) int
 		}
 		return stmt
 	}
+	if ctx.Compound_dml_trigger() != nil {
+		stmt, ok := ctx.Compound_dml_trigger().Accept(v).(*semantic.CreateCompoundDmlTriggerStatement)
+		if !ok {
+			v.ReportError(fmt.Sprintf("unsupported syntax %T", ctx.Compound_dml_trigger()),
+				ctx.Compound_dml_trigger().GetStart().GetLine(),
+				ctx.Compound_dml_trigger().GetStart().GetColumn())
+		}
+		trigger = &stmt.CreateTriggerStatement
+		trigger.Name = ctx.Trigger_name().GetText()
+		if ctx.Trigger_body() != nil {
+			triggerBody := ctx.Trigger_body().Accept(v)
+			switch triggerBody.(type) {
+			case *semantic.TriggerBlock:
+				trigger.TriggerBody = triggerBody.(*semantic.TriggerBlock)
+			case *semantic.CompoundTriggerBlock:
+				trigger.TriggerBody = triggerBody.(*semantic.CompoundTriggerBlock)
+			}
+		}
+		return stmt
+	}
 	return nil
 }
 
@@ -1487,6 +1507,9 @@ func (v *plsqlVisitor) VisitTrigger_body(ctx *plsql.Trigger_bodyContext) interfa
 	if ctx.Trigger_block() != nil {
 		return ctx.Trigger_block().Accept(v)
 	}
+	if ctx.Compound_trigger_block() != nil {
+		return ctx.Compound_trigger_block().Accept(v)
+	}
 	return nil
 }
 
@@ -1504,5 +1527,49 @@ func (v *plsqlVisitor) VisitTrigger_block(ctx *plsql.Trigger_blockContext) inter
 			stmt.Declarations = append(stmt.Declarations, declaration)
 		}
 	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitCompound_dml_trigger(ctx *plsql.Compound_dml_triggerContext) interface{} {
+	stmt := newAstNode[semantic.CreateCompoundDmlTriggerStatement](ctx)
+	if ctx.Dml_event_clause() != nil {
+		events := ctx.Dml_event_clause().Accept(v).(map[string]interface{})
+		if es, ok := events["events"]; ok {
+			stmt.Events = es.([]string)
+		}
+		if ss, ok := events["tableview"]; ok {
+			stmt.TableView = ss.(string)
+		}
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitCompound_trigger_block(ctx *plsql.Compound_trigger_blockContext) interface{} {
+	stmt := newAstNode[semantic.CompoundTriggerBlock](ctx)
+	for _, b := range ctx.AllTiming_point_section() {
+		stmt.TimingPoints = append(stmt.TimingPoints, b.Accept(v).(*semantic.TimingPoint))
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitTiming_point_section(ctx *plsql.Timing_point_sectionContext) interface{} {
+	stmt := newAstNode[semantic.TimingPoint](ctx)
+	if ctx.GetBk() != nil {
+		stmt.IsBefore = true
+	} else if ctx.GetAk() != nil {
+		stmt.IsBefore = false
+	}
+	if len(ctx.AllEACH()) > 0 {
+		stmt.ForEachRow = true
+	}
+	if ctx.Tps_body() != nil {
+		stmt.Body = ctx.Tps_body().Accept(v).(*semantic.Body)
+	}
+	return stmt
+}
+
+func (v *plsqlVisitor) VisitTps_body(ctx *plsql.Tps_bodyContext) interface{} {
+	stmt := newAstNode[semantic.Body](ctx)
+	stmt.Statements = v.VisitSeq_of_statements(ctx.Seq_of_statements().(*plsql.Seq_of_statementsContext)).([]semantic.Statement)
 	return stmt
 }
