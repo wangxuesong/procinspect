@@ -2675,6 +2675,9 @@ type PlSqlParserVisitor interface {
 	// Visit a parse tree produced by PlSqlParser#trigger_block.
 	VisitTrigger_block(ctx *Trigger_blockContext) interface{}
 
+	// Visit a parse tree produced by PlSqlParser#tps_body.
+	VisitTps_body(ctx *Tps_bodyContext) interface{}
+
 	// Visit a parse tree produced by PlSqlParser#block.
 	VisitBlock(ctx *BlockContext) interface{}
 

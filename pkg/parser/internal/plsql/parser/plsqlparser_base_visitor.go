@@ -3565,6 +3565,10 @@ func (v *BasePlSqlParserVisitor) VisitTrigger_block(ctx *Trigger_blockContext) i
 	return v.VisitChildren(ctx)
 }
 
+func (v *BasePlSqlParserVisitor) VisitTps_body(ctx *Tps_bodyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
 func (v *BasePlSqlParserVisitor) VisitBlock(ctx *BlockContext) interface{} {
 	return v.VisitChildren(ctx)
 }

@@ -5683,6 +5683,12 @@ func (s *BasePlSqlParserListener) EnterTrigger_block(ctx *Trigger_blockContext) 
 // ExitTrigger_block is called when production trigger_block is exited.
 func (s *BasePlSqlParserListener) ExitTrigger_block(ctx *Trigger_blockContext) {}
 
+// EnterTps_body is called when production tps_body is entered.
+func (s *BasePlSqlParserListener) EnterTps_body(ctx *Tps_bodyContext) {}
+
+// ExitTps_body is called when production tps_body is exited.
+func (s *BasePlSqlParserListener) ExitTps_body(ctx *Tps_bodyContext) {}
+
 // EnterBlock is called when production block is entered.
 func (s *BasePlSqlParserListener) EnterBlock(ctx *BlockContext) {}
 

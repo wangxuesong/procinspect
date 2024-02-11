@@ -2675,6 +2675,9 @@ type PlSqlParserListener interface {
 	// EnterTrigger_block is called when entering the trigger_block production.
 	EnterTrigger_block(c *Trigger_blockContext)
 
+	// EnterTps_body is called when entering the tps_body production.
+	EnterTps_body(c *Tps_bodyContext)
+
 	// EnterBlock is called when entering the block production.
 	EnterBlock(c *BlockContext)
 
@@ -6160,6 +6163,9 @@ type PlSqlParserListener interface {
 
 	// ExitTrigger_block is called when exiting the trigger_block production.
 	ExitTrigger_block(c *Trigger_blockContext)
+
+	// ExitTps_body is called when exiting the tps_body production.
+	ExitTps_body(c *Tps_bodyContext)
 
 	// ExitBlock is called when exiting the block production.
 	ExitBlock(c *BlockContext)
