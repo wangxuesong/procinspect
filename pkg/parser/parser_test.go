@@ -2594,7 +2594,8 @@ END;`,
 				assert.Equal(t, "orders", stmt.TableView)
 				assert.True(t, stmt.ForEachRow)
 				assert.NotNil(t, stmt.TriggerBody)
-				body := stmt.TriggerBody
+				assert.IsType(t, &semantic.TriggerBlock{}, stmt.TriggerBody)
+				body := stmt.TriggerBody.(*semantic.TriggerBlock)
 				assert.Equal(t, 1, len(body.Declarations))
 				assert.Equal(t, 3, len(body.Body.Statements))
 			},

@@ -43,10 +43,14 @@ type (
 	CreateTriggerStatement struct {
 		SyntaxNode
 		Name        string
-		TriggerBody *TriggerBody
+		TriggerBody TriggerBody
 	}
 
-	TriggerBody struct {
+	TriggerBody interface {
+		triggerBody()
+	}
+
+	TriggerBlock struct {
 		SyntaxNode
 		Declarations []Declaration
 		Body         *Body
@@ -109,4 +113,6 @@ func (s *CreateTriggerStatement) statement() {}
 
 func (s *CreateSimpleDmlTriggerStatement) statement() {}
 
-func (s *TriggerBody) statement() {}
+func (s *TriggerBlock) statement() {}
+
+func (s *TriggerBlock) triggerBody() {}

@@ -192,6 +192,7 @@ var AstTypes = map[string]reflect.Type{
 	"StubNodeVisitor":                  reflect.TypeOf((*semantic.StubNodeVisitor)(nil)).Elem(),
 	"StubStmtVisitor":                  reflect.TypeOf((*semantic.StubStmtVisitor)(nil)).Elem(),
 	"TableRef":                         reflect.TypeOf((*semantic.TableRef)(nil)).Elem(),
+	"TriggerBlock":                     reflect.TypeOf((*semantic.TriggerBlock)(nil)).Elem(),
 	"TriggerBody":                      reflect.TypeOf((*semantic.TriggerBody)(nil)).Elem(),
 	"UnaryLogicalExpression":           reflect.TypeOf((*semantic.UnaryLogicalExpression)(nil)).Elem(),
 	"UpdateStatement":                  reflect.TypeOf((*semantic.UpdateStatement)(nil)).Elem(),

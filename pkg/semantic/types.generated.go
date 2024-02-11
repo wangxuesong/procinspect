@@ -327,7 +327,7 @@ type StmtVisitor interface {
 	VisitRollbackStatement(v *RollbackStatement) (err error)
 	VisitSelectStatement(v *SelectStatement) (err error)
 	VisitSetOperationStatement(v *SetOperationStatement) (err error)
-	VisitTriggerBody(v *TriggerBody) (err error)
+	VisitTriggerBlock(v *TriggerBlock) (err error)
 	VisitUpdateStatement(v *UpdateStatement) (err error)
 	VisitAutonomousTransactionDeclaration(v *AutonomousTransactionDeclaration) (err error)
 	VisitCursorDeclaration(v *CursorDeclaration) (err error)
@@ -505,8 +505,8 @@ func (s StubStmtVisitor) VisitSetOperationStatement(_ *SetOperationStatement) er
 	return errors.New("visit func for SetOperationStatement is not implemented")
 }
 
-func (s StubStmtVisitor) VisitTriggerBody(_ *TriggerBody) error {
-	return errors.New("visit func for TriggerBody is not implemented")
+func (s StubStmtVisitor) VisitTriggerBlock(_ *TriggerBlock) error {
+	return errors.New("visit func for TriggerBlock is not implemented")
 }
 
 func (s StubStmtVisitor) VisitUpdateStatement(_ *UpdateStatement) error {
@@ -701,8 +701,8 @@ func (b *SetOperationStatement) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.VisitSetOperationStatement(b)
 }
 
-func (b *TriggerBody) StmtAccept(visitor StmtVisitor) (err error) {
-	return visitor.VisitTriggerBody(b)
+func (b *TriggerBlock) StmtAccept(visitor StmtVisitor) (err error) {
+	return visitor.VisitTriggerBlock(b)
 }
 
 func (b *UpdateStatement) StmtAccept(visitor StmtVisitor) (err error) {
@@ -820,7 +820,7 @@ type NodeVisitor interface {
 	VisitStatementExpression(v *StatementExpression) (err error)
 	VisitStringLiteral(v *StringLiteral) (err error)
 	VisitTableRef(v *TableRef) (err error)
-	VisitTriggerBody(v *TriggerBody) (err error)
+	VisitTriggerBlock(v *TriggerBlock) (err error)
 	VisitUnaryLogicalExpression(v *UnaryLogicalExpression) (err error)
 	VisitUpdateStatement(v *UpdateStatement) (err error)
 	VisitUsingClause(v *UsingClause) (err error)
@@ -1174,8 +1174,8 @@ func (s *StubNodeVisitor) VisitTableRef(n *TableRef) error {
 	return s.VisitChildren(n) // TableRef
 }
 
-func (s *StubNodeVisitor) VisitTriggerBody(n *TriggerBody) error {
-	return s.VisitChildren(n) // TriggerBody
+func (s *StubNodeVisitor) VisitTriggerBlock(n *TriggerBlock) error {
+	return s.VisitChildren(n) // TriggerBlock
 }
 
 func (s *StubNodeVisitor) VisitUnaryLogicalExpression(n *UnaryLogicalExpression) error {
@@ -1546,8 +1546,8 @@ func (b *TableRef) Accept(visitor NodeVisitor) (err error) {
 	return visitor.VisitTableRef(b)
 }
 
-func (b *TriggerBody) Accept(visitor NodeVisitor) (err error) {
-	return visitor.VisitTriggerBody(b)
+func (b *TriggerBlock) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitTriggerBlock(b)
 }
 
 func (b *UnaryLogicalExpression) Accept(visitor NodeVisitor) (err error) {
@@ -1664,7 +1664,7 @@ var register = sync.OnceFunc(func() {
 	gob.Register(&StatementExpression{})
 	gob.Register(&StringLiteral{})
 	gob.Register(&TableRef{})
-	gob.Register(&TriggerBody{})
+	gob.Register(&TriggerBlock{})
 	gob.Register(&UnaryLogicalExpression{})
 	gob.Register(&UpdateStatement{})
 	gob.Register(&UsingClause{})

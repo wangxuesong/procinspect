@@ -165,8 +165,8 @@ var stmtTypes = Types{{
 	Fields:  "semantic.SetOperationStatement",
 	Comment: "",
 }, {
-	Name:    "TriggerBody",
-	Fields:  "semantic.TriggerBody",
+	Name:    "TriggerBlock",
+	Fields:  "semantic.TriggerBlock",
 	Comment: "",
 }, {
 	Name:    "UpdateStatement",

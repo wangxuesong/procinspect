@@ -1442,8 +1442,8 @@ func (v *plsqlVisitor) VisitCreate_trigger(ctx *plsql.Create_triggerContext) int
 		if ctx.Trigger_body() != nil {
 			triggerBody := ctx.Trigger_body().Accept(v)
 			switch triggerBody.(type) {
-			case *semantic.TriggerBody:
-				trigger.TriggerBody = triggerBody.(*semantic.TriggerBody)
+			case *semantic.TriggerBlock:
+				trigger.TriggerBody = triggerBody.(*semantic.TriggerBlock)
 			}
 		}
 		return stmt
@@ -1491,7 +1491,7 @@ func (v *plsqlVisitor) VisitTrigger_body(ctx *plsql.Trigger_bodyContext) interfa
 }
 
 func (v *plsqlVisitor) VisitTrigger_block(ctx *plsql.Trigger_blockContext) interface{} {
-	stmt := newAstNode[semantic.TriggerBody](ctx)
+	stmt := newAstNode[semantic.TriggerBlock](ctx)
 	stmt.Body = ctx.Body().Accept(v).(*semantic.Body)
 	if ctx.AllDeclare_spec() != nil {
 		for _, decl := range ctx.AllDeclare_spec() {

@@ -341,8 +341,8 @@ var nodeTypes = Types{{
 	Fields:  "semantic.TableRef",
 	Comment: "",
 }, {
-	Name:    "TriggerBody",
-	Fields:  "semantic.TriggerBody",
+	Name:    "TriggerBlock",
+	Fields:  "semantic.TriggerBlock",
 	Comment: "",
 }, {
 	Name:    "UnaryLogicalExpression",
