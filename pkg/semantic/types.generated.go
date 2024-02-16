@@ -292,7 +292,9 @@ type StmtVisitor interface {
 	VisitCaseWhenStatement(v *CaseWhenStatement) (err error)
 	VisitCloseStatement(v *CloseStatement) (err error)
 	VisitCommitStatement(v *CommitStatement) (err error)
+	VisitCompoundTriggerBlock(v *CompoundTriggerBlock) (err error)
 	VisitContinueStatement(v *ContinueStatement) (err error)
+	VisitCreateCompoundDmlTriggerStatement(v *CreateCompoundDmlTriggerStatement) (err error)
 	VisitCreateFunctionStatement(v *CreateFunctionStatement) (err error)
 	VisitCreateNestTableStatement(v *CreateNestTableStatement) (err error)
 	VisitCreatePackageBodyStatement(v *CreatePackageBodyStatement) (err error)
@@ -327,6 +329,7 @@ type StmtVisitor interface {
 	VisitRollbackStatement(v *RollbackStatement) (err error)
 	VisitSelectStatement(v *SelectStatement) (err error)
 	VisitSetOperationStatement(v *SetOperationStatement) (err error)
+	VisitTimingPoint(v *TimingPoint) (err error)
 	VisitTriggerBlock(v *TriggerBlock) (err error)
 	VisitUpdateStatement(v *UpdateStatement) (err error)
 	VisitAutonomousTransactionDeclaration(v *AutonomousTransactionDeclaration) (err error)
@@ -365,8 +368,16 @@ func (s StubStmtVisitor) VisitCommitStatement(_ *CommitStatement) error {
 	return errors.New("visit func for CommitStatement is not implemented")
 }
 
+func (s StubStmtVisitor) VisitCompoundTriggerBlock(_ *CompoundTriggerBlock) error {
+	return errors.New("visit func for CompoundTriggerBlock is not implemented")
+}
+
 func (s StubStmtVisitor) VisitContinueStatement(_ *ContinueStatement) error {
 	return errors.New("visit func for ContinueStatement is not implemented")
+}
+
+func (s StubStmtVisitor) VisitCreateCompoundDmlTriggerStatement(_ *CreateCompoundDmlTriggerStatement) error {
+	return errors.New("visit func for CreateCompoundDmlTriggerStatement is not implemented")
 }
 
 func (s StubStmtVisitor) VisitCreateFunctionStatement(_ *CreateFunctionStatement) error {
@@ -505,6 +516,10 @@ func (s StubStmtVisitor) VisitSetOperationStatement(_ *SetOperationStatement) er
 	return errors.New("visit func for SetOperationStatement is not implemented")
 }
 
+func (s StubStmtVisitor) VisitTimingPoint(_ *TimingPoint) error {
+	return errors.New("visit func for TimingPoint is not implemented")
+}
+
 func (s StubStmtVisitor) VisitTriggerBlock(_ *TriggerBlock) error {
 	return errors.New("visit func for TriggerBlock is not implemented")
 }
@@ -561,8 +576,16 @@ func (b *CommitStatement) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.VisitCommitStatement(b)
 }
 
+func (b *CompoundTriggerBlock) StmtAccept(visitor StmtVisitor) (err error) {
+	return visitor.VisitCompoundTriggerBlock(b)
+}
+
 func (b *ContinueStatement) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.VisitContinueStatement(b)
+}
+
+func (b *CreateCompoundDmlTriggerStatement) StmtAccept(visitor StmtVisitor) (err error) {
+	return visitor.VisitCreateCompoundDmlTriggerStatement(b)
 }
 
 func (b *CreateFunctionStatement) StmtAccept(visitor StmtVisitor) (err error) {
@@ -701,6 +724,10 @@ func (b *SetOperationStatement) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.VisitSetOperationStatement(b)
 }
 
+func (b *TimingPoint) StmtAccept(visitor StmtVisitor) (err error) {
+	return visitor.VisitTimingPoint(b)
+}
+
 func (b *TriggerBlock) StmtAccept(visitor StmtVisitor) (err error) {
 	return visitor.VisitTriggerBlock(b)
 }
@@ -750,7 +777,9 @@ type NodeVisitor interface {
 	VisitCloseStatement(v *CloseStatement) (err error)
 	VisitCommitStatement(v *CommitStatement) (err error)
 	VisitCommonTableExpression(v *CommonTableExpression) (err error)
+	VisitCompoundTriggerBlock(v *CompoundTriggerBlock) (err error)
 	VisitContinueStatement(v *ContinueStatement) (err error)
+	VisitCreateCompoundDmlTriggerStatement(v *CreateCompoundDmlTriggerStatement) (err error)
 	VisitCreateFunctionStatement(v *CreateFunctionStatement) (err error)
 	VisitCreateNestTableStatement(v *CreateNestTableStatement) (err error)
 	VisitCreatePackageBodyStatement(v *CreatePackageBodyStatement) (err error)
@@ -820,6 +849,7 @@ type NodeVisitor interface {
 	VisitStatementExpression(v *StatementExpression) (err error)
 	VisitStringLiteral(v *StringLiteral) (err error)
 	VisitTableRef(v *TableRef) (err error)
+	VisitTimingPoint(v *TimingPoint) (err error)
 	VisitTriggerBlock(v *TriggerBlock) (err error)
 	VisitUnaryLogicalExpression(v *UnaryLogicalExpression) (err error)
 	VisitUpdateStatement(v *UpdateStatement) (err error)
@@ -894,8 +924,16 @@ func (s *StubNodeVisitor) VisitCommonTableExpression(n *CommonTableExpression) e
 	return s.VisitChildren(n) // CommonTableExpression
 }
 
+func (s *StubNodeVisitor) VisitCompoundTriggerBlock(n *CompoundTriggerBlock) error {
+	return s.VisitChildren(n) // CompoundTriggerBlock
+}
+
 func (s *StubNodeVisitor) VisitContinueStatement(n *ContinueStatement) error {
 	return s.VisitChildren(n) // ContinueStatement
+}
+
+func (s *StubNodeVisitor) VisitCreateCompoundDmlTriggerStatement(n *CreateCompoundDmlTriggerStatement) error {
+	return s.VisitChildren(n) // CreateCompoundDmlTriggerStatement
 }
 
 func (s *StubNodeVisitor) VisitCreateFunctionStatement(n *CreateFunctionStatement) error {
@@ -1174,6 +1212,10 @@ func (s *StubNodeVisitor) VisitTableRef(n *TableRef) error {
 	return s.VisitChildren(n) // TableRef
 }
 
+func (s *StubNodeVisitor) VisitTimingPoint(n *TimingPoint) error {
+	return s.VisitChildren(n) // TimingPoint
+}
+
 func (s *StubNodeVisitor) VisitTriggerBlock(n *TriggerBlock) error {
 	return s.VisitChildren(n) // TriggerBlock
 }
@@ -1266,8 +1308,16 @@ func (b *CommonTableExpression) Accept(visitor NodeVisitor) (err error) {
 	return visitor.VisitCommonTableExpression(b)
 }
 
+func (b *CompoundTriggerBlock) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCompoundTriggerBlock(b)
+}
+
 func (b *ContinueStatement) Accept(visitor NodeVisitor) (err error) {
 	return visitor.VisitContinueStatement(b)
+}
+
+func (b *CreateCompoundDmlTriggerStatement) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitCreateCompoundDmlTriggerStatement(b)
 }
 
 func (b *CreateFunctionStatement) Accept(visitor NodeVisitor) (err error) {
@@ -1546,6 +1596,10 @@ func (b *TableRef) Accept(visitor NodeVisitor) (err error) {
 	return visitor.VisitTableRef(b)
 }
 
+func (b *TimingPoint) Accept(visitor NodeVisitor) (err error) {
+	return visitor.VisitTimingPoint(b)
+}
+
 func (b *TriggerBlock) Accept(visitor NodeVisitor) (err error) {
 	return visitor.VisitTriggerBlock(b)
 }
@@ -1594,7 +1648,9 @@ var register = sync.OnceFunc(func() {
 	gob.Register(&CloseStatement{})
 	gob.Register(&CommitStatement{})
 	gob.Register(&CommonTableExpression{})
+	gob.Register(&CompoundTriggerBlock{})
 	gob.Register(&ContinueStatement{})
+	gob.Register(&CreateCompoundDmlTriggerStatement{})
 	gob.Register(&CreateFunctionStatement{})
 	gob.Register(&CreateNestTableStatement{})
 	gob.Register(&CreatePackageBodyStatement{})
@@ -1664,6 +1720,7 @@ var register = sync.OnceFunc(func() {
 	gob.Register(&StatementExpression{})
 	gob.Register(&StringLiteral{})
 	gob.Register(&TableRef{})
+	gob.Register(&TimingPoint{})
 	gob.Register(&TriggerBlock{})
 	gob.Register(&UnaryLogicalExpression{})
 	gob.Register(&UpdateStatement{})

@@ -61,8 +61,16 @@ var nodeTypes = Types{{
 	Fields:  "semantic.CommonTableExpression",
 	Comment: "",
 }, {
+	Name:    "CompoundTriggerBlock",
+	Fields:  "semantic.CompoundTriggerBlock",
+	Comment: "",
+}, {
 	Name:    "ContinueStatement",
 	Fields:  "semantic.ContinueStatement",
+	Comment: "",
+}, {
+	Name:    "CreateCompoundDmlTriggerStatement",
+	Fields:  "semantic.CreateCompoundDmlTriggerStatement",
 	Comment: "",
 }, {
 	Name:    "CreateFunctionStatement",
@@ -339,6 +347,10 @@ var nodeTypes = Types{{
 }, {
 	Name:    "TableRef",
 	Fields:  "semantic.TableRef",
+	Comment: "",
+}, {
+	Name:    "TimingPoint",
+	Fields:  "semantic.TimingPoint",
 	Comment: "",
 }, {
 	Name:    "TriggerBlock",

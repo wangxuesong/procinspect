@@ -25,8 +25,16 @@ var stmtTypes = Types{{
 	Fields:  "semantic.CommitStatement",
 	Comment: "",
 }, {
+	Name:    "CompoundTriggerBlock",
+	Fields:  "semantic.CompoundTriggerBlock",
+	Comment: "",
+}, {
 	Name:    "ContinueStatement",
 	Fields:  "semantic.ContinueStatement",
+	Comment: "",
+}, {
+	Name:    "CreateCompoundDmlTriggerStatement",
+	Fields:  "semantic.CreateCompoundDmlTriggerStatement",
 	Comment: "",
 }, {
 	Name:    "CreateFunctionStatement",
@@ -163,6 +171,10 @@ var stmtTypes = Types{{
 }, {
 	Name:    "SetOperationStatement",
 	Fields:  "semantic.SetOperationStatement",
+	Comment: "",
+}, {
+	Name:    "TimingPoint",
+	Fields:  "semantic.TimingPoint",
 	Comment: "",
 }, {
 	Name:    "TriggerBlock",

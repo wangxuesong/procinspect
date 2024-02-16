@@ -1446,6 +1446,7 @@ func (v *plsqlVisitor) VisitCreate_trigger(ctx *plsql.Create_triggerContext) int
 				trigger.TriggerBody = triggerBody.(*semantic.TriggerBlock)
 			}
 		}
+		setAstSpan(ctx, trigger)
 		return stmt
 	}
 	if ctx.Compound_dml_trigger() != nil {
@@ -1466,6 +1467,7 @@ func (v *plsqlVisitor) VisitCreate_trigger(ctx *plsql.Create_triggerContext) int
 				trigger.TriggerBody = triggerBody.(*semantic.CompoundTriggerBlock)
 			}
 		}
+		setAstSpan(ctx, trigger)
 		return stmt
 	}
 	return nil
