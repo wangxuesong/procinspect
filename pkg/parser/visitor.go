@@ -1483,7 +1483,7 @@ func (v *plsqlVisitor) VisitSimple_dml_trigger(ctx *plsql.Simple_dml_triggerCont
 	if ctx.Dml_event_clause() != nil {
 		events := ctx.Dml_event_clause().Accept(v).(map[string]interface{})
 		if es, ok := events["events"]; ok {
-			stmt.Events = es.([]string)
+			stmt.Events = es.([]*semantic.TriggerEvent)
 		}
 		if ss, ok := events["tableview"]; ok {
 			stmt.TableView = ss.(string)
@@ -1497,12 +1497,28 @@ func (v *plsqlVisitor) VisitSimple_dml_trigger(ctx *plsql.Simple_dml_triggerCont
 
 func (v *plsqlVisitor) VisitDml_event_clause(ctx *plsql.Dml_event_clauseContext) interface{} {
 	result := make(map[string]interface{})
-	result["events"] = make([]string, 0)
+	result["events"] = make([]*semantic.TriggerEvent, 0)
 	for _, event := range ctx.AllDml_event_element() {
-		result["events"] = append(result["events"].([]string), event.GetText())
+		e := event.Accept(v).(*semantic.TriggerEvent)
+		result["events"] = append(result["events"].([]*semantic.TriggerEvent), e)
 	}
 	result["tableview"] = ctx.Tableview_name().GetText()
 	return result
+}
+
+func (v *plsqlVisitor) VisitDml_event_element(ctx *plsql.Dml_event_elementContext) interface{} {
+	stmt := newAstNode[semantic.TriggerEvent](ctx)
+	if ctx.INSERT() != nil {
+		stmt.Name = ctx.INSERT().GetText()
+	}
+	if ctx.UPDATE() != nil {
+		stmt.Name = ctx.UPDATE().GetText()
+	}
+	if ctx.DELETE() != nil {
+		stmt.Name = ctx.DELETE().GetText()
+	}
+
+	return stmt
 }
 
 func (v *plsqlVisitor) VisitTrigger_body(ctx *plsql.Trigger_bodyContext) interface{} {
@@ -1537,7 +1553,7 @@ func (v *plsqlVisitor) VisitCompound_dml_trigger(ctx *plsql.Compound_dml_trigger
 	if ctx.Dml_event_clause() != nil {
 		events := ctx.Dml_event_clause().Accept(v).(map[string]interface{})
 		if es, ok := events["events"]; ok {
-			stmt.Events = es.([]string)
+			stmt.Events = es.([]*semantic.TriggerEvent)
 		}
 		if ss, ok := events["tableview"]; ok {
 			stmt.TableView = ss.(string)

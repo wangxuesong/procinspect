@@ -60,14 +60,20 @@ type (
 		CreateTriggerStatement
 		IsBefore   bool
 		ForEachRow bool
-		Events     []string
+		Events     []*TriggerEvent
 		TableView  string
 	}
 
 	CreateCompoundDmlTriggerStatement struct {
 		CreateTriggerStatement
-		Events    []string
+		Events    []*TriggerEvent
 		TableView string
+	}
+
+	TriggerEvent struct {
+		SyntaxNode
+		Name   string
+		Column string
 	}
 
 	CompoundTriggerBlock struct {

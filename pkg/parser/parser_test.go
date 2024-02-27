@@ -2590,7 +2590,7 @@ END;`,
 				assert.NotNil(t, stmt)
 				assert.Equal(t, "orders_before_insert", stmt.Name)
 				assert.True(t, stmt.IsBefore)
-				assert.Equal(t, "INSERT", stmt.Events[0])
+				assert.Equal(t, "INSERT", stmt.Events[0].Name)
 				assert.Equal(t, "orders", stmt.TableView)
 				assert.True(t, stmt.ForEachRow)
 				assert.NotNil(t, stmt.TriggerBody)
@@ -2636,9 +2636,9 @@ end;`,
 				assert.Equal(t, "comp_test", stmt.Name)
 				assert.NotNil(t, stmt.TriggerBody)
 				assert.Equal(t, 3, len(stmt.Events))
-				assert.Equal(t, "insert", stmt.Events[0])
-				assert.Equal(t, "update", stmt.Events[1])
-				assert.Equal(t, "delete", stmt.Events[2])
+				assert.Equal(t, "insert", stmt.Events[0].Name)
+				assert.Equal(t, "update", stmt.Events[1].Name)
+				assert.Equal(t, "delete", stmt.Events[2].Name)
 				assert.Equal(t, "emp_test", stmt.TableView)
 				assert.IsType(t, &semantic.CompoundTriggerBlock{}, stmt.TriggerBody)
 				block := stmt.TriggerBody.(*semantic.CompoundTriggerBlock)
@@ -2662,6 +2662,70 @@ end;`,
 				tp = block.TimingPoints[3]
 				assert.False(t, tp.IsBefore)
 				assert.False(t, tp.ForEachRow)
+				assert.NotNil(t, tp.Body)
+				assert.Equal(t, 1, len(tp.Body.Statements))
+			},
+		},
+		{
+			name: "compound trigger sample",
+			text: `CREATE OR REPLACE TRIGGER Check_Employee_Salary_Raise
+  FOR UPDATE OF Salary ON Employees
+COMPOUND TRIGGER
+  Ten_Percent                 CONSTANT NUMBER := 0.1;
+  TYPE Salaries_t             IS TABLE OF Employees.Salary%TYPE;
+  Avg_Salaries                Salaries_t;
+  TYPE Department_IDs_t       IS TABLE OF Employees.Department_ID%TYPE;
+  Department_IDs              Department_IDs_t;
+
+  -- Declare collection type and variable:
+
+  TYPE Department_Salaries_t  IS TABLE OF Employees.Salary%TYPE
+                                INDEX BY VARCHAR2(80);
+  Department_Avg_Salaries     Department_Salaries_t;
+
+  BEFORE STATEMENT IS
+  BEGIN
+    SELECT               AVG(e.Salary), NVL(e.Department_ID, -1)
+      BULK COLLECT INTO  Avg_Salaries, Department_IDs
+      FROM               Employees e
+      GROUP BY           e.Department_ID;
+    FOR j IN 1..Department_IDs.COUNT() LOOP
+      Department_Avg_Salaries(Department_IDs(j)) := Avg_Salaries(j);
+    END LOOP;
+  END BEFORE STATEMENT;
+
+  AFTER EACH ROW IS
+  BEGIN
+    IF :NEW.Salary - :Old.Salary >
+      Ten_Percent*Department_Avg_Salaries(:NEW.Department_ID)
+    THEN
+      Raise_Application_Error(-20000, 'Raise too big');
+    END IF;
+  END AFTER EACH ROW;
+END Check_Employee_Salary_Raise;`,
+			Func: func(t *testing.T, root any) {
+				node := root.(*semantic.Script)
+				assert.Equal(t, len(node.Statements), 1)
+				assert.IsType(t, &semantic.CreateCompoundDmlTriggerStatement{}, node.Statements[0])
+				stmt := node.Statements[0].(*semantic.CreateCompoundDmlTriggerStatement)
+				assert.NotNil(t, stmt)
+				assert.Equal(t, "Check_Employee_Salary_Raise", stmt.Name)
+				assert.NotNil(t, stmt.TriggerBody)
+				assert.Equal(t, 1, len(stmt.Events))
+				assert.Equal(t, "UPDATE", stmt.Events[0].Name)
+				assert.Equal(t, "Employees", stmt.TableView)
+				assert.IsType(t, &semantic.CompoundTriggerBlock{}, stmt.TriggerBody)
+				block := stmt.TriggerBody.(*semantic.CompoundTriggerBlock)
+				assert.NotNil(t, block)
+				assert.Equal(t, 2, len(block.TimingPoints))
+				tp := block.TimingPoints[0]
+				assert.True(t, tp.IsBefore)
+				assert.False(t, tp.ForEachRow)
+				assert.NotNil(t, tp.Body)
+				assert.Equal(t, 2, len(tp.Body.Statements))
+				tp = block.TimingPoints[1]
+				assert.False(t, tp.IsBefore)
+				assert.True(t, tp.ForEachRow)
 				assert.NotNil(t, tp.Body)
 				assert.Equal(t, 1, len(tp.Body.Statements))
 			},

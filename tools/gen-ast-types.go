@@ -197,6 +197,7 @@ var AstTypes = map[string]reflect.Type{
 	"TimingPoint":                       reflect.TypeOf((*semantic.TimingPoint)(nil)).Elem(),
 	"TriggerBlock":                      reflect.TypeOf((*semantic.TriggerBlock)(nil)).Elem(),
 	"TriggerBody":                       reflect.TypeOf((*semantic.TriggerBody)(nil)).Elem(),
+	"TriggerEvent":                      reflect.TypeOf((*semantic.TriggerEvent)(nil)).Elem(),
 	"UnaryLogicalExpression":            reflect.TypeOf((*semantic.UnaryLogicalExpression)(nil)).Elem(),
 	"UpdateStatement":                   reflect.TypeOf((*semantic.UpdateStatement)(nil)).Elem(),
 	"UsingClause":                       reflect.TypeOf((*semantic.UsingClause)(nil)).Elem(),
